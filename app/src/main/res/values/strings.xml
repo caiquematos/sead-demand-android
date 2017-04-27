@@ -1,0 +1,49 @@
+<resources>
+    <string name="app_name">SEaD</string>
+    <string name="action_settings">Sair</string>
+    <string name="main_accepted">Aceitas</string>
+    <string name="main_cancelled">Canceladas</string>
+
+    <!-- Strings related to create demand -->
+    <string name="title_activity_scrolling">Criar Demanda</string>
+    <string name="large_text">
+        "Entre com as informações referentes ao destinatário e à demanda."
+    </string>
+    <string-array name="array_status">
+        <item>Regular</item>
+        <item>Importante</item>
+        <item>Urgente</item>
+    </string-array>
+    <string name="title_activity_login">Sign in</string>
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Entrar</string>
+    <string name="action_sign_up">Regitrar</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
+
+    <!-- Strings relates to Home Activity -->
+    <string name="title_activity_home">SeAD</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">SeAD\nDEMANDA</string>
+    <string name="title_activity_register">Sign Up</string>
+    <string name="prompt_name">Name</string>
+    <string name="prompt_confirm">Password (confirm)</string>
+    <string name="register_category">Posição</string>
+    <string name="register_superior">Superior</string>
+    <string name="login_register_button">cadastre-se aqui</string>
+    <string name="title_activity_view_demand"></string>
+    <string name="title_activity_status">Demandas</string>
+    <string name="cancel_button">CANCELAR</string>
+    <string name="postpone_button">ADIAR</string>
+    <string name="accept_button">ACEITAR</string>
+    <string name="fist_title">SEaD\nDEMANDA</string>
+</resources>

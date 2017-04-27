@@ -1,0 +1,20 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.example.caiqu.demand.Activities.MainActivity">
+    <item
+        android:id="@+id/main_accepted"
+        android:orderInCategory="98"
+        android:title="@string/main_accepted"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/main_cancelled"
+        android:orderInCategory="99"
+        android:title="@string/main_cancelled"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="@string/action_settings"
+        app:showAsAction="never" />
+</menu>

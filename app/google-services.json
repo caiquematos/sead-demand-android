@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "40306972789",
+    "firebase_url": "https://sead-cb8d0.firebaseio.com",
+    "project_id": "sead-cb8d0",
+    "storage_bucket": "sead-cb8d0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:40306972789:android:9d4874afd93092c5",
+        "android_client_info": {
+          "package_name": "com.example.caiqu.demand"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "40306972789-gu8lltpreiucnfhbc65t9r0rqdbm06bg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCLzaCCL9pCB6_bmucPRkrJMZC4PcssgY"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

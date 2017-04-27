@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.example.caiqu.demand.Activities.DemandActivity"
+    tools:showIn="@layout/activity_scrolling">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/text_margin"
+            android:text="@string/large_text" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:layout_weight="1">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/text_margin"
+                    android:layout_marginRight="@dimen/text_margin"
+                    android:text="Posição"
+                    android:textSize="18dp"/>
+
+                <Spinner
+                    android:id="@+id/demand_position_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginLeft="@dimen/text_margin"
+                    android:layout_marginRight="@dimen/text_margin">
+
+                </Spinner>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_weight="1">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/text_margin"
+                    android:layout_marginRight="@dimen/text_margin"
+                    android:text="Importância"
+                    android:textSize="18dp"/>
+
+                <Spinner
+                    android:id="@+id/demand_importance_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginLeft="@dimen/text_margin"
+                    android:layout_marginRight="@dimen/text_margin"
+                    android:entries="@array/array_status">
+
+                </Spinner>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/text_margin">
+
+            <AutoCompleteTextView
+                android:id="@+id/demand_receiver_act"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/text_margin"
+                android:layout_marginRight="@dimen/text_margin"
+                android:hint="Para"
+                android:inputType="textEmailAddress"
+                android:maxLines="1"/>
+
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/text_margin">
+
+            <EditText
+                android:id="@+id/demand_subject_et"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/text_margin"
+                android:layout_marginRight="@dimen/text_margin"
+                android:inputType="text"
+                android:hint="Assunto"
+                android:maxLines="1"/>
+
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/demand_description_et"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginLeft="@dimen/text_margin"
+                android:layout_marginRight="@dimen/text_margin"
+                android:layout_marginTop="@dimen/text_margin"
+                android:gravity="start"
+                android:hint="Descrição"
+                android:scrollbars="vertical"/>
+
+        </android.support.design.widget.TextInputLayout>
+
+    </LinearLayout>
+
+</android.support.v4.widget.NestedScrollView>
