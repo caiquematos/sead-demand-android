@@ -8,14 +8,15 @@ import android.util.Log;
 
 import com.example.caiqu.demand.Fragments.ReceivedFragment;
 import com.example.caiqu.demand.Fragments.SentFragment;
+import com.example.caiqu.demand.Fragments.SuperiorFragment;
 
 /**
  * Created by caiqu on 09/03/2017.
  */
 
 public class FixedTabsPageAdapter extends FragmentPagerAdapter {
-    final static int PAGE_COUNT = 2;
-    private String tabTitle[] = {"RECEBIDAS", "ENVIADAS"};
+    final static int PAGE_COUNT = 3;
+    private String tabTitle[] = {"RECEBIDAS", "ENVIADAS", "ADMIN"};
     private Context context;
 
     public FixedTabsPageAdapter(FragmentManager fm, Context context) {
@@ -35,6 +36,10 @@ public class FixedTabsPageAdapter extends FragmentPagerAdapter {
                 Log.d("something","I'm passed by Frag #" + position);
                 //urlRequest = "/demand/list-sent/";
                 return SentFragment.newInstance(position + 1);
+            case 2:
+                Log.d("something","I'm passed by Frag #" + position);
+                //urlRequest = "/demand/list-sent/";
+                return SuperiorFragment.newInstance(position + 1);
             default:
                 return null;
         }

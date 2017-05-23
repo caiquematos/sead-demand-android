@@ -75,15 +75,25 @@ public class SentFragment extends Fragment {
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                if(mGetDemandTask == null){
+                if(mGetDemandTask == null && CommonUtils.isOnline(getContext())){
                     mGetDemandTask = new GetDemandTask(mUserEmail, getView());
                     mGetDemandTask.execute();
+                } else {
+                    mSwipeRefresh.setRefreshing(false);
+                    Snackbar.make(mSwipeRefresh, R.string.internet_error, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
                 }
             }
         });
 
-        mGetDemandTask = new GetDemandTask(mUserEmail, view);
-        mGetDemandTask.execute();
+        if (CommonUtils.isOnline(getContext())) {
+            mGetDemandTask = new GetDemandTask(mUserEmail, view);
+            mGetDemandTask.execute();
+        } else {
+            Snackbar.make(view, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+
         return view;
     }
 
@@ -125,7 +135,7 @@ public class SentFragment extends Fragment {
                 success = jsonObject.getBoolean("success");
                 jsonArray = jsonObject.getJSONArray("list");
             } catch (JSONException e) {
-                Snackbar.make(view, "Server Problem", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                Snackbar.make(view, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
                 e.printStackTrace();
             }
 
@@ -149,7 +159,7 @@ public class SentFragment extends Fragment {
                 mSwipeRefresh.setRefreshing(false);
             } else {
                 mSwipeRefresh.setRefreshing(false);
-                Snackbar.make(view, "Problema no servidor. Tente mais tarde.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                Snackbar.make(view, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
             }
 
         }

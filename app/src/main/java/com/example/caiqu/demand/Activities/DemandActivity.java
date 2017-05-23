@@ -1,5 +1,6 @@
 package com.example.caiqu.demand.Activities;
 
+import android.annotation.TargetApi;
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
@@ -36,6 +37,7 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DemandActivity extends AppCompatActivity{
@@ -50,11 +52,15 @@ public class DemandActivity extends AppCompatActivity{
     private SendDemandTask mDemandTask;
     private  ArrayList<String> mEmployeesEmails;
     private int mReceiverIndex;
+    private String mReceiverName;
     private SharedPreferences mPrefs;
-    FloatingActionButton mFab;
+    private int mPage;
+    private FloatingActionButton mFab;
+    private List<String> mAutocompleteArray;
 
     public DemandActivity() {
         this.mActivity = this;
+        this.mPage = 0;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -66,6 +72,7 @@ public class DemandActivity extends AppCompatActivity{
         setSupportActionBar(toolbar);
 
         mPDDemand = new ProgressDialog(this);
+        mReceiverIndex = -1;
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         mReceiverView = (AutoCompleteTextView) findViewById(R.id.demand_receiver_act);
@@ -96,15 +103,13 @@ public class DemandActivity extends AppCompatActivity{
             }
         });
 
-        mReceiverView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        mReceiverView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                mReceiverIndex = position;
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                mReceiverName = mReceiverView.getText().toString();
+                mReceiverIndex = mAutocompleteArray.indexOf(mReceiverName);
+                Log.d("ON DEMAND", "Receiver Index:" + mReceiverIndex
+                        + " Receiver name:" + mReceiverName);
             }
         });
 
@@ -122,35 +127,61 @@ public class DemandActivity extends AppCompatActivity{
         String senderEmail = "";
         boolean cancel = false;
         View focusView = null;
+        Demand demand = null;
 
         if (mDemandTask != null) {
             return;
         }
 
+        if (!CommonUtils.isOnline(mActivity)) {
+            Snackbar.make(mFab, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+            return;
+        }
+
         // Reset errors.
         mSubjectView.setError(null);
+        mReceiverView.setError(null);
         // Get logged in user email
         senderEmail = mPrefs.getString(Constants.USER_EMAIL,"");
         Log.d("ON DEMAND", "Shared Prefs:" + senderEmail);
-        Log.d("ON DEMAND", "Receiver Email:" + mEmployeesEmails.get(mReceiverIndex));
+        Log.d("ON DEMAND", "Receiver Index:" + mReceiverIndex);
 
-        Demand demand = new Demand(
-                senderEmail,
-                mEmployeesEmails.get(mReceiverIndex),
-                mImportanceView.getSelectedItem().toString(),
-                mSubjectView.getText().toString(),
-                mDescriptionView.getText().toString());
-
-        if (demand.getSubject().isEmpty()){
-            mSubjectView.setError(getString(R.string.error_field_required));
-            focusView = mSubjectView;
-            cancel = true;
-        }
-
-        if (demand.getTo().isEmpty()){
+        if (mReceiverIndex == -1){
             mReceiverView.setError(getString(R.string.error_field_required));
             focusView = mReceiverView;
             cancel = true;
+        } else {
+            Log.d("ON DEMAND", "Receiver Email:" + mEmployeesEmails.get(mReceiverIndex));
+
+            demand = new Demand(-1,
+                    senderEmail,
+                    mEmployeesEmails.get(mReceiverIndex),
+                    "",
+                    "",
+                    mImportanceView.getSelectedItem().toString(),
+                    mSubjectView.getText().toString(),
+                    mDescriptionView.getText().toString(),
+                    "U");
+
+            if (demand.getSubject().isEmpty()){
+                mSubjectView.setError(getString(R.string.error_field_required));
+                focusView = mSubjectView;
+                cancel = true;
+            }
+
+            if (demand.getTo().isEmpty()){
+                mReceiverView.setError(getString(R.string.error_field_required));
+                focusView = mReceiverView;
+                cancel = true;
+            }
+
+            if (!mReceiverName.equals(mReceiverView.getText().toString())){
+                mReceiverView.setError(getString(R.string.error_send_demand_receiver));
+                focusView = mReceiverView;
+                cancel = true;
+            }
+
         }
 
         if (cancel) {
@@ -163,6 +194,7 @@ public class DemandActivity extends AppCompatActivity{
             mDemandTask = new SendDemandTask(demand);
             mDemandTask.execute((Void) null);
         }
+
     }
 
     private class SendDemandTask extends  AsyncTask<Void, Void, String>{
@@ -183,20 +215,24 @@ public class DemandActivity extends AppCompatActivity{
         @Override
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
-            values.put("sender", demand.getFrom());
-            values.put("receiver", demand.getTo());
+            values.put("sender", demand.getFromEmail());
+            values.put("receiver", demand.getToEmail());
             values.put("importance", demand.getImportance());
             values.put("subject", demand.getSubject());
             values.put("description", demand.getDescription());
             return CommonUtils.POST("/demand/send/", values);
         }
 
+        @TargetApi(Build.VERSION_CODES.N)
+        @RequiresApi(api = Build.VERSION_CODES.N)
         @Override
         protected void onPostExecute(String jsonResponse) {
             super.onPostExecute(jsonResponse);
             mDemandTask = null;
 
             JSONObject jsonObject;
+            JSONObject demandJson;
+            Demand demandResponse = null;
             boolean success = false;
 
             Log.d("ON POST EXECUTE DEMAND", "string json: " + jsonResponse);
@@ -204,8 +240,12 @@ public class DemandActivity extends AppCompatActivity{
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
+                demandJson = jsonObject.getJSONObject("demand");
+
+                Log.d("ON POST EXECUTE DEMAND", "string json demand: " + demandJson);
+                demandResponse = new Demand(demandJson);
             } catch (JSONException e) {
-                Snackbar.make(mFab, "Server Problem", Snackbar.LENGTH_LONG)
+                Snackbar.make(mFab, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
@@ -214,16 +254,27 @@ public class DemandActivity extends AppCompatActivity{
                 mPDDemand.dismiss();
             }
 
-            String message;
             if (success) {
-                message = "Demanda enviada com sucesso";
-                //TODO: make it go to Sent Demand Tab
+                Intent intent = new Intent(mActivity, ViewDemandActivity.class);
+                intent.putExtra("ACTIVITY", mActivity.getClass().getSimpleName());
+                intent.putExtra("PAGE", mPage);
+                intent.putExtra("DEMAND", "" + demandResponse.getId());
+                intent.putExtra("SUBJECT", demandResponse.getSubject());
+                intent.putExtra("STATUS", demandResponse.getStatus());
+                intent.putExtra("SENDER", demandResponse.getFrom());
+                intent.putExtra("SEEN", demandResponse.getSeen());
+                intent.putExtra("DESCRIPTION", demandResponse.getDescription());
+                intent.putExtra("TIME", CommonUtils.formatDate(demandResponse.getCreatedAt()));
+                intent.putExtra("IMPORTANCE", demandResponse.getImportance());
+                intent.putExtra("RECEIVER", demandResponse.getTo());
+                Log.d("ON VIEW HOLDER", demandResponse.getSubject() + " Importance:" + demandResponse.getImportance()
+                        + " PACKAGE:"  + mActivity.getClass().getSimpleName() + " Page:" + mPage);
+                finish();
+                mActivity.startActivity(intent);
             } else {
-                message = "A demanda não pode ser enviada";
+                Snackbar.make(mFab, R.string.send_demand_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
             }
-
-            Snackbar.make(mFab, message, Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
         }
     }
 
@@ -266,33 +317,33 @@ public class DemandActivity extends AppCompatActivity{
                 success = jsonObject.getBoolean("success");
                 jsonArray = jsonObject.getJSONArray("employees");
             } catch (JSONException e) {
-                Snackbar.make(mPositionView, "Server Problem", Snackbar.LENGTH_LONG)
+                Snackbar.make(mPositionView, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
 
             if(success){
                 mEmployeesEmails = new ArrayList<>();
-                List<String> autocompleteArray =  new ArrayList<>();
+                mAutocompleteArray =  new ArrayList<>();
                 for(int i=0; i < jsonArray.length(); i++){
                     try {
                         JSONObject json = jsonArray.getJSONObject(i);
-                        autocompleteArray.add(i,json.getString("name"));
+                        mAutocompleteArray.add(i,json.getString("name"));
                         mEmployeesEmails.add(i,json.getString("email"));
-                        Log.d("ON DEMAND", "" + autocompleteArray.get(i));
+                        Log.d("ON DEMAND", "" + mAutocompleteArray.get(i));
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity,
-                        android.R.layout.simple_dropdown_item_1line, autocompleteArray);
+                        android.R.layout.simple_dropdown_item_1line, mAutocompleteArray);
                 mReceiverView.setAdapter(adapter);
 
-                if (autocompleteArray.isEmpty())
-                    Snackbar.make(mPositionView, "Não há colaboradores para esta posição", Snackbar.LENGTH_LONG)
+                if (mAutocompleteArray.isEmpty())
+                    Snackbar.make(mPositionView, R.string.position_error, Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
             }else{
-                Snackbar.make(mPositionView, "Server Problem", Snackbar.LENGTH_LONG)
+                Snackbar.make(mPositionView, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
 

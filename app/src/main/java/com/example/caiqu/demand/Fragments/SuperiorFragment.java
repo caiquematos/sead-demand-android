@@ -1,13 +1,12 @@
 package com.example.caiqu.demand.Fragments;
 
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -32,11 +31,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by caiqu on 09/03/2017.
+ * Created by caiqu on 04/05/2017.
  */
 
-public class ReceivedFragment extends Fragment{
-    public static final String ARG_PAGE = "RECEIVED_DEMAND";
+public class SuperiorFragment extends Fragment {
+    public static final String ARG_PAGE = "SuperiorFragment";
+    int mPage;
     private RecyclerView mRecyclerView;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
@@ -45,12 +45,11 @@ public class ReceivedFragment extends Fragment{
     private SharedPreferences mPrefs;
     private SwipeRefreshLayout mSwipeRefresh;
     private String mUserEmail;
-    private int mPage;
 
-    public static ReceivedFragment newInstance(int page){
+    public static SuperiorFragment newInstance( int page ) {
         Bundle args = new Bundle();
         args.putInt(ARG_PAGE, page);
-        ReceivedFragment fragment = new ReceivedFragment();
+        SuperiorFragment fragment = new SuperiorFragment();
         fragment.setArguments(args);
         return fragment;
     }
@@ -61,13 +60,12 @@ public class ReceivedFragment extends Fragment{
         mPage = getArguments().getInt(ARG_PAGE);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_all_demand, container, false);
 
+        View view = inflater.inflate(R.layout.fragment_all_demand, container, false);
         mPrefs = getActivity().getSharedPreferences(getContext().getPackageName(), Context.MODE_PRIVATE);
         mUserEmail = mPrefs.getString(Constants.USER_EMAIL,"");
 
@@ -97,7 +95,6 @@ public class ReceivedFragment extends Fragment{
                     .setAction("Action", null).show();
         }
 
-
         return view;
     }
 
@@ -120,7 +117,7 @@ public class ReceivedFragment extends Fragment{
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
             values.put("email", userEmail);
-            return CommonUtils.POST("/demand/list-received/", values);
+            return CommonUtils.POST("/demand/list-admin-received/", values);
         }
 
         @Override
@@ -132,14 +129,14 @@ public class ReceivedFragment extends Fragment{
             JSONArray jsonArray = null;
             boolean success = false;
 
-            Log.d("ON RECEI TAB POST EXEC", "string json: " + jsonResponse);
+            Log.d("ON SENT TAB POST EXEC", "string json: " + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 jsonArray = jsonObject.getJSONArray("list");
             } catch (JSONException e) {
-                Snackbar.make(view, "Server Problem", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                Snackbar.make(view, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
                 e.printStackTrace();
             }
 
@@ -163,7 +160,7 @@ public class ReceivedFragment extends Fragment{
                 mSwipeRefresh.setRefreshing(false);
             } else {
                 mSwipeRefresh.setRefreshing(false);
-                Snackbar.make(view, "Problema no servidor. Tente mais tarde.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                Snackbar.make(view, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
             }
 
         }

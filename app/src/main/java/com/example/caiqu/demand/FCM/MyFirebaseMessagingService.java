@@ -6,14 +6,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
 import com.example.caiqu.demand.Activities.FirstActivity;
 import com.example.caiqu.demand.Activities.MainActivity;
+import com.example.caiqu.demand.Activities.ViewDemandActivity;
+import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.R;
+import com.example.caiqu.demand.Tools.CommonUtils;
+import com.google.android.gms.gcm.Task;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.Map;
 
@@ -23,7 +33,9 @@ import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private final String TAG = getClass().getSimpleName();
+    private final int PAGE = 3;
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
@@ -94,11 +106,49 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
      * @param notification FCM notification received.
      * @param data
      */
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private void sendNotification(RemoteMessage.Notification notification, Map<String, String> data) {
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, ViewDemandActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
-                PendingIntent.FLAG_ONE_SHOT);
+
+        JSONObject jsonObject = null;
+        Demand demand = null;
+                
+        try {
+            jsonObject = new JSONObject(data.get("demand"));
+            Log.e(TAG, "Json Noti:" + jsonObject.toString());
+            demand = new Demand(jsonObject);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        intent.putExtra("ACTIVITY", getClass().getSimpleName());
+        intent.putExtra("PAGE", Integer.parseInt(data.get("page")));
+        intent.putExtra("DEMAND", demand.getId());
+        intent.putExtra("SUBJECT", demand.getSubject());
+        intent.putExtra("STATUS", demand.getStatus());
+        intent.putExtra("SENDERNAME", demand.getFrom());
+        intent.putExtra("SENDEREMAIL", demand.getFromEmail());
+        intent.putExtra("SEEN", demand.getSeen());
+        intent.putExtra("DESCRIPTION", demand.getDescription());
+        intent.putExtra("TIME", CommonUtils.formatDate(demand.getCreatedAt()));
+        intent.putExtra("IMPORTANCE", demand.getImportance());
+        intent.putExtra("RECEIVERNAME", demand.getTo());
+        intent.putExtra("RECEIVEREMAIL", demand.getToEmail());
+        Log.d(TAG, demand.getSubject() + " Importance:" + demand.getImportance()
+                + " PACKAGE:"  + getClass().getSimpleName() + " Page:" + PAGE
+                + " Seen:" + demand.getSeen());
+
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addNextIntentWithParentStack((new Intent(this, MainActivity.class)));
+        stackBuilder.addNextIntent(intent);
+
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(
+                0,
+                PendingIntent.FLAG_UPDATE_CURRENT
+                );
+
+      //  PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent, PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
@@ -107,7 +157,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentText(notification.getBody())
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
-                .setContentIntent(pendingIntent);
+                .setContentIntent(resultPendingIntent);
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

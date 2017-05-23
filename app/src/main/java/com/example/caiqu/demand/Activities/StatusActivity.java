@@ -16,6 +16,7 @@ import android.util.Log;
 
 import com.example.caiqu.demand.Adapters.DemandAdapter;
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Fragments.SentFragment;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
@@ -38,6 +39,8 @@ public class StatusActivity extends AppCompatActivity {
     private List<Demand> mDemandSet;
     private StatusActivity mActivity;
     private String mStatus;
+    private String mType;
+    private int mPage;
 
     public StatusActivity() {
         this.mActivity = this;
@@ -50,15 +53,43 @@ public class StatusActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        mPage = -1;
+
         Intent intent = getIntent();
-        mStatus = intent.getStringExtra("STATUS"); // A - Accepted, C - Cancelled
-        Log.d("On Accepted", "Status: " + mStatus);
-        switch (mStatus) {
-            case "A":
-                setTitle("Demandas Aceitas");
+        mType = intent.getStringExtra("TYPE"); // U - user, A - Admin
+        mStatus = intent.getStringExtra("STATUS"); // A - Accepted, C - Cancelled, X - Rejected
+        Log.d("On Accepted", "Status: " + mStatus + " Type: " + mType);
+        switch (mType) {
+            case "U":
+                switch (mStatus) {
+                    case "A":
+                        mPage = 5;
+                        setTitle("Demandas Aceitas");
+                        break;
+                    case "X":
+                        mPage = 6;
+                        setTitle("Demandas Rejeitadas");
+                        break;
+                    case "C":
+                        mPage = 4; // This makes menu REOPEN visible
+                        setTitle("Demandas Canceladas");
+                }
                 break;
-            case "C":
-                setTitle("Demandas Canceladas");
+            case "A":
+                switch (mStatus) {
+                    case "A":
+                        mPage = 5;
+                        setTitle("(Admin) Demandas Aceitas");
+                        break;
+                    case "X":
+                        mPage = 6;
+                        setTitle("Demandas Rejeitadas");
+                        break;
+                    case "C":
+                        mPage = 4; // This makes menu REOPEN visible
+                        setTitle("(Admin) Demandas Canceladas");
+                }
+
         }
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
@@ -71,16 +102,23 @@ public class StatusActivity extends AppCompatActivity {
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                if(mGetAcceptedTask == null){
+                if(mGetAcceptedTask == null && CommonUtils.isOnline(mActivity)){
                     mGetAcceptedTask = new GetAcceptedTask(mUserEmail, mStatus);
                     mGetAcceptedTask.execute();
+                } else {
+                    mSwipeRefresh.setRefreshing(false);
+                    Snackbar.make(mSwipeRefresh, R.string.internet_error, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
                 }
             }
         });
 
-        if(mGetAcceptedTask == null){
+        if(mGetAcceptedTask == null && CommonUtils.isOnline(mActivity)){
             mGetAcceptedTask = new GetAcceptedTask(mUserEmail, mStatus);
             mGetAcceptedTask.execute();
+        } else {
+            Snackbar.make(mSwipeRefresh, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
         }
     }
 
@@ -98,7 +136,14 @@ public class StatusActivity extends AppCompatActivity {
             ContentValues values = new ContentValues();
             values.put("email", userEmail);
             values.put("status", status);
-            return CommonUtils.POST("/demand/list-by-status/", values);
+            switch (mType) {
+                case "U":
+                    return CommonUtils.POST("/demand/list-demand-by-status/", values);
+                case "A":
+                    return CommonUtils.POST("/demand/list-admin-demand-by-status/", values);
+                default:
+                    return null;
+            }
         }
 
         @Override
@@ -134,7 +179,7 @@ public class StatusActivity extends AppCompatActivity {
                 }
 
                 mRecyclerView.setLayoutManager(mLayoutManager);
-                mAdapter = new DemandAdapter(mDemandSet,mActivity,0);
+                mAdapter = new DemandAdapter(mDemandSet,mActivity,mPage);
                 mRecyclerView.setAdapter(mAdapter);
                 mSwipeRefresh.setRefreshing(false);
 
@@ -143,7 +188,4 @@ public class StatusActivity extends AppCompatActivity {
             }
         }
     }
-
-
-
 }

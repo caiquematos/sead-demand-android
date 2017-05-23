@@ -2,16 +2,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.example.caiqu.demand.Activities.MainActivity">
+
     <item
-        android:id="@+id/main_accepted"
+        android:id="@+id/main_admin_accepted"
+        android:orderInCategory="97"
+        android:title="@string/main_admin_accepted"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/main_admin_cancelled"
         android:orderInCategory="98"
-        android:title="@string/main_accepted"
+        android:title="@string/main_admin_cancelled"
         app:showAsAction="never" />
+
     <item
-        android:id="@+id/main_cancelled"
+        android:id="@+id/main_admin_rejected"
         android:orderInCategory="99"
-        android:title="@string/main_cancelled"
+        android:title="@string/demandas_rejeitadas"
         app:showAsAction="never" />
+
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"

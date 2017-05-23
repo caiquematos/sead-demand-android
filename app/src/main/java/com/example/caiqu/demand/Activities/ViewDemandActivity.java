@@ -1,5 +1,7 @@
 package com.example.caiqu.demand.Activities;
 
+import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
@@ -20,14 +22,17 @@ import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
+import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
+import com.example.caiqu.demand.Tools.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class ViewDemandActivity extends AppCompatActivity {
-    private String mDemandId;
+    private final String TAG = getClass().getSimpleName();
+
     private String mSeen;
     private TextView mSubjectTV;
     private TextView mImportanceTV;
@@ -43,13 +48,20 @@ public class ViewDemandActivity extends AppCompatActivity {
     private FloatingActionButton mFabYes;
     private FloatingActionButton mFabLater;
     private FloatingActionButton mFabNo;
+    private FloatingActionButton mFabReopen;
+    private FloatingActionButton mFabReject;
+    private FloatingActionButton mFabResend;
     private FloatingActionButton mFabMenu;
     private TextView mYesTV;
     private TextView mNoTV;
     private TextView mLaterTV;
-    private String mDemandStatus;
-    private int mPage; //identifies which tab called this
+    private TextView mReopenTV;
+    private TextView mRejectTV;
+    private TextView mResendTV;
+    private int mPage; //identifies which activity called this one
     private boolean mTurned;
+    private SendDemandTask mDemandTask;
+    private Demand mDemand;
     ViewDemandActivity mActivity;
 
     public ViewDemandActivity() {
@@ -74,30 +86,44 @@ public class ViewDemandActivity extends AppCompatActivity {
         mPDDemand = new ProgressDialog(mActivity);
 
         Intent intent = getIntent();
-        String activity = intent.getStringExtra("ACTIVITY");
         String importance = intent.getStringExtra("IMPORTANCE");
         setImportanceColor(importance);
-        mPage = intent.getIntExtra("PAGE", 0);
+        mPage = intent.getIntExtra("PAGE", -1);
         mSeen = intent.getStringExtra("SEEN");
-        if (mSeen.equals("N") && mPage == 1) markAsSeen();
 
-        mDemandId = intent.getStringExtra("DEMAND");
-        mSubjectTV.setText(intent.getStringExtra("SUBJECT").toUpperCase());
-        mImportanceTV.setText(importance);
-        mSenderTV.setText("De: " + intent.getStringExtra("SENDER"));
-        mReceiverTV.setText("Para: " + intent.getStringExtra("RECEIVER"));
+        if ( ( mPage == 1 || mPage == 3) ) markAsSeen(); // On Received demands or Admin demands
+
+        if (mPage == 0) Snackbar.make(mSubjectTV, R.string.send_demand_success, Snackbar.LENGTH_LONG)
+                .setAction("Action", null).show();
+
+        mDemand = new Demand(
+                intent.getIntExtra("DEMAND",-1),
+                intent.getStringExtra("SENDEREMAIL"),
+                intent.getStringExtra("RECEIVEREMAIL"),
+                intent.getStringExtra("SENDERNAME"),
+                intent.getStringExtra("RECEIVERNAME"),
+                intent.getStringExtra("IMPORTANCE"),
+                intent.getStringExtra("SUBJECT"),
+                intent.getStringExtra("DESCRIPTION"),
+                intent.getStringExtra("STATUS")
+                );
+
+        mSubjectTV.setText(mDemand.getSubject().toUpperCase());
+        mImportanceTV.setText(mDemand.getImportance());
+        mSenderTV.setText("De: " + mDemand.getFrom());
+        mReceiverTV.setText("Para: " + mDemand.getTo());
         mTimeTV.setText(intent.getStringExtra("TIME"));
-        mDescriptionTV.setText(intent.getStringExtra("DESCRIPTION"));
+        mDescriptionTV.setText(mDemand.getDescription());
 
-        mDemandStatus = intent.getStringExtra("STATUS");
-        showDemandStatus(mDemandStatus);
+        showDemandStatus(mDemand.getStatus());
+        Log.e(TAG, "Page number: " + mPage + " Status: " + mDemand.getStatus());
 
         mYesTV = (TextView) findViewById(R.id.tv_yes);
         mFabYes = (FloatingActionButton) findViewById(R.id.fab_yes);
         mFabYes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus("A");
+                setDemandStatus(Constants.ACCEPT_STATUS);
             }
         }); //Accepted
 
@@ -106,7 +132,7 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabLater.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus("P");
+                setDemandStatus(Constants.POSTPONE_STATUS);
             }
         }); //Postponed
 
@@ -115,9 +141,38 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabNo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus("C");
+                setDemandStatus(Constants.CANCEL_STATUS);
             }
         }); //Cancelled
+
+        mReopenTV = (TextView) findViewById(R.id.tv_repopen);
+        mFabReopen = (FloatingActionButton) findViewById(R.id.fab_reopen);
+        mFabReopen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                setDemandStatus(Constants.REOPEN_STATUS);
+            }
+        }); //Reopen
+
+        mRejectTV = (TextView) findViewById(R.id.tv_reject);
+        mFabReject = (FloatingActionButton) findViewById(R.id.fab_reject);
+        mFabReject.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                setDemandStatus(Constants.REJECT_STATUS);
+            }
+        }); //Reject
+
+        mResendTV = (TextView) findViewById(R.id.tv_resend);
+        mFabResend = (FloatingActionButton) findViewById(R.id.fab_resend);
+        mFabResend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (CommonUtils.isOnline(getApplicationContext())) attemptSendDemand();
+                else  Snackbar.make(mFabResend, R.string.internet_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        }); //Resend
 
         mFabMenu = (FloatingActionButton) findViewById(R.id.fab_menu);
         mFabMenu.setOnClickListener(new View.OnClickListener(){
@@ -131,12 +186,61 @@ public class ViewDemandActivity extends AppCompatActivity {
                             setInterpolator(new OvershootInterpolator()).
                             start();
                     mTurned = false;
-                    mFabNo.hide();
-                    mFabLater.hide();
-                    mFabYes.hide();
-                    mNoTV.setVisibility(View.INVISIBLE);
-                    mLaterTV.setVisibility(View.INVISIBLE);
-                    mYesTV.setVisibility(View.INVISIBLE);
+                    if (mPage == 4) { // if Canceled Activity
+                        mFabReopen.hide();
+                        mReopenTV.setVisibility(View.INVISIBLE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                        mFabResend.setVisibility(View.GONE);
+                        mResendTV.setVisibility(View.GONE);
+                    } else if (mPage == 5){ // if Accepted Activity
+                        mFabNo.hide();
+                        mNoTV.setVisibility(View.INVISIBLE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                        mFabResend.setVisibility(View.GONE);
+                        mResendTV.setVisibility(View.GONE);
+                    } else if(mPage == 2 // if Received Tab (canceled or rejected demand)
+                            && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
+                                || mDemand.getStatus().equals(Constants.REJECT_STATUS))) {
+                        mFabResend.hide();
+                        mResendTV.setVisibility(View.INVISIBLE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                    } else {
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                        mFabResend.setVisibility(View.GONE);
+                        mResendTV.setVisibility(View.GONE);
+                        mFabReject.hide();
+                        mRejectTV.setVisibility(View.INVISIBLE);
+                        mFabLater.hide();
+                        mLaterTV.setVisibility(View.INVISIBLE);
+                        mFabYes.hide();
+                        mYesTV.setVisibility(View.INVISIBLE);
+                    }
                 } else {
                     ViewCompat.animate(mFabMenu).
                             rotation(135f).
@@ -145,23 +249,75 @@ public class ViewDemandActivity extends AppCompatActivity {
                             setInterpolator(new OvershootInterpolator()).
                             start();
                     mTurned = true;
-                    mFabYes.show();
-                    mFabLater.show();
-                    mFabNo.show();
-                    mNoTV.setVisibility(View.VISIBLE);
-                    mLaterTV.setVisibility(View.VISIBLE);
-                    mYesTV.setVisibility(View.VISIBLE);
+                    if (mPage == 4) { // if Canceled Activity
+                        mFabReopen.show();
+                        mReopenTV.setVisibility(View.VISIBLE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                    } else if (mPage == 5){ // if Accepted Activity
+                        mFabNo.show();
+                        mNoTV.setVisibility(View.VISIBLE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                    } else if(mPage == 2
+                            && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
+                                || mDemand.getStatus().equals(Constants.REJECT_STATUS))) { // if Received Tab (canceled or rejected demand)
+                        mFabResend.show();
+                        mResendTV.setVisibility(View.VISIBLE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                    } else {
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                        mFabResend.setVisibility(View.GONE);
+                        mResendTV.setVisibility(View.GONE);
+                        mFabYes.show();
+                        mYesTV.setVisibility(View.VISIBLE);
+                        mFabLater.show();
+                        mLaterTV.setVisibility(View.VISIBLE);
+                        mFabReject.show();
+                        mRejectTV.setVisibility(View.VISIBLE);
+                    }
                 }
             }
         });
 
-        Log.e("On ViewDemand", "Activity out if: " + activity);
-        if (activity.equals("StatusActivity") || mPage == 2){
-            Log.e("On ViewDemand", "Activity in if: " + activity);
+        if (mPage == -1
+                || mPage == 1
+                || mPage == 0
+                || (mPage == 2
+                    && !(mDemand.getStatus().equals(Constants.CANCEL_STATUS)
+                        || mDemand.getStatus().equals(Constants.REJECT_STATUS)))
+                || mPage == 6){
             mFabMenu.hide();
+            mFabReject.hide();
             mFabNo.hide();
             mFabLater.hide();
             mFabYes.hide();
+            mFabReopen.hide();
+            mFabResend.hide();
         }else{
             mScrollView = findViewById(R.id.view_demand_scroll_view);
             mScrollView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
@@ -177,12 +333,51 @@ public class ViewDemandActivity extends AppCompatActivity {
                                     setListener(new ViewPropertyAnimatorListener() {
                                         @Override
                                         public void onAnimationStart(View view) {
-                                            mFabNo.hide();
-                                            mFabLater.hide();
-                                            mFabYes.hide();
-                                            mNoTV.setVisibility(View.INVISIBLE);
-                                            mLaterTV.setVisibility(View.INVISIBLE);
-                                            mYesTV.setVisibility(View.INVISIBLE);
+                                            if (mPage == 4) { // if Canceled Activity
+                                                mFabReopen.hide();
+                                                mReopenTV.setVisibility(View.INVISIBLE);
+                                                mFabReject.setVisibility(View.GONE);
+                                                mRejectTV.setVisibility(View.GONE);
+                                                mFabLater.setVisibility(View.GONE);
+                                                mLaterTV.setVisibility(View.GONE);
+                                                mFabYes.setVisibility(View.GONE);
+                                                mYesTV.setVisibility(View.GONE);
+                                                mFabNo.setVisibility(View.GONE);
+                                                mNoTV.setVisibility(View.GONE);
+                                            } else if (mPage == 5){ // if Accepted Activity
+                                                mFabNo.hide();
+                                                mNoTV.setVisibility(View.INVISIBLE);
+                                                mFabReject.setVisibility(View.GONE);
+                                                mRejectTV.setVisibility(View.GONE);
+                                                mFabLater.setVisibility(View.GONE);
+                                                mLaterTV.setVisibility(View.GONE);
+                                                mFabYes.setVisibility(View.GONE);
+                                                mYesTV.setVisibility(View.GONE);
+                                                mFabReopen.setVisibility(View.GONE);
+                                                mReopenTV.setVisibility(View.GONE);
+                                            } else if(mPage == 2
+                                                    && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
+                                                        || mDemand.getStatus().equals(Constants.REJECT_STATUS))) { // if Received Tab (canceled demand)
+                                                mFabResend.hide();
+                                                mResendTV.setVisibility(View.INVISIBLE);
+                                                mFabNo.setVisibility(View.GONE);
+                                                mNoTV.setVisibility(View.GONE);
+                                                mFabReject.setVisibility(View.GONE);
+                                                mRejectTV.setVisibility(View.GONE);
+                                                mFabLater.setVisibility(View.GONE);
+                                                mLaterTV.setVisibility(View.GONE);
+                                                mFabYes.setVisibility(View.GONE);
+                                                mYesTV.setVisibility(View.GONE);
+                                                mFabReopen.setVisibility(View.GONE);
+                                                mReopenTV.setVisibility(View.GONE);
+                                            } else {
+                                                mFabReject.hide();
+                                                mRejectTV.setVisibility(View.INVISIBLE);
+                                                mFabLater.hide();
+                                                mLaterTV.setVisibility(View.INVISIBLE);
+                                                mFabYes.hide();
+                                                mYesTV.setVisibility(View.INVISIBLE);
+                                            }
                                         }
 
                                         @Override
@@ -208,6 +403,96 @@ public class ViewDemandActivity extends AppCompatActivity {
         }
     }
 
+    private void attemptSendDemand(){
+        boolean cancel = false;
+
+        if (mDemandTask != null) cancel = true;
+
+        if (cancel){
+
+        } else {
+            mDemandTask = new SendDemandTask(mDemand);
+            mDemandTask.execute((Void) null);
+        }
+    }
+
+    private class SendDemandTask extends  AsyncTask<Void, Void, String>{
+        private final Demand demand;
+
+        public SendDemandTask(Demand demand) {
+            this.demand = demand;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDDemand.setMessage("Por favor aguarde.");
+            mPDDemand.setCancelable(false);
+            mPDDemand.show();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            ContentValues values = new ContentValues();
+            values.put("id", demand.getId());
+            return CommonUtils.POST("/demand/resend/", values);
+        }
+
+        @TargetApi(Build.VERSION_CODES.N)
+        @RequiresApi(api = Build.VERSION_CODES.N)
+        @Override
+        protected void onPostExecute(String jsonResponse) {
+            super.onPostExecute(jsonResponse);
+            mDemandTask = null;
+
+            JSONObject jsonObject;
+            JSONObject demandJson;
+            Demand demandResponse = null;
+            boolean success = false;
+
+            Log.d("ON POST EXECUTE DEMAND", "string json: " + jsonResponse);
+
+            try {
+                jsonObject = new JSONObject(jsonResponse);
+                success = jsonObject.getBoolean("success");
+                demandJson = jsonObject.getJSONObject("demand");
+
+                Log.d("ON POST EXECUTE DEMAND", "string json demand: " + demandJson);
+                demandResponse = new Demand(demandJson);
+            } catch (JSONException e) {
+                Snackbar.make(mFabResend, R.string.server_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+                e.printStackTrace();
+            }
+
+            if (mPDDemand.isShowing()){
+                mPDDemand.dismiss();
+            }
+
+            if (success) {
+                Intent intent = new Intent(mActivity, ViewDemandActivity.class);
+                intent.putExtra("ACTIVITY", mActivity.getClass().getSimpleName());
+                intent.putExtra("PAGE", mPage);
+                intent.putExtra("DEMAND", demandResponse.getId());
+                intent.putExtra("SUBJECT", demandResponse.getSubject());
+                intent.putExtra("STATUS", demandResponse.getStatus());
+                intent.putExtra("SENDERNAME", demandResponse.getFrom());
+                intent.putExtra("SEEN", demandResponse.getSeen());
+                intent.putExtra("DESCRIPTION", demandResponse.getDescription());
+                intent.putExtra("TIME", CommonUtils.formatDate(demandResponse.getCreatedAt()));
+                intent.putExtra("IMPORTANCE", demandResponse.getImportance());
+                intent.putExtra("RECEIVERNAME", demandResponse.getTo());
+                Log.d("ON VIEW HOLDER", demandResponse.getSubject() + " Importance:" + demandResponse.getImportance()
+                        + " PACKAGE:"  + mActivity.getClass().getSimpleName() + " Page:" + mPage);
+                finish();
+                mActivity.startActivity(intent);
+            } else {
+                Snackbar.make(mFabResend, R.string.send_demand_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        }
+    }
+
     private void showDemandStatus(String status) {
         if (status.equals("A"))
             mStatusTV.setText("Essa demanda foi Aceita");
@@ -217,21 +502,28 @@ public class ViewDemandActivity extends AppCompatActivity {
             mStatusTV.setText("Essa demanda foi Adiada");
         else if (status.equals("R"))
             mStatusTV.setText("Essa demanda foi Reaberta");
+        else if (status.equals("X"))
+            mStatusTV.setText("Essa demanda foi Rejeitada");
         else
             mStatusTV.setText("Essa demanda ainda não foi avaliada");
     }
 
     private void markAsSeen(){
+        Log.e("ON SEEN DEMAND", "on seen bfore if");
         if (mSeenTask == null){
             mSeenTask = new SeenTask();
             mSeenTask.execute();
+            Log.e("ON SEEN DEMAND", "on seen after if");
         }
     }
 
     private void setDemandStatus(String status){
-        if (mStatusTask == null){
-            mStatusTask = new StatusTask(mDemandId, status);
+        if (mStatusTask == null && CommonUtils.isOnline(mActivity)){
+            mStatusTask = new StatusTask(mDemand.getId(), status);
             mStatusTask.execute();
+        } else {
+            Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
         }
     }
 
@@ -248,7 +540,7 @@ public class ViewDemandActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
-            values.put("demand", mDemandId);
+            values.put("demand", mDemand.getId());
             return CommonUtils.POST("/demand/mark-as-read/", values);
         }
 
@@ -273,10 +565,10 @@ public class ViewDemandActivity extends AppCompatActivity {
     }
 
     public class StatusTask extends AsyncTask<Void, Void, String> {
-        private String id;
+        private int id;
         private String status;
 
-        public StatusTask(String id, String status) {
+        public StatusTask(int id, String status) {
             this.id = id;
             this.status = status;
         }
@@ -310,17 +602,38 @@ public class ViewDemandActivity extends AppCompatActivity {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
             } catch (JSONException e) {
-                Snackbar.make(mFabYes, "Server Problem", Snackbar.LENGTH_LONG)
+                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
 
+            String message;
+
             if (success) {
-                Snackbar.make(mFabYes, "SUCCESS", Snackbar.LENGTH_LONG)
+                switch(status){
+                    case "A":
+                        message = "Demanda Aceita com Sucesso.";
+                        break;
+                    case "P":
+                        message = "Demanda Adiada com Sucesso.";
+                        break;
+                    case "C":
+                        message = "Demanda Cancelada com Sucesso.";
+                        break;
+                    case "R":
+                        message = "Demanda Reaberta com Sucesso.";
+                        break;
+                     case "X":
+                        message = "Demanda Rejeitada com Sucesso.";
+                        break;
+                    default:
+                        message = "Feito.";
+                }
+                Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 showDemandStatus(status);
             } else {
-                Snackbar.make(mFabYes, "FAILED", Snackbar.LENGTH_LONG)
+                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
 

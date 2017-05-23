@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">SEaD</string>
     <string name="action_settings">Sair</string>
-    <string name="main_accepted">Aceitas</string>
-    <string name="main_cancelled">Canceladas</string>
+    <string name="main_accepted">Demandas Aceitas</string>
+    <string name="main_cancelled">Demandas Canceladas</string>
 
     <!-- Strings related to create demand -->
     <string name="title_activity_scrolling">Criar Demanda</string>
@@ -25,7 +25,7 @@
     <string name="error_invalid_email">This email address is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
-    <string name="error_field_required">This field is required</string>
+    <string name="error_field_required">Esse campo deve ser preenchido</string>
     <string name="permission_rationale">"Contacts permissions are needed for providing email
         completions."
     </string>
@@ -42,8 +42,20 @@
     <string name="login_register_button">cadastre-se aqui</string>
     <string name="title_activity_view_demand"></string>
     <string name="title_activity_status">Demandas</string>
-    <string name="cancel_button">CANCELAR</string>
-    <string name="postpone_button">ADIAR</string>
-    <string name="accept_button">ACEITAR</string>
+    <string name="cancel_button">Cancelar</string>
+    <string name="postpone_button">Adiar</string>
+    <string name="accept_button">Aceitar</string>
     <string name="fist_title">SEaD\nDEMANDA</string>
+    <string name="error_send_demand_receiver">Selecione uma das opções sugeridas</string>
+    <string name="internet_error">Por favor conecte-se à internet!</string>
+    <string name="position_error">Esta posição ainda não possui superior</string>
+    <string name="server_error">Erro no servidor. Por favor tente mais tarde.</string>
+    <string name="send_demand_error">Erro ao enviar demanda. Por favor tente mais tarde.</string>
+    <string name="send_demand_success">Demanda enviada com sucesso.</string>
+    <string name="main_admin_accepted">Demandas Aceitas</string>
+    <string name="main_admin_cancelled">Demandas Canceladas</string>
+    <string name="reopen_button">Reabrir</string>
+    <string name="reject">Rejeitar</string>
+    <string name="demandas_rejeitadas">Demandas Rejeitadas</string>
+    <string name="resend_button">Reenviar</string>
 </resources>

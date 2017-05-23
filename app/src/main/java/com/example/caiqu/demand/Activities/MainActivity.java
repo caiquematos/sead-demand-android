@@ -111,11 +111,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }, 2000);
             return true;
         }
+
+        /*
         if (id == R.id.main_accepted){
+            intent.putExtra("TYPE", "U"); // Demands I accepted as User
             intent.putExtra("STATUS", "A");
             startActivity(intent);
         }
         if (id == R.id.main_cancelled){
+            intent.putExtra("TYPE", "U"); // Demands I canceled as User
+            intent.putExtra("STATUS", "C");
+            startActivity(intent);
+        }
+        */
+
+        if (id == R.id.main_admin_accepted){
+            intent.putExtra("TYPE", "A"); // Demands I accepted as Admin
+            intent.putExtra("STATUS", "A");
+            startActivity(intent);
+        }
+        if (id == R.id.main_admin_rejected){
+            intent.putExtra("TYPE", "A"); // Demands I rejected as Admin
+            intent.putExtra("STATUS", "X");
+            startActivity(intent);
+        }
+        if (id == R.id.main_admin_cancelled){
+            intent.putExtra("TYPE", "A"); // Demands I canceled as Admin
             intent.putExtra("STATUS", "C");
             startActivity(intent);
         }

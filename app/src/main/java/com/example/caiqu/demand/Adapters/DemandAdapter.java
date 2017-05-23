@@ -17,6 +17,8 @@ import android.widget.TextView;
 import com.example.caiqu.demand.Activities.ViewDemandActivity;
 import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.R;
+import com.example.caiqu.demand.Tools.CommonUtils;
+import com.example.caiqu.demand.Tools.Constants;
 
 import java.util.Date;
 import java.util.List;
@@ -44,24 +46,28 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
-    public void onBindViewHolder(DemandAdapter.ViewHolder holder, int position) {
+    public void onBindViewHolder(DemandAdapter.ViewHolder holder, final int position) {
         final Demand demand = mDemandList.get(position);
+        // Log.e("On ViewHolder", "Position:" +position + " Seen:" + demand.getSeen());
 
         switch (demand.getStatus()){
-            case "A": //Accepted
+            case Constants.ACCEPT_STATUS: //Accepted
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.green));
                 break;
-            case "C": //Cancelled
+            case Constants.REJECT_STATUS: //Rejected
+            case Constants.CANCEL_STATUS: //Cancelled
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.red));
                 break;
-            case "P": //Postponed
+            case Constants.POSTPONE_STATUS: //Postponed
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.yellow));
                 break;
-            case "R": //Reopen
+            case Constants.REOPEN_STATUS: //Reopen
+            case Constants.UNDEFINE_STATUS: //Undefined
+                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.gray));
+                break;
+            case Constants.RESEND_STATUS: //Resent
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.blue));
                 break;
-            case "U": //Undefined
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.gray));
         }
 
         switch (demand.getImportance()){
@@ -75,7 +81,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 holder.mImportance.setColorFilter(ContextCompat.getColor(mContext,R.color.transgreen));
         }
 
-        Log.e("On DemandAdap", "Page: " + mPage);
+        // Log.e("On DemandAdap", "Page: " + mPage);
         //For tab sent the name to show should be who the demand was sent
         String user;
         if (mPage == 2) user = demand.getTo();
@@ -85,48 +91,48 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         if (demand.getSeen().equals("Y")) {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
             holder.mSubject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
+        } else {
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(mContext,R.color.white));
+            holder.mSubject.setTextColor(ContextCompat.getColor(mContext,R.color.black));
         }
 
         holder.mSubject.setText(demand.getSubject());
         holder.mUser.setText(user);
         holder.mDescription.setText(demand.getDescription());
-        holder.mTime.setText(formatDate(demand.getCreatedAt()));
+        holder.mTime.setText(CommonUtils.formatDate(demand.getCreatedAt()));
 
         holder.itemView.setClickable(true);
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //change color in order to indicate seen status
-                if(mPage == 1){
+                if((mPage == 1 || mPage == 3) && demand.getSeen().equals("N")){
                     v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
                     TextView subject = (TextView) v.findViewById(R.id.demand_title);
                     subject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
+                    demand.setSeen("Y");
+                    mDemandList.get(position).setSeen("Y");
                 }
                 Intent intent = new Intent(mContext, ViewDemandActivity.class);
                 intent.putExtra("ACTIVITY", mContext.getClass().getSimpleName());
                 intent.putExtra("PAGE", mPage);
-                intent.putExtra("DEMAND", "" + demand.getId());
+                intent.putExtra("DEMAND", demand.getId());
                 intent.putExtra("SUBJECT", demand.getSubject());
                 intent.putExtra("STATUS", demand.getStatus());
-                intent.putExtra("SENDER", demand.getFrom());
+                intent.putExtra("SENDERNAME", demand.getFrom());
                 intent.putExtra("SEEN", demand.getSeen());
                 intent.putExtra("DESCRIPTION", demand.getDescription());
-                intent.putExtra("TIME", formatDate(demand.getCreatedAt()));
+                intent.putExtra("TIME", CommonUtils.formatDate(demand.getCreatedAt()));
                 intent.putExtra("IMPORTANCE", demand.getImportance());
-                intent.putExtra("RECEIVER", demand.getTo());
+                intent.putExtra("RECEIVERNAME", demand.getTo());
+                intent.putExtra("SENDEREMAIL", demand.getFromEmail());
+                intent.putExtra("RECEIVEREMAIL", demand.getToEmail());
                 Log.d("ON VIEW HOLDER", demand.getSubject() + " Importance:" + demand.getImportance()
-                    + " PACKAGE:"  + mContext.getClass().getSimpleName() + " Page:" + mPage);
+                    + " PACKAGE:"  + mContext.getClass().getSimpleName() + " Page:" + mPage
+                        + " Seen:" + demand.getSeen());
                 mContext.startActivity(intent);
             }
         });
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    private String formatDate(Date createdAt) {
-        Calendar cal =  Calendar.getInstance();
-        cal.setTime(createdAt);
-        int day = cal.get(Calendar.DAY_OF_MONTH);
-        return "Day " + day;
     }
 
     @Override

@@ -78,6 +78,7 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
     private ProgressDialog mPDRegister;
     private SharedPreferences mPrefs;
     private String mToken;
+    private boolean mIsTopPosition;
 
     public RegisterActivity() {
         this.mActivity = this;
@@ -139,11 +140,23 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 int superior = position + 1; //This will make it retrieve the superior position
 
-                if(superior != Constants.JOB_POSITIONS.length)
-                    new FetchSuperiorTask(Constants.JOB_POSITIONS[superior]).execute();
-                else
-                    Snackbar.make(mSuperiorView, "Esta posição ainda não possui superior", Snackbar.LENGTH_LONG)
+                if(superior != Constants.JOB_POSITIONS.length){
+                    mIsTopPosition = false;
+                    mSuperiorView.setEnabled(true);
+                    Log.e(TAG, Constants.JOB_POSITIONS[superior]);
+                    if(CommonUtils.isOnline(mActivity))
+                            new FetchSuperiorTask(Constants.JOB_POSITIONS[superior]).execute();
+                    else {
+                        Snackbar.make(mSuperiorView, R.string.internet_error, Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    }
+                }
+                else {
+                    mIsTopPosition = true;
+                    mSuperiorView.setEnabled(false);
+                    Snackbar.make(mSuperiorView, R.string.position_error, Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
+                }
             }
 
             @Override
@@ -303,6 +316,12 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             return;
         }
 
+        if (!CommonUtils.isOnline(mActivity)) {
+            Snackbar.make(mEmailSignInButton, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+            return;
+        }
+
         // Reset errors.
         mEmailView.setError(null);
         mPasswordView.setError(null);
@@ -311,18 +330,21 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         boolean cancel = false;
         View focusView = null;
 
-
-        if( mSuperiorsEmails == null){
-            Snackbar.make(mPositionView, "Escolha uma posição que possua superiores", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-            focusView = mSuperiorView;
-            cancel = true;
-            superiorEmail = "";
-        }else if( mSuperiorsEmails.isEmpty()){
-            superiorEmail = "";
-            ((TextView)mSuperiorView.getChildAt(0)).setError("This field is required");
+        if (mIsTopPosition) {
+            superiorEmail = mEmailView.getText().toString();
         } else {
-            superiorEmail = mSuperiorsEmails.get(mSuperiorView.getSelectedItemPosition());
+            if( mSuperiorsEmails == null){
+                Snackbar.make(mPositionView, "Escolha uma posição que possua superiores", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+                focusView = mSuperiorView;
+                cancel = true;
+                superiorEmail = "";
+            }else if( mSuperiorsEmails.isEmpty()){
+                superiorEmail = "";
+                ((TextView)mSuperiorView.getChildAt(0)).setError("This field is required");
+            } else {
+                superiorEmail = mSuperiorsEmails.get(mSuperiorView.getSelectedItemPosition());
+            }
         }
 
         // Store values at the time of the login attempt.

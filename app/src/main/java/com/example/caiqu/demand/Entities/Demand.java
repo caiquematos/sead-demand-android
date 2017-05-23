@@ -14,6 +14,8 @@ public class Demand {
     private int id;
     private int fromId;
     private int toId;
+    private String fromEmail;
+    private String toEmail;
     private String from;
     private String to;
     private String importance;
@@ -23,12 +25,18 @@ public class Demand {
     private String seen;
     private Date createdAt;
 
-    public Demand(String from, String to, String importance, String subject, String description) {
+    public Demand(int id, String fromEmail, String toEmail, String from, String to,
+                  String importance, String subject, String description,
+                  String status) {
+        this.id= id;
+        this.fromEmail = fromEmail;
+        this.toEmail = toEmail;
         this.from = from;
         this.to = to;
         this.importance = importance;
         this.subject = subject;
         this.description = description;
+        this.status = status;
     }
 
     public Demand(JSONObject json) throws JSONException {
@@ -37,11 +45,13 @@ public class Demand {
         setToId(json.getInt("receiver"));
         setFrom(json.getString("senderName"));
         setTo(json.getString("receiverName"));
+        setFromEmail(json.getString("senderEmail"));
+        setToEmail(json.getString("receiverEmail"));
         setImportance(json.getString("importance"));
         setSeen(json.getString("seen"));
         setStatus(json.getString("status"));
         setSubject(json.getString("subject"));
-        setDescription(json.getString("description"));
+        setDescription(json.getString("description") + "\n\n\n\n");
         setCreatedAt(datify(json.getString("created_at")));
     }
 
@@ -52,6 +62,22 @@ public class Demand {
         }catch(Exception e){//this generic but you can control another types of exception
             return null;
         }
+    }
+
+    public String getFromEmail() {
+        return fromEmail;
+    }
+
+    public void setFromEmail(String fromEmail) {
+        this.fromEmail = fromEmail;
+    }
+
+    public String getToEmail() {
+        return toEmail;
+    }
+
+    public void setToEmail(String toEmail) {
+        this.toEmail = toEmail;
     }
 
     public int getFromId() {

@@ -1,6 +1,11 @@
 package com.example.caiqu.demand.Tools;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 
 import org.json.JSONObject;
@@ -17,6 +22,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Calendar;
+import java.util.Date;
 
 public class CommonUtils {
 
@@ -125,5 +132,19 @@ public class CommonUtils {
             }
         }
         return response.toString();
+    }
+
+    public static boolean isOnline(Context context){
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return  netInfo != null && netInfo.isConnectedOrConnecting();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static String formatDate(Date createdAt) {
+        Calendar cal =  Calendar.getInstance();
+        cal.setTime(createdAt);
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        return "Day " + day;
     }
 }

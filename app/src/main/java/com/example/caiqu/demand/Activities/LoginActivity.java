@@ -79,6 +79,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private View mLoginFormView;
     private ProgressDialog mPDLogin;
     private SharedPreferences mPrefs;
+    private Button mEmailSignInButton;
 
     public LoginActivity() {
         this.mActivity = this;
@@ -107,7 +108,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             }
         });
 
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
+        mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -181,6 +182,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private void attemptLogin() {
 
         if (mAuthTask != null) {
+            return;
+        }
+
+        if (!CommonUtils.isOnline(mActivity)) {
+            Snackbar.make(mEmailSignInButton, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
             return;
         }
 
@@ -328,6 +335,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mAuthTask = null;
             JSONObject jsonObject;
             String userEmail = "";
+            String message = "";
             boolean success = false;
 
             Log.d("ON POST EXECUTE LOGIN", "string json: " + jsonResponse);
@@ -335,7 +343,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
-                userEmail = jsonObject.getJSONObject("user").getString("email");
+                JSONObject user = jsonObject.getJSONObject("user");
+                if (user != null) userEmail = user.getString("email");
+                message = jsonObject.getString("msg"); // maybe necessary in the future
                 Log.d("ON LOGIN", "email:" + userEmail);
             } catch (JSONException e) {
                 Snackbar.make(findViewById(R.id.email_sign_in_button), "Server Problem", Snackbar.LENGTH_LONG)
