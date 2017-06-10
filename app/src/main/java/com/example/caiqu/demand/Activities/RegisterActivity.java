@@ -4,12 +4,13 @@ import android.annotation.TargetApi;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.app.LoaderManager.LoaderCallbacks;
 
@@ -43,7 +44,6 @@ import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
-import com.google.firebase.iid.FirebaseInstanceId;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -67,6 +67,8 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
      */
     private UserLoginTask mAuthTask = null;
 
+    private FetchSuperiorTask mFetchSuperiorTask = null;
+
     // UI references.
     private AutoCompleteTextView mEmailView;
     private EditText mPasswordView;
@@ -79,6 +81,8 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
     private SharedPreferences mPrefs;
     private String mToken;
     private boolean mIsTopPosition;
+    private int mSaveInternetJobPosition; // saves the Job Position when internet connected
+    private int mCurrentJobPosition;
 
     public RegisterActivity() {
         this.mActivity = this;
@@ -95,18 +99,8 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         mPDRegister = new ProgressDialog(mActivity);
 
-        //Generate FCM Token and save it on Shared Preferences
-        String token = FirebaseInstanceId.getInstance().getToken();
-        Log.e(TAG, "My Token:" + token);
-        SharedPreferences.Editor editor = mPrefs.edit();
-        editor.putBoolean(Constants.IS_LOGGED,true);
-        editor.putString(Constants.GCM_TOKEN, token);
-        if (editor.commit()) {
-            mToken = mPrefs.getString(Constants.GCM_TOKEN, "");
-            Log.d(TAG, "SHAREDPREF Token:" + mToken);
-        } else {
-            Log.d(TAG, "SHAREDPREF FALSE");
-        }
+        mToken = mPrefs.getString(Constants.GCM_TOKEN, "");
+        Log.d(TAG, "SHAREDPREF Token:" + mToken);
 
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.register_email);
@@ -136,27 +130,10 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         mPositionView.setAdapter(adapter);
 
         mPositionView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                int superior = position + 1; //This will make it retrieve the superior position
-
-                if(superior != Constants.JOB_POSITIONS.length){
-                    mIsTopPosition = false;
-                    mSuperiorView.setEnabled(true);
-                    Log.e(TAG, Constants.JOB_POSITIONS[superior]);
-                    if(CommonUtils.isOnline(mActivity))
-                            new FetchSuperiorTask(Constants.JOB_POSITIONS[superior]).execute();
-                    else {
-                        Snackbar.make(mSuperiorView, R.string.internet_error, Snackbar.LENGTH_LONG)
-                                .setAction("Action", null).show();
-                    }
-                }
-                else {
-                    mIsTopPosition = true;
-                    mSuperiorView.setEnabled(false);
-                    Snackbar.make(mSuperiorView, R.string.position_error, Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
+                attemptToGetSuperiors(position);
             }
 
             @Override
@@ -169,10 +146,66 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                attemptRegister();
+                if(CommonUtils.isOnline(mActivity)){
+                    attemptRegister();
+                }
+                else {
+                    Snackbar.make(mSuperiorView, R.string.internet_error, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
             }
         });
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setTitle("Deseja sair antes de se registrar?");
+        alert.setPositiveButton("Sim", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mActivity.finish();
+            }
+        });
+        alert.setNegativeButton("Não", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        alert.show();
+    }
+
+    private void attemptToGetSuperiors(int position){
+        mCurrentJobPosition = position;
+
+        int superior = position + 1; //This will make it retrieve the superior position
+
+        if(CommonUtils.isOnline(mActivity)) mSaveInternetJobPosition = position;
+
+        Log.e(TAG,"PositionInt:" + mSaveInternetJobPosition + " PositionNot:" + mCurrentJobPosition);
+
+        if(superior != Constants.JOB_POSITIONS.length){
+            mIsTopPosition = false;
+            mSuperiorView.setEnabled(true);
+            Log.e(TAG, Constants.JOB_POSITIONS[superior]);
+            if(CommonUtils.isOnline(mActivity)){
+                if(mFetchSuperiorTask == null)
+                    new FetchSuperiorTask(Constants.JOB_POSITIONS[superior]).execute();
+                else return;
+            }
+            else {
+                Snackbar.make(mSuperiorView, R.string.internet_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        }
+        else {
+            mIsTopPosition = true;
+            mSuperiorView.setEnabled(false);
+            Snackbar.make(mSuperiorView, R.string.position_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
     }
 
     //Handle post request for superior array
@@ -203,7 +236,9 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         protected void onPostExecute(String jsonResponse) {
             super.onPostExecute(jsonResponse);
 
-            JSONObject jsonObject = null;
+            mFetchSuperiorTask = null;
+
+            JSONObject jsonObject;
             JSONArray jsonArray = null;
             boolean success = false;
 
@@ -249,7 +284,6 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             }
         }
     }
-
 
     private void populateAutoComplete() {
         if (!mayRequestContacts()) {
@@ -312,17 +346,25 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
      */
     private void attemptRegister() {
 
-        if (mAuthTask != null) {
-            return;
-        }
-
         if (!CommonUtils.isOnline(mActivity)) {
             Snackbar.make(mEmailSignInButton, R.string.internet_error, Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
             return;
         }
 
+        if (mAuthTask != null) {
+            return;
+        }
+
+        if (mCurrentJobPosition != mSaveInternetJobPosition) {
+            attemptToGetSuperiors(mSaveInternetJobPosition);
+            Snackbar.make(mPositionView, "Recarregando superiores... Tente registrar agora.", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+            return;
+        }
+
         // Reset errors.
+        mNameView.setError(null);
         mEmailView.setError(null);
         mPasswordView.setError(null);
 
@@ -357,12 +399,6 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
                 mToken
                 );
 
-        if (!isNameValid(user.getName())){
-            mNameView.setError(getString(R.string.error_field_required));
-            focusView = mNameView;
-            cancel = true;
-        }
-
         if (!isPasswordValid(user.getPassword())) {
             mPasswordView.setError(getString(R.string.error_invalid_password));
             focusView = mPasswordView;
@@ -383,6 +419,12 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         } else if (!isEmailValid(user.getEmail())) {
             mEmailView.setError(getString(R.string.error_invalid_email));
             focusView = mEmailView;
+            cancel = true;
+        }
+
+        if (!isNameValid(user.getName())){
+            mNameView.setError(getString(R.string.error_field_required));
+            focusView = mNameView;
             cancel = true;
         }
 
@@ -461,7 +503,6 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         mEmailView.setAdapter(adapter);
     }
 
-
     private interface ProfileQuery {
         String[] PROJECTION = {
                 ContactsContract.CommonDataKinds.Email.ADDRESS,
@@ -498,7 +539,7 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             values.put("email", mUser.getEmail());
             values.put("password", mUser.getPassword());
             values.put("name", mUser.getName());
-            values.put("superior", mUser.getSuperior());
+            values.put("superior", mUser.getSuperiorEmail());
             values.put("position", mUser.getPosition());
             values.put("gcm", mUser.getGcm());
             return CommonUtils.POST("/user/register/", values);

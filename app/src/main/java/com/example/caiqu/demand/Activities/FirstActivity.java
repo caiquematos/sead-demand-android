@@ -23,6 +23,7 @@ public class FirstActivity extends AppCompatActivity {
     private final String TAG = getClass().getSimpleName();
     private GoogleApiAvailability mGoogleClient;
     private SharedPreferences mPrefs;
+    private String mToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +33,21 @@ public class FirstActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_first);
 
-        //TODO: GET FCM TOKEN AND CHECK IF IT SYNCHRONOUS OR ASSYNCHRONOUS
+        mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
+
+        //Generate FCM Token and save it on Shared Preferences
+        String token = FirebaseInstanceId.getInstance().getToken();
+        Log.e(TAG, "Token generated:" + token);
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putString(Constants.GCM_TOKEN, token);
+        if (editor.commit()) {
+            mToken = mPrefs.getString(Constants.GCM_TOKEN, "");
+            Log.d(TAG, "Shared Prefs Fcm token saved:" + mToken);
+        } else {
+            Log.d(TAG, "Shared Prefs Fcm token not saved!");
+        }
+
+
         if (isPlayServiceAvailable()) {
             try {
                 isUserLoggedIn();

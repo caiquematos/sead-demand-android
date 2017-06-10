@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -34,24 +33,15 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.caiqu.demand.Databases.MyDBManager;
+import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -61,6 +51,7 @@ import static android.Manifest.permission.READ_CONTACTS;
  * A login screen that offers login via email/password.
  */
 public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
+    public String TAG = getClass().getSimpleName();
     private LoginActivity mActivity;
 
     /**
@@ -112,7 +103,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                attemptLogin();
+                if(CommonUtils.isOnline(mActivity)){
+                    attemptLogin();
+                }
+                else {
+                    Snackbar.make(mEmailSignInButton, R.string.internet_error, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
             }
         });
 
@@ -235,12 +232,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     }
 
     private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
         return email.contains("@");
     }
 
     private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
         return password.length() > 3;
     }
 
@@ -306,10 +301,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         private final String mEmail;
         private final String mPassword;
+        private final String mFcmToken;
 
         UserLoginTask(String email, String password) {
             mEmail = email;
             mPassword = password;
+            mFcmToken = mPrefs.getString(Constants.GCM_TOKEN, "");
         }
 
         @Override
@@ -326,6 +323,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             ContentValues values = new ContentValues();
             values.put("email", mEmail);
             values.put("password", mPassword);
+            values.put("fcm", mFcmToken);
             String response = CommonUtils.POST("/user/login/", values);
             return response;
         }
@@ -334,33 +332,43 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         protected void onPostExecute(String jsonResponse) {
             mAuthTask = null;
             JSONObject jsonObject;
-            String userEmail = "";
             String message = "";
+            User user = null;
             boolean success = false;
 
-            Log.d("ON POST EXECUTE LOGIN", "string json: " + jsonResponse);
+            Log.d(TAG, "string json response: " + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
-                JSONObject user = jsonObject.getJSONObject("user");
-                if (user != null) userEmail = user.getString("email");
+                JSONObject userJson = jsonObject.getJSONObject("user");
+
+                user = User.build(userJson);
+                Log.d(TAG, "user response email:" + user.getEmail());
+
                 message = jsonObject.getString("msg"); // maybe necessary in the future
-                Log.d("ON LOGIN", "email:" + userEmail);
             } catch (JSONException e) {
-                Snackbar.make(findViewById(R.id.email_sign_in_button), "Server Problem", Snackbar.LENGTH_LONG)
+                Snackbar.make(findViewById(R.id.email_sign_in_button), R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
 
-            if (success) {
+            if (success && user != null) {
+                // Try to store user
+                MyDBManager myDBManager = new MyDBManager(mActivity);
+                long isUserStored = myDBManager.addUser(user);
+                if (isUserStored >= 0) Log.e(TAG, "User stored");
+
                 SharedPreferences.Editor editor = mPrefs.edit();
                 editor.putBoolean(Constants.IS_LOGGED,true);
-                editor.putString(Constants.USER_EMAIL, userEmail);
-                if (editor.commit())
-                    Log.d("ON LOGIN ACTIVITY","TRUE User:" + mPrefs.getString(Constants.USER_EMAIL,""));
-                else
-                    Log.d("ON LOGIN ACTIVITY","FALSE");
+                editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
+                editor.putInt(Constants.LOGGED_USER_ID, user.getId());
+                if (editor.commit()){
+                    Log.d(TAG,"User email prefs:" + mPrefs.getString(Constants.LOGGED_USER_EMAIL,""));
+                    Log.d(TAG,"User id prefs:" + mPrefs.getInt(Constants.LOGGED_USER_ID,-1));
+                } else {
+                    Log.d(TAG,"Could not save prefs!");
+                }
                 Intent intent = new Intent(getApplication(), MainActivity.class);
                 if (mPDLogin.isShowing()){
                     mPDLogin.dismiss();

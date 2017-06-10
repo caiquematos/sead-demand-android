@@ -1,9 +1,9 @@
 package com.example.caiqu.demand.Activities;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.os.AsyncTask;
@@ -15,6 +15,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPropertyAnimatorListener;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -23,6 +24,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
@@ -33,7 +35,6 @@ import org.json.JSONObject;
 public class ViewDemandActivity extends AppCompatActivity {
     private final String TAG = getClass().getSimpleName();
 
-    private String mSeen;
     private TextView mSubjectTV;
     private TextView mImportanceTV;
     private TextView mStatusTV;
@@ -43,7 +44,6 @@ public class ViewDemandActivity extends AppCompatActivity {
     private TextView mDescriptionTV;
     private View mScrollView;
     private StatusTask mStatusTask;
-    private SeenTask mSeenTask;
     private ProgressDialog mPDDemand;
     private FloatingActionButton mFabYes;
     private FloatingActionButton mFabLater;
@@ -62,12 +62,17 @@ public class ViewDemandActivity extends AppCompatActivity {
     private boolean mTurned;
     private SendDemandTask mDemandTask;
     private Demand mDemand;
+    private AlertDialog.Builder mAlert;
+    private String mAlertType;
+    private ImportanceTask mImportanceTask;
+    private AlertDialog.Builder mImportanceDialog;
     ViewDemandActivity mActivity;
 
     public ViewDemandActivity() {
         mActivity = this;
     }
 
+    @TargetApi(Build.VERSION_CODES.N)
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +80,10 @@ public class ViewDemandActivity extends AppCompatActivity {
         setContentView(R.layout.activity_view_demand);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        Intent intent = getIntent();
+        mDemand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
+        Log.e(TAG, "Demand intent:" + mDemand.toString());
 
         mSubjectTV = (TextView) findViewById(R.id.view_demand_subject);
         mImportanceTV = (TextView) findViewById(R.id.view_demand_importance);
@@ -85,45 +94,66 @@ public class ViewDemandActivity extends AppCompatActivity {
         mDescriptionTV = (TextView) findViewById(R.id.view_demand_description);
         mPDDemand = new ProgressDialog(mActivity);
 
-        Intent intent = getIntent();
-        String importance = intent.getStringExtra("IMPORTANCE");
-        setImportanceColor(importance);
-        mPage = intent.getIntExtra("PAGE", -1);
-        mSeen = intent.getStringExtra("SEEN");
+        mImportanceTV.setClickable(true);
+        mImportanceTV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mImportanceDialog = new AlertDialog.Builder(mActivity);
+                mImportanceDialog.setTitle("Mudar para:");
+                mImportanceDialog.setItems(Constants.DEMAND_IMPORTANCE, new DialogInterface.OnClickListener(){
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        setDemandImportance(Constants.DEMAND_IMPORTANCE[which]);
+                    }
+                });
+                mImportanceDialog.create();
+                mImportanceDialog.show();
+            }
+        });
 
-        if ( ( mPage == 1 || mPage == 3) ) markAsSeen(); // On Received demands or Admin demands
+        String importance = mDemand.getImportance();
+        setImportanceColor(importance);
+        mPage = intent.getIntExtra(Constants.INTENT_PAGE, -1);
+        Log.e(TAG, "Page number: " + mPage);
 
         if (mPage == 0) Snackbar.make(mSubjectTV, R.string.send_demand_success, Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show();
 
-        mDemand = new Demand(
-                intent.getIntExtra("DEMAND",-1),
-                intent.getStringExtra("SENDEREMAIL"),
-                intent.getStringExtra("RECEIVEREMAIL"),
-                intent.getStringExtra("SENDERNAME"),
-                intent.getStringExtra("RECEIVERNAME"),
-                intent.getStringExtra("IMPORTANCE"),
-                intent.getStringExtra("SUBJECT"),
-                intent.getStringExtra("DESCRIPTION"),
-                intent.getStringExtra("STATUS")
-                );
-
         mSubjectTV.setText(mDemand.getSubject().toUpperCase());
         mImportanceTV.setText(mDemand.getImportance());
-        mSenderTV.setText("De: " + mDemand.getFrom());
-        mReceiverTV.setText("Para: " + mDemand.getTo());
-        mTimeTV.setText(intent.getStringExtra("TIME"));
-        mDescriptionTV.setText(mDemand.getDescription());
+        mSenderTV.setText("De: " + mDemand.getSender().getName());
+        mReceiverTV.setText("Para: " + mDemand.getReceiver().getName());
+        mTimeTV.setText(CommonUtils.formatDate(mDemand.getCreatedAt()));
+        mDescriptionTV.setText(mDemand.getDescription()+ "\n\n\n\n");
 
         showDemandStatus(mDemand.getStatus());
-        Log.e(TAG, "Page number: " + mPage + " Status: " + mDemand.getStatus());
+
+        mAlert = new AlertDialog.Builder(this);
+        mAlert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (mAlertType.equals(Constants.RESEND_STATUS)) {
+                    attemptSendDemand();
+                } else {
+                    setDemandStatus(mAlertType);
+                }
+            }
+        });
+        mAlert.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
 
         mYesTV = (TextView) findViewById(R.id.tv_yes);
         mFabYes = (FloatingActionButton) findViewById(R.id.fab_yes);
         mFabYes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus(Constants.ACCEPT_STATUS);
+                mAlert.setTitle("Aceitar a demanda?");
+                mAlertType = Constants.ACCEPT_STATUS;
+                mAlert.show();
             }
         }); //Accepted
 
@@ -132,7 +162,9 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabLater.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus(Constants.POSTPONE_STATUS);
+                mAlert.setTitle("Adiar a demanda?");
+                mAlertType = Constants.POSTPONE_STATUS;
+                mAlert.show();
             }
         }); //Postponed
 
@@ -141,7 +173,9 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabNo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus(Constants.CANCEL_STATUS);
+                mAlert.setTitle("Cancelar a demanda?");
+                mAlertType = Constants.CANCEL_STATUS;
+                mAlert.show();
             }
         }); //Cancelled
 
@@ -150,7 +184,10 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabReopen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus(Constants.REOPEN_STATUS);
+                mAlert.setTitle("Reabrir a demanda?");
+                mAlert.setMessage("Quando uma demanda é reaberta, ela é movida novamente para a aba Admin e seu status é configurado de volta para indefinido.");
+                mAlertType = Constants.REOPEN_STATUS;
+                mAlert.show();
             }
         }); //Reopen
 
@@ -159,7 +196,9 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabReject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                setDemandStatus(Constants.REJECT_STATUS);
+                mAlert.setTitle("Rejeitar a demanda?");
+                mAlertType = Constants.REJECT_STATUS;
+                mAlert.show();
             }
         }); //Reject
 
@@ -168,9 +207,9 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabResend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (CommonUtils.isOnline(getApplicationContext())) attemptSendDemand();
-                else  Snackbar.make(mFabResend, R.string.internet_error, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                mAlert.setTitle("Reenviar a demanda?");
+                mAlertType = Constants.RESEND_STATUS;
+                mAlert.show();
             }
         }); //Resend
 
@@ -318,6 +357,7 @@ public class ViewDemandActivity extends AppCompatActivity {
             mFabYes.hide();
             mFabReopen.hide();
             mFabResend.hide();
+            mImportanceTV.setClickable(false);
         }else{
             mScrollView = findViewById(R.id.view_demand_scroll_view);
             mScrollView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
@@ -403,17 +443,61 @@ public class ViewDemandActivity extends AppCompatActivity {
         }
     }
 
-    private void attemptSendDemand(){
-        boolean cancel = false;
-
-        if (mDemandTask != null) cancel = true;
-
-        if (cancel){
-
+    private void setDemandImportance(String s) {
+        if (mImportanceTask == null && CommonUtils.isOnline(mActivity)){
+            mImportanceTask = new ImportanceTask(mDemand.getId(), s);
+            mImportanceTask.execute();
         } else {
-            mDemandTask = new SendDemandTask(mDemand);
-            mDemandTask.execute((Void) null);
+            Snackbar.make(mImportanceTV, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
         }
+    }
+
+    private void showDemandImportance(String importance) {
+        mImportanceTV.setText(importance);
+        setImportanceColor(importance);
+    }
+
+    private void attemptSendDemand(){
+        if (mDemandTask == null && CommonUtils.isOnline(mActivity)){
+            mDemandTask = new SendDemandTask(mDemand);
+            mDemandTask.execute();
+        } else {
+            Snackbar.make(mFabResend, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+    }
+
+    private void showDemandStatus(String status) {
+        if (status.equals("A"))
+            mStatusTV.setText("Essa demanda foi Aceita");
+        else if (status.equals("C"))
+            mStatusTV.setText("Essa demanda foi Cancelada");
+        else if (status.equals("P"))
+            mStatusTV.setText("Essa demanda foi Adiada");
+        else if (status.equals("R"))
+            mStatusTV.setText("Essa demanda foi Reaberta");
+        else if (status.equals("X"))
+            mStatusTV.setText("Essa demanda foi Rejeitada");
+        else
+            mStatusTV.setText("Essa demanda ainda não foi avaliada");
+    }
+
+    private void setDemandStatus(String status){
+        if (mStatusTask == null && CommonUtils.isOnline(mActivity)){
+            mStatusTask = new StatusTask(mDemand.getId(), status);
+            mStatusTask.execute();
+        } else {
+            Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+        }
+    }
+
+    private void setImportanceColor(String importance) {
+        int color = ContextCompat.getColor(this,R.color.dGreen);
+        if (importance.equals("Urgente")) color = ContextCompat.getColor(this,R.color.darkred);
+        if (importance.equals("Importante")) color = ContextCompat.getColor(this,R.color.dyellow);
+        mImportanceTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
     private class SendDemandTask extends  AsyncTask<Void, Void, String>{
@@ -446,19 +530,30 @@ public class ViewDemandActivity extends AppCompatActivity {
             mDemandTask = null;
 
             JSONObject jsonObject;
+            JSONObject senderJson;
+            JSONObject receiverJson;
             JSONObject demandJson;
             Demand demandResponse = null;
             boolean success = false;
 
-            Log.d("ON POST EXECUTE DEMAND", "string json: " + jsonResponse);
+            Log.e(TAG, "Json Response (resend): " + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
+                senderJson = jsonObject.getJSONObject("sender");
+                receiverJson = jsonObject.getJSONObject("receiver");
                 demandJson = jsonObject.getJSONObject("demand");
 
-                Log.d("ON POST EXECUTE DEMAND", "string json demand: " + demandJson);
-                demandResponse = new Demand(demandJson);
+                User sender = User.build(senderJson);
+                User receiver = User.build(receiverJson);
+                demandResponse = Demand.build(sender, receiver, demandJson);
+
+                Log.e(TAG,
+                        "Json Resend Response:" + demandResponse.toString()
+                                + " sender:" + sender.toString()
+                                + " receiver:" + receiver.toString()
+                );
             } catch (JSONException e) {
                 Snackbar.make(mFabResend, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
@@ -471,19 +566,9 @@ public class ViewDemandActivity extends AppCompatActivity {
 
             if (success) {
                 Intent intent = new Intent(mActivity, ViewDemandActivity.class);
-                intent.putExtra("ACTIVITY", mActivity.getClass().getSimpleName());
-                intent.putExtra("PAGE", mPage);
-                intent.putExtra("DEMAND", demandResponse.getId());
-                intent.putExtra("SUBJECT", demandResponse.getSubject());
-                intent.putExtra("STATUS", demandResponse.getStatus());
-                intent.putExtra("SENDERNAME", demandResponse.getFrom());
-                intent.putExtra("SEEN", demandResponse.getSeen());
-                intent.putExtra("DESCRIPTION", demandResponse.getDescription());
-                intent.putExtra("TIME", CommonUtils.formatDate(demandResponse.getCreatedAt()));
-                intent.putExtra("IMPORTANCE", demandResponse.getImportance());
-                intent.putExtra("RECEIVERNAME", demandResponse.getTo());
-                Log.d("ON VIEW HOLDER", demandResponse.getSubject() + " Importance:" + demandResponse.getImportance()
-                        + " PACKAGE:"  + mActivity.getClass().getSimpleName() + " Page:" + mPage);
+                intent.putExtra(Constants.INTENT_ACTIVITY, mActivity.getClass().getSimpleName());
+                intent.putExtra(Constants.INTENT_PAGE, mPage);
+                intent.putExtra(Constants.INTENT_DEMAND, demandResponse);
                 finish();
                 mActivity.startActivity(intent);
             } else {
@@ -493,75 +578,66 @@ public class ViewDemandActivity extends AppCompatActivity {
         }
     }
 
-    private void showDemandStatus(String status) {
-        if (status.equals("A"))
-            mStatusTV.setText("Essa demanda foi Aceita");
-        else if (status.equals("C"))
-            mStatusTV.setText("Essa demanda foi Cancelada");
-        else if (status.equals("P"))
-            mStatusTV.setText("Essa demanda foi Adiada");
-        else if (status.equals("R"))
-            mStatusTV.setText("Essa demanda foi Reaberta");
-        else if (status.equals("X"))
-            mStatusTV.setText("Essa demanda foi Rejeitada");
-        else
-            mStatusTV.setText("Essa demanda ainda não foi avaliada");
-    }
+    private class ImportanceTask extends AsyncTask<Void, Void, String>{
+        private int id;
+        private String importance;
 
-    private void markAsSeen(){
-        Log.e("ON SEEN DEMAND", "on seen bfore if");
-        if (mSeenTask == null){
-            mSeenTask = new SeenTask();
-            mSeenTask.execute();
-            Log.e("ON SEEN DEMAND", "on seen after if");
+        public ImportanceTask(int id, String importance) {
+            this.id = id;
+            this.importance = importance;
         }
-    }
 
-    private void setDemandStatus(String status){
-        if (mStatusTask == null && CommonUtils.isOnline(mActivity)){
-            mStatusTask = new StatusTask(mDemand.getId(), status);
-            mStatusTask.execute();
-        } else {
-            Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDDemand.setMessage("Por favor aguarde");
+            mPDDemand.setCancelable(false);
+            mPDDemand.show();
         }
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    private void setImportanceColor(String importance) {
-        int color = ContextCompat.getColor(this,R.color.dGreen);
-        if (importance.equals("Urgente")) color = ContextCompat.getColor(this,R.color.darkred);
-        if (importance.equals("Importante")) color = ContextCompat.getColor(this,R.color.dyellow);
-        mImportanceTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
-    }
-
-    public class SeenTask extends  AsyncTask<Void, Void, String>{
 
         @Override
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
-            values.put("demand", mDemand.getId());
-            return CommonUtils.POST("/demand/mark-as-read/", values);
+            values.put("demand", id);
+            values.put("importance", importance);
+            return CommonUtils.POST("/demand/set-importance/", values);
         }
 
         @Override
         protected void onPostExecute(String jsonResponse) {
             super.onPostExecute(jsonResponse);
-            mSeenTask = null;
+            mImportanceTask = null;
             JSONObject jsonObject;
             boolean success = false;
 
-            Log.e("ON SEEN DEMAND", jsonResponse);
+            Log.e("ON POST EX VIEW DEMAND", jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
             } catch (JSONException e) {
+                Snackbar.make(mImportanceTV, R.string.server_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
                 e.printStackTrace();
             }
 
-            if (success) mSeen = "Y"; //TODO: Make this persistent for a while
+            String message;
+
+            if (success) {
+                message = "Demanda modificada com sucesso";
+                showDemandImportance(importance);
+            } else {
+                message = String.valueOf(R.string.server_error);
+            }
+
+            Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+
+            if (mPDDemand.isShowing()){
+                mPDDemand.dismiss();
+            }
         }
+
     }
 
     public class StatusTask extends AsyncTask<Void, Void, String> {
@@ -611,19 +687,19 @@ public class ViewDemandActivity extends AppCompatActivity {
 
             if (success) {
                 switch(status){
-                    case "A":
+                    case Constants.ACCEPT_STATUS:
                         message = "Demanda Aceita com Sucesso.";
                         break;
-                    case "P":
+                    case Constants.POSTPONE_STATUS:
                         message = "Demanda Adiada com Sucesso.";
                         break;
-                    case "C":
+                    case Constants.CANCEL_STATUS:
                         message = "Demanda Cancelada com Sucesso.";
                         break;
-                    case "R":
+                    case Constants.REOPEN_STATUS:
                         message = "Demanda Reaberta com Sucesso.";
                         break;
-                     case "X":
+                     case Constants.REJECT_STATUS:
                         message = "Demanda Rejeitada com Sucesso.";
                         break;
                     default:

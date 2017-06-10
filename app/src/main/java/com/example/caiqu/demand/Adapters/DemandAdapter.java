@@ -1,8 +1,9 @@
 package com.example.caiqu.demand.Adapters;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import java.util.Calendar;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v4.content.ContextCompat;
@@ -20,7 +21,9 @@ import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
 
-import java.util.Date;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.List;
 
 /**
@@ -28,9 +31,12 @@ import java.util.List;
  */
 
 public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder> {
+    public String TAG = getClass().getSimpleName();
+
     private List<Demand> mDemandList;
     private Context mContext;
     private int mPage; //identifies which tab called it
+    private SeenTask mSeenTask;
 
     public DemandAdapter(List<Demand> demandList, Context context, int page){
         this.mDemandList = demandList;
@@ -84,8 +90,8 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         // Log.e("On DemandAdap", "Page: " + mPage);
         //For tab sent the name to show should be who the demand was sent
         String user;
-        if (mPage == 2) user = demand.getTo();
-        else user = demand.getFrom();
+        if (mPage == 2) user = demand.getReceiver().getName();
+        else user = demand.getSender().getName();
 
         //If demand was already seen by the receiver change color of background and title
         if (demand.getSeen().equals("Y")) {
@@ -106,30 +112,17 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
             @Override
             public void onClick(View v) {
                 //change color in order to indicate seen status
-                if((mPage == 1 || mPage == 3) && demand.getSeen().equals("N")){
+                if((mPage == 1 || mPage == 3) && demand.getSeen().equals(Constants.NO_SEEN)){
                     v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
                     TextView subject = (TextView) v.findViewById(R.id.demand_title);
                     subject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
-                    demand.setSeen("Y");
-                    mDemandList.get(position).setSeen("Y");
+                    demand.setSeen(Constants.YES_SEEN);
+                    markAsSeen(demand, position); // On Received demands or Admin demands
                 }
                 Intent intent = new Intent(mContext, ViewDemandActivity.class);
-                intent.putExtra("ACTIVITY", mContext.getClass().getSimpleName());
-                intent.putExtra("PAGE", mPage);
-                intent.putExtra("DEMAND", demand.getId());
-                intent.putExtra("SUBJECT", demand.getSubject());
-                intent.putExtra("STATUS", demand.getStatus());
-                intent.putExtra("SENDERNAME", demand.getFrom());
-                intent.putExtra("SEEN", demand.getSeen());
-                intent.putExtra("DESCRIPTION", demand.getDescription());
-                intent.putExtra("TIME", CommonUtils.formatDate(demand.getCreatedAt()));
-                intent.putExtra("IMPORTANCE", demand.getImportance());
-                intent.putExtra("RECEIVERNAME", demand.getTo());
-                intent.putExtra("SENDEREMAIL", demand.getFromEmail());
-                intent.putExtra("RECEIVEREMAIL", demand.getToEmail());
-                Log.d("ON VIEW HOLDER", demand.getSubject() + " Importance:" + demand.getImportance()
-                    + " PACKAGE:"  + mContext.getClass().getSimpleName() + " Page:" + mPage
-                        + " Seen:" + demand.getSeen());
+                intent.putExtra(Constants.INTENT_ACTIVITY, mContext.getClass().getSimpleName());
+                intent.putExtra(Constants.INTENT_PAGE, mPage);
+                intent.putExtra(Constants.INTENT_DEMAND, demand);
                 mContext.startActivity(intent);
             }
         });
@@ -159,4 +152,51 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
             mTime = (TextView) view.findViewById(R.id.demand_time);
         }
     }
+
+
+    private void markAsSeen(Demand demand, int position){
+        if (mSeenTask == null){
+            mSeenTask = new SeenTask(demand, position);
+            mSeenTask.execute();
+        }
+    }
+
+    public class SeenTask extends AsyncTask<Void, Void, String> {
+        private Demand demand;
+        private int position;
+
+        public SeenTask(Demand demand, int position) {
+            this.demand = demand;
+            this.position = position;
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            ContentValues values = new ContentValues();
+            values.put("demand", demand.getId());
+            return CommonUtils.POST("/demand/mark-as-read/", values);
+        }
+
+        @Override
+        protected void onPostExecute(String jsonResponse) {
+            super.onPostExecute(jsonResponse);
+            mSeenTask = null;
+            JSONObject jsonObject;
+            boolean success = false;
+
+            Log.e(TAG, "ON SEEN DEMAND: " + jsonResponse);
+
+            try {
+                jsonObject = new JSONObject(jsonResponse);
+                success = jsonObject.getBoolean("success");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            //TODO: Make this persistent for a while
+            if (success) mDemandList.get(position).setSeen(Constants.YES_SEEN);
+        }
+    }
+
+
 }

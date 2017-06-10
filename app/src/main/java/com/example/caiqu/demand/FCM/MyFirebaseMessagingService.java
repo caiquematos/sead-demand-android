@@ -7,18 +7,23 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
-import com.example.caiqu.demand.Activities.FirstActivity;
 import com.example.caiqu.demand.Activities.MainActivity;
 import com.example.caiqu.demand.Activities.ViewDemandActivity;
+import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
-import com.google.android.gms.gcm.Task;
+import com.example.caiqu.demand.Tools.Constants;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -58,13 +63,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
 
-            //if (/* Check if data needs to be processed by long running job */ false) {
-                // For long-running tasks (10 seconds or more) use Firebase Job Dispatcher.
-            //    scheduleJob();
-            //} else {
-                // Handle message within 10 seconds
-            //    handleNow();
-            //}
+            if (false) {
+                scheduleJob(remoteMessage.getData());
+            } else {
+                handleNow(remoteMessage.getData());
+            }
         }
 
         // Check if message contains a notification payload.
@@ -73,32 +76,106 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             sendNotification(remoteMessage.getNotification(), remoteMessage.getData());
         }
 
-        // Also if you intend on generating your own notifications as a result of a received FCM
-// message, here is where that should be initiated. See sendNotification method below.
     }
 
     // [END receive_message]
 
     /**
      * Schedule a job using FirebaseJobDispatcher.
+     * @param data
      */
-    private void scheduleJob() {
-        /*// [START dispatch_job]
-        Firebase dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
+    private void scheduleJob(Map<String, String> data) {
+        Bundle myExtrasBundle = doMapToBundle(data);
+        Log.e(TAG, "Bundle:" + myExtrasBundle.toString());
+
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         Job myJob = dispatcher.newJobBuilder()
                 .setService(MyJobService.class)
-                .setTag("my-job-tag")
+                .setTag(Constants.INSERT_JOB_TAG)
+                .setReplaceCurrent(false)
+                .setExtras(myExtrasBundle)
                 .build();
         dispatcher.schedule(myJob);
-        // [END dispatch_job] */
+    }
+
+    private Bundle doMapToBundle(Map<String, String> data) {
+        Bundle bundle = new Bundle();
+        for (Map.Entry<String, String> entry : data.entrySet()) {
+            bundle.putString(entry.getKey(), entry.getValue());
+        }
+        return bundle;
     }
 
     /**
      * Handle time allotted to BroadcastReceivers.
+     * @param data
      */
-    private void handleNow() {
+    private void handleNow(Map<String, String> data) {
+        Bundle bundle = doMapToBundle(data);
+        String type = bundle.getString("type");
+
+        Log.d(TAG, "Data Type: " + type);
+
+        try {
+            JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
+            JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
+            JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
+
+            User sender = User.build(senderJson);
+            User receiver = User.build(receiverJson);
+            Demand demand = Demand.build(sender, receiver, demandJson);
+
+            Log.e(TAG, "demand:" + demand.toString()
+                    + " sender:" + sender.toString()
+                    + " receiver:" + receiver.toString()
+            );
+
+            switch (data.get("type")) {
+                case Constants.INSERT_DEMAND_RECEIVED:
+                    Log.d(TAG, "Create method to store user type demands.");
+                    break;
+                case Constants.INSERT_DEMAND_ADMIN:
+                    CommonUtils.storeDemandDB(demand, type, this);
+                    break;
+                case Constants.UPDATE_DEMAND:
+                    CommonUtils.updateDemandDB(demand, type, this);
+                    break;
+                case Constants.UPDATE_STATUS:
+                    CommonUtils.updateColumnDB(
+                            FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
+                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS),
+                            demand,
+                            type,
+                            this
+                            );
+                    break;
+                case Constants.UPDATE_IMPORTANCE:
+                    CommonUtils.updateColumnDB(
+                            FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE,
+                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE),
+                            demand,
+                            type,
+                            this
+                    );
+                    break;
+                case Constants.UPDATE_READ:
+                    CommonUtils.updateColumnDB(
+                            FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
+                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN),
+                            demand,
+                            type,
+                            this
+                    );
+                    break;
+            }
+
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+
         Log.d(TAG, "Short lived task is done.");
     }
+
 
     /**
      * Create and show a simple notification containing the received FCM message.
@@ -111,33 +188,34 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Intent intent = new Intent(this, ViewDemandActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        JSONObject jsonObject = null;
+        JSONObject senderJson;
+        JSONObject receiverJson;
+        JSONObject demandJson;
+        User sender;
+        User receiver;
         Demand demand = null;
                 
         try {
-            jsonObject = new JSONObject(data.get("demand"));
-            Log.e(TAG, "Json Noti:" + jsonObject.toString());
-            demand = new Demand(jsonObject);
+            senderJson = new JSONObject(data.get("sender"));
+            receiverJson = new JSONObject(data.get("receiver"));
+            demandJson = new JSONObject(data.get("demand"));
+            sender = User.build(senderJson);
+            receiver = User.build(receiverJson);
+            demand = Demand.build(sender,receiver,demandJson);
+            Log.e(TAG, "Json (Notification):"
+                    + demand.toString()
+                    + " sender:" + sender.toString()
+                    + " receiver:" + receiver.toString()
+            );
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
-        intent.putExtra("ACTIVITY", getClass().getSimpleName());
-        intent.putExtra("PAGE", Integer.parseInt(data.get("page")));
-        intent.putExtra("DEMAND", demand.getId());
-        intent.putExtra("SUBJECT", demand.getSubject());
-        intent.putExtra("STATUS", demand.getStatus());
-        intent.putExtra("SENDERNAME", demand.getFrom());
-        intent.putExtra("SENDEREMAIL", demand.getFromEmail());
-        intent.putExtra("SEEN", demand.getSeen());
-        intent.putExtra("DESCRIPTION", demand.getDescription());
-        intent.putExtra("TIME", CommonUtils.formatDate(demand.getCreatedAt()));
-        intent.putExtra("IMPORTANCE", demand.getImportance());
-        intent.putExtra("RECEIVERNAME", demand.getTo());
-        intent.putExtra("RECEIVEREMAIL", demand.getToEmail());
-        Log.d(TAG, demand.getSubject() + " Importance:" + demand.getImportance()
-                + " PACKAGE:"  + getClass().getSimpleName() + " Page:" + PAGE
-                + " Seen:" + demand.getSeen());
+        int notificationId = demand.getId();
+
+        intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
+        intent.putExtra(Constants.INTENT_PAGE, Integer.parseInt(data.get("page")));
+        intent.putExtra(Constants.INTENT_DEMAND, demand);
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addNextIntentWithParentStack((new Intent(this, MainActivity.class)));
@@ -153,16 +231,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_business_center_black_24dp)
-                .setContentTitle(notification.getTitle())
+                .setContentTitle("Demanda " + notification.getTitle())
                 .setContentText(notification.getBody())
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(resultPendingIntent);
 
+        NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
+        bigTextStyle.setBigContentTitle(demand.getSubject() + " " + notification.getTitle());
+        bigTextStyle.bigText(notification.getBody() + "\n\n" + demand.getDescription());
+        bigTextStyle.setSummaryText(CommonUtils.formatDate(demand.getCreatedAt()));
+
+        notificationBuilder.setStyle(bigTextStyle);
+
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        notificationManager.notify(Integer.parseInt(data.get("noteId")) /* ID of notification */, notificationBuilder.build());
+        notificationManager.notify(notificationId, notificationBuilder.build());
     }
 
 }

@@ -16,7 +16,6 @@ import android.util.Log;
 
 import com.example.caiqu.demand.Adapters.DemandAdapter;
 import com.example.caiqu.demand.Entities.Demand;
-import com.example.caiqu.demand.Fragments.SentFragment;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
@@ -29,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StatusActivity extends AppCompatActivity {
+    private String TAG = getClass().getSimpleName();
+
     private RecyclerView mRecyclerView;
     private RecyclerView.LayoutManager mLayoutManager;
     private RecyclerView.Adapter mAdapter;
@@ -58,42 +59,42 @@ public class StatusActivity extends AppCompatActivity {
         Intent intent = getIntent();
         mType = intent.getStringExtra("TYPE"); // U - user, A - Admin
         mStatus = intent.getStringExtra("STATUS"); // A - Accepted, C - Cancelled, X - Rejected
-        Log.d("On Accepted", "Status: " + mStatus + " Type: " + mType);
+        Log.d(TAG, "Status: " + mStatus + " Type: " + mType);
         switch (mType) {
-            case "U":
+            case Constants.INTENT_USER_TYPE:
                 switch (mStatus) {
-                    case "A":
+                    case Constants.ACCEPT_STATUS:
                         mPage = 5;
                         setTitle("Demandas Aceitas");
                         break;
-                    case "X":
+                    case Constants.REJECT_STATUS:
                         mPage = 6;
                         setTitle("Demandas Rejeitadas");
                         break;
-                    case "C":
+                    case Constants.CANCEL_STATUS:
                         mPage = 4; // This makes menu REOPEN visible
                         setTitle("Demandas Canceladas");
                 }
                 break;
-            case "A":
+            case Constants.INTENT_ADMIN_TYPE:
                 switch (mStatus) {
-                    case "A":
+                    case Constants.ACCEPT_STATUS:
                         mPage = 5;
-                        setTitle("(Admin) Demandas Aceitas");
+                        setTitle("Demandas Aceitas");
                         break;
-                    case "X":
+                    case Constants.REJECT_STATUS:
                         mPage = 6;
                         setTitle("Demandas Rejeitadas");
                         break;
-                    case "C":
+                    case Constants.CANCEL_STATUS:
                         mPage = 4; // This makes menu REOPEN visible
-                        setTitle("(Admin) Demandas Canceladas");
+                        setTitle("Demandas Canceladas");
                 }
 
         }
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
-        mUserEmail = mPrefs.getString(Constants.USER_EMAIL,"");
+        mUserEmail = mPrefs.getString(Constants.LOGGED_USER_EMAIL,"");
 
         mRecyclerView = (RecyclerView) findViewById(R.id.accepted_recycler);
         mLayoutManager = new LinearLayoutManager(getApplicationContext());
@@ -137,9 +138,9 @@ public class StatusActivity extends AppCompatActivity {
             values.put("email", userEmail);
             values.put("status", status);
             switch (mType) {
-                case "U":
+                case Constants.INTENT_USER_TYPE:
                     return CommonUtils.POST("/demand/list-demand-by-status/", values);
-                case "A":
+                case Constants.INTENT_ADMIN_TYPE:
                     return CommonUtils.POST("/demand/list-admin-demand-by-status/", values);
                 default:
                     return null;
@@ -155,14 +156,14 @@ public class StatusActivity extends AppCompatActivity {
             JSONArray jsonArray = null;
             boolean success = false;
 
-            Log.d("ON ACCEPT EXEC", "string json: " + jsonResponse);
+            Log.d(TAG, "string json: " + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 jsonArray = jsonObject.getJSONArray("list");
             } catch (JSONException e) {
-                Snackbar.make(mSwipeRefresh, "Server Problem", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                Snackbar.make(mSwipeRefresh, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
                 e.printStackTrace();
             }
 
@@ -171,8 +172,8 @@ public class StatusActivity extends AppCompatActivity {
                 for(int i=0; i < jsonArray.length(); i++){
                     try {
                         JSONObject json = jsonArray.getJSONObject(i);
-                        mDemandSet.add(new Demand(json));
-                        Log.d("ON DEMAND", "" + json.toString());
+                        mDemandSet.add(Demand.build(json));
+                        Log.d(TAG, json.toString());
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -184,7 +185,7 @@ public class StatusActivity extends AppCompatActivity {
                 mSwipeRefresh.setRefreshing(false);
 
             } else {
-                Snackbar.make(mSwipeRefresh, "Problema no servidor. Tente mais tarde.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                Snackbar.make(mSwipeRefresh, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
             }
         }
     }

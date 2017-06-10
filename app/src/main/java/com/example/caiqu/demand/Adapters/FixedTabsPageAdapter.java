@@ -17,11 +17,9 @@ import com.example.caiqu.demand.Fragments.SuperiorFragment;
 public class FixedTabsPageAdapter extends FragmentPagerAdapter {
     final static int PAGE_COUNT = 3;
     private String tabTitle[] = {"RECEBIDAS", "ENVIADAS", "ADMIN"};
-    private Context context;
 
-    public FixedTabsPageAdapter(FragmentManager fm, Context context) {
+    public FixedTabsPageAdapter(FragmentManager fm) {
         super(fm);
-        this.context = context;
     }
 
     @Override
@@ -54,4 +52,6 @@ public class FixedTabsPageAdapter extends FragmentPagerAdapter {
     public CharSequence getPageTitle(int position) {
         return tabTitle[position];
     }
+
+
 }

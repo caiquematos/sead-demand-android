@@ -3,6 +3,7 @@ package com.example.caiqu.demand.Activities;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,6 +11,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -26,6 +28,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ProgressDialog mPDLogout;
     private ViewPager mViewPager;
     private FloatingActionButton mFab;
+    private PagerAdapter mPagerAdapter;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -37,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent mainIntent = new Intent(MainActivity.this, DemandActivity.class);
+                Intent mainIntent = new Intent(MainActivity.this, CreateDemandActivity.class);
                 startActivity(mainIntent);
             }
         });
@@ -46,33 +49,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setSupportActionBar(toolbar);
 
         mViewPager = (ViewPager) findViewById(R.id.mainPager);
-        PagerAdapter pagerAdapter= new FixedTabsPageAdapter(getSupportFragmentManager(),this);
-        mViewPager.setAdapter(pagerAdapter);
+        mPagerAdapter= new FixedTabsPageAdapter(getSupportFragmentManager());
+        mViewPager.setAdapter(mPagerAdapter);
 
         TabLayout tabLayout = (TabLayout) findViewById(R.id.mainTabLayout);
+        tabLayout.setSelectedTabIndicatorColor(Color.WHITE);
+        tabLayout.setTabTextColors(ContextCompat.getColor(this,R.color.transwhite), Color.WHITE);
         tabLayout.setupWithViewPager(mViewPager);
     }
-
-    /*
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        String LOGIN_STATUS = "";
-
-        if (resultCode == RESULT_OK){
-            if (resultCode == Constants.REQUEST_LOGIN){
-                if (data.getBooleanExtra(Constants.IS_LOGGED, false)){
-                    LOGIN_STATUS = "USER LOGGED";
-                }else{
-                    LOGIN_STATUS = "NOT LOGGED";
-                }
-            }
-        }
-
-        Snackbar.make(findViewById(R.id.main_activity_view),LOGIN_STATUS, Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show();
-    }
-    */
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -91,24 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            mPDLogout = new ProgressDialog(this);
-            mPDLogout.setMessage("Por favor aguarde");
-            mPDLogout.setCancelable(false);
-            mPDLogout.show();
-            final Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                    prefs.edit().putBoolean(Constants.IS_LOGGED, false).apply();
-                    if (mPDLogout.isShowing()){
-                        mPDLogout.dismiss();
-                    }
-                    Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
-                    startActivity(intent);
-                    finish();
-                }
-            }, 2000);
+            attemptLogout();
             return true;
         }
 
@@ -126,22 +93,43 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         */
 
         if (id == R.id.main_admin_accepted){
-            intent.putExtra("TYPE", "A"); // Demands I accepted as Admin
-            intent.putExtra("STATUS", "A");
+            intent.putExtra("TYPE", Constants.INTENT_ADMIN_TYPE); // Demands I accepted as Admin
+            intent.putExtra("STATUS", Constants.ACCEPT_STATUS);
             startActivity(intent);
         }
         if (id == R.id.main_admin_rejected){
-            intent.putExtra("TYPE", "A"); // Demands I rejected as Admin
-            intent.putExtra("STATUS", "X");
+            intent.putExtra("TYPE", Constants.INTENT_ADMIN_TYPE); // Demands I rejected as Admin
+            intent.putExtra("STATUS", Constants.REJECT_STATUS);
             startActivity(intent);
         }
         if (id == R.id.main_admin_cancelled){
-            intent.putExtra("TYPE", "A"); // Demands I canceled as Admin
-            intent.putExtra("STATUS", "C");
+            intent.putExtra("TYPE", Constants.INTENT_ADMIN_TYPE); // Demands I canceled as Admin
+            intent.putExtra("STATUS", Constants.CANCEL_STATUS);
             startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void attemptLogout() {
+        mPDLogout = new ProgressDialog(this);
+        mPDLogout.setMessage("Por favor aguarde");
+        mPDLogout.setCancelable(false);
+        mPDLogout.show();
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                prefs.edit().putBoolean(Constants.IS_LOGGED, false).apply();
+                if (mPDLogout.isShowing()){
+                    mPDLogout.dismiss();
+                }
+                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        }, 2000);
     }
 
     @Override

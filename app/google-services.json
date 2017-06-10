@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "40306972789-acpimf03gigub8hqiv9somgp507ije54.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.caiqu.demand",
+            "certificate_hash": "53832095d618b43cdf987d502c8b45eb7f4a9a5d"
+          }
+        },
+        {
           "client_id": "40306972789-gu8lltpreiucnfhbc65t9r0rqdbm06bg.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,8 +37,13 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "40306972789-gu8lltpreiucnfhbc65t9r0rqdbm06bg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         },
         "ads_service": {
           "status": 2

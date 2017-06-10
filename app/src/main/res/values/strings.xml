@@ -4,7 +4,7 @@
     <string name="main_accepted">Demandas Aceitas</string>
     <string name="main_cancelled">Demandas Canceladas</string>
 
-    <!-- Strings related to create demand -->
+    <!-- Strings related toName create demand -->
     <string name="title_activity_scrolling">Criar Demanda</string>
     <string name="large_text">
         "Entre com as informações referentes ao destinatário e à demanda."
@@ -16,7 +16,7 @@
     </string-array>
     <string name="title_activity_login">Sign in</string>
 
-    <!-- Strings related to login -->
+    <!-- Strings related toName login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
     <string name="action_sign_in">Entrar</string>
@@ -30,7 +30,7 @@
         completions."
     </string>
 
-    <!-- Strings relates to Home Activity -->
+    <!-- Strings relates toName Home Activity -->
     <string name="title_activity_home">SeAD</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">SeAD\nDEMANDA</string>
@@ -48,7 +48,7 @@
     <string name="fist_title">SEaD\nDEMANDA</string>
     <string name="error_send_demand_receiver">Selecione uma das opções sugeridas</string>
     <string name="internet_error">Por favor conecte-se à internet!</string>
-    <string name="position_error">Esta posição ainda não possui superior</string>
+    <string name="position_error">Esta posição ainda não possui superiorEmail</string>
     <string name="server_error">Erro no servidor. Por favor tente mais tarde.</string>
     <string name="send_demand_error">Erro ao enviar demanda. Por favor tente mais tarde.</string>
     <string name="send_demand_success">Demanda enviada com sucesso.</string>
