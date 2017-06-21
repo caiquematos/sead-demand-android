@@ -364,6 +364,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
                 editor.putInt(Constants.LOGGED_USER_ID, user.getId());
                 if (editor.commit()){
+                    Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
                     Log.d(TAG,"User email prefs:" + mPrefs.getString(Constants.LOGGED_USER_EMAIL,""));
                     Log.d(TAG,"User id prefs:" + mPrefs.getInt(Constants.LOGGED_USER_ID,-1));
                 } else {

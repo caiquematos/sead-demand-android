@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 
@@ -13,6 +14,12 @@ import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Databases.MyDBManager;
 import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.Entities.User;
+import com.example.caiqu.demand.FCM.MyJobService;
+import com.firebase.jobdispatcher.Constraint;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
+import com.firebase.jobdispatcher.RetryStrategy;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -44,7 +51,7 @@ public class CommonUtils {
         try{
             URL urlObject = new URL(Constants.BASE_URL + url);
 
-            Log.e("ON POST", urlObject.toString());
+            Log.e(TAG, urlObject.toString());
 
             HttpURLConnection urlConnection = (HttpURLConnection) urlObject.openConnection();
             urlConnection.setDoInput(true);
@@ -53,7 +60,7 @@ public class CommonUtils {
 
             os = urlConnection.getOutputStream();
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os,"UTF-8"));
-            Log.d("ON POST", " Values are: " + values.toString());
+            Log.d(TAG, " Values are: " + values.toString());
 
             writer.write(buildPostString(values));
             writer.flush();
@@ -64,22 +71,22 @@ public class CommonUtils {
             urlConnection.connect();
 
             int statusCode = urlConnection.getResponseCode();
-            Log.d("ON POST", " The status code is " + statusCode);
+            Log.d(TAG, " The status code is " + statusCode);
 
             if (statusCode == 200) {
                 is = new BufferedInputStream(urlConnection.getInputStream());
                 String response = convertInputStreamToString(is);
-                Log.d("ON POST", "The response is " + response);
+                Log.d(TAG, "The response is " + response);
                 urlConnection.disconnect();
                 return response;
 
             } else {
-                Log.d("ON POST", "On Else");
+                Log.d(TAG, "On Else");
                 return "";
             }
 
         } catch (Exception e) {
-            Log.d("ON POST", "On CATCH");
+            Log.d(TAG, "On CATCH");
             e.printStackTrace();
             return "";
         } finally {
@@ -94,7 +101,7 @@ public class CommonUtils {
                 e.printStackTrace();
             }
 
-            Log.d("ON POST", "On Finally");
+            Log.d(TAG, "On Finally");
         }
     }
 
@@ -150,7 +157,6 @@ public class CommonUtils {
         return  netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     public static String formatDate(Date createdAt) {
         Calendar cal =  Calendar.getInstance();
         cal.setTime(createdAt);
@@ -254,6 +260,8 @@ public class CommonUtils {
             notifyListView(demand,fragTag,type,context);
             fragTag = Constants.BROADCAST_ADMIN_FRAG;
             notifyListView(demand,fragTag,type,context);
+            fragTag = Constants.BROADCAST_STATUS_ACT;
+            notifyListView(demand,fragTag,type, context);
         }
 
         listAllDemandsDB(context);
@@ -272,6 +280,8 @@ public class CommonUtils {
             notifyListView(demand,fragTag,type,context);
             fragTag = Constants.BROADCAST_ADMIN_FRAG;
             notifyListView(demand,fragTag,type,context);
+            fragTag = Constants.BROADCAST_STATUS_ACT;
+            notifyListView(demand,fragTag,type, context);
         }
 
         listAllDemandsDB(context);
@@ -283,6 +293,29 @@ public class CommonUtils {
             if(demands.get(i).getId() == id ) return i;
         }
         return -1;
+    }
+
+    // Handle demand changes when there is no internet connection
+    public static void handleLater(Demand demand, String tag, Context context){
+        Bundle bundle = new Bundle();
+        // TODO: Make Demand parcelable at some point.
+        //bundle.putSerializable(Constants.INTENT_DEMAND, demand);
+        bundle.putInt(Constants.INTENT_DEMAND_SERVER_ID, demand.getId());
+        bundle.putString(Constants.INTENT_DEMAND_STATUS, demand.getStatus());
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
+        Job myJob = dispatcher.newJobBuilder()
+                .setService(MyJobService.class)
+                .setTag(tag)
+                .setReplaceCurrent(false)
+                .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL)
+                .setConstraints(
+                        Constraint.ON_ANY_NETWORK
+                )
+                .setExtras(bundle)
+                .build();
+        dispatcher.schedule(myJob);
+        //Demand demandSer = (Demand) bundle.getSerializable(Constants.INTENT_DEMAND);
+        Log.e(TAG, "Handle Later Called. Demand:" + bundle.getInt(Constants.INTENT_DEMAND_SERVER_ID));
     }
 
 }

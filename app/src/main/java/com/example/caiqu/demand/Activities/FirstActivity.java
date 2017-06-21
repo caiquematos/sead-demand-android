@@ -15,9 +15,7 @@ import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.Constants;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.FirebaseInstanceIdService;
 
 public class FirstActivity extends AppCompatActivity {
     private final String TAG = getClass().getSimpleName();
@@ -50,7 +48,7 @@ public class FirstActivity extends AppCompatActivity {
 
         if (isPlayServiceAvailable()) {
             try {
-                isUserLoggedIn();
+                checkLogin();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -70,9 +68,10 @@ public class FirstActivity extends AppCompatActivity {
         }
     }
 
-    private void isUserLoggedIn() throws InterruptedException {
+    private void checkLogin() throws InterruptedException {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         boolean isLogged = prefs.getBoolean(Constants.IS_LOGGED,false);
+        Log.e(TAG, "User logged:" + isLogged);
 
         if (!isLogged){
             //this handler simulates an app first presentation

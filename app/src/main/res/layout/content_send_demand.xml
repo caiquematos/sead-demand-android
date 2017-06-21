@@ -126,6 +126,7 @@
                 android:layout_marginTop="@dimen/text_margin"
                 android:gravity="start"
                 android:hint="Descrição"
+                android:maxLength="1024"
                 android:scrollbars="vertical"/>
 
         </android.support.design.widget.TextInputLayout>

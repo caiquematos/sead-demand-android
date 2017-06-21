@@ -98,6 +98,9 @@ public class SentFragment extends Fragment {
         if (mUserId != -1) loadSenderList(mUserId);
         else Log.e(TAG, "Logged User id not found!");
 
+        mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
+        mSwipeRefresh.setEnabled(false);
+
         /*
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {

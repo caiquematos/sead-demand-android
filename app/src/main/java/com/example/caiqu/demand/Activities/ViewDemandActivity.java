@@ -1,11 +1,16 @@
 package com.example.caiqu.demand.Activities;
 
 import android.annotation.TargetApi;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.icu.util.Calendar;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,6 +30,7 @@ import android.widget.TextView;
 
 import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.Entities.User;
+import com.example.caiqu.demand.Handlers.AlarmReceiver;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
@@ -52,12 +58,14 @@ public class ViewDemandActivity extends AppCompatActivity {
     private FloatingActionButton mFabReject;
     private FloatingActionButton mFabResend;
     private FloatingActionButton mFabMenu;
+    private FloatingActionButton mFabDone;
     private TextView mYesTV;
     private TextView mNoTV;
     private TextView mLaterTV;
     private TextView mReopenTV;
     private TextView mRejectTV;
     private TextView mResendTV;
+    private TextView mDoneTV;
     private int mPage; //identifies which activity called this one
     private boolean mTurned;
     private SendDemandTask mDemandTask;
@@ -66,6 +74,7 @@ public class ViewDemandActivity extends AppCompatActivity {
     private String mAlertType;
     private ImportanceTask mImportanceTask;
     private AlertDialog.Builder mImportanceDialog;
+    private AlertDialog.Builder mPostponeDialog;
     ViewDemandActivity mActivity;
 
     public ViewDemandActivity() {
@@ -162,9 +171,28 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabLater.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                mPostponeDialog = new AlertDialog.Builder(mActivity);
+                mPostponeDialog.setTitle("Adiar para:");
+                String[] postponeOptions = {
+                        Constants.POSTPONE_OPTIONS[0] + " dia",
+                        Constants.POSTPONE_OPTIONS[1] + " dias",
+                        Constants.POSTPONE_OPTIONS[2] + " dias",
+                        Constants.POSTPONE_OPTIONS[3] + " dias"
+                };
+               // mPostponeDialog.setMessage("Você receberá uma notificação te relembrando que precisa avaliar essa demanda.");
+                mPostponeDialog.setItems(postponeOptions, new DialogInterface.OnClickListener(){
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        setPostponeTime(Constants.POSTPONE_OPTIONS[which]);
+                    }
+                });
+                mPostponeDialog.create();
+                mPostponeDialog.show();
+                /*
                 mAlert.setTitle("Adiar a demanda?");
                 mAlertType = Constants.POSTPONE_STATUS;
                 mAlert.show();
+                */
             }
         }); //Postponed
 
@@ -213,11 +241,22 @@ public class ViewDemandActivity extends AppCompatActivity {
             }
         }); //Resend
 
+        mDoneTV = (TextView) findViewById(R.id.tv_done);
+        mFabDone = (FloatingActionButton) findViewById(R.id.fab_done);
+        mFabDone.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mAlert.setTitle("Concluir demanda?");
+                mAlertType = Constants.DONE_STATUS;
+                mAlert.show();
+            }
+        }); // Done.
+
         mFabMenu = (FloatingActionButton) findViewById(R.id.fab_menu);
         mFabMenu.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                if (mTurned) {
+                if (mTurned) { // When 'close menu' button is hit.
                     ViewCompat.animate(mFabMenu).
                             rotation(0f).
                             withLayer().
@@ -225,7 +264,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                             setInterpolator(new OvershootInterpolator()).
                             start();
                     mTurned = false;
-                    if (mPage == 4) { // if Canceled Activity
+                    if (mPage == 4) { // if Canceled Activity, handle button Reopen.
                         mFabReopen.hide();
                         mReopenTV.setVisibility(View.INVISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -238,7 +277,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mNoTV.setVisibility(View.GONE);
                         mFabResend.setVisibility(View.GONE);
                         mResendTV.setVisibility(View.GONE);
-                    } else if (mPage == 5){ // if Accepted Activity
+                    } else if (mPage == 5){ // if Accepted Activity, handle button Cancel.
                         mFabNo.hide();
                         mNoTV.setVisibility(View.INVISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -251,7 +290,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mReopenTV.setVisibility(View.GONE);
                         mFabResend.setVisibility(View.GONE);
                         mResendTV.setVisibility(View.GONE);
-                    } else if(mPage == 2 // if Received Tab (canceled or rejected demand)
+                    } else if(mPage == 2 // if Received Tab (for canceled or rejected demands, handle Resend button).
                             && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
                                 || mDemand.getStatus().equals(Constants.REJECT_STATUS))) {
                         mFabResend.hide();
@@ -280,7 +319,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mFabYes.hide();
                         mYesTV.setVisibility(View.INVISIBLE);
                     }
-                } else {
+                } else { // When 'open menu' button is hit.
                     ViewCompat.animate(mFabMenu).
                             rotation(135f).
                             withLayer().
@@ -288,7 +327,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                             setInterpolator(new OvershootInterpolator()).
                             start();
                     mTurned = true;
-                    if (mPage == 4) { // if Canceled Activity
+                    if (mPage == 4) { // if Canceled Activity, handle Reopen button.
                         mFabReopen.show();
                         mReopenTV.setVisibility(View.VISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -299,7 +338,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mYesTV.setVisibility(View.GONE);
                         mFabNo.setVisibility(View.GONE);
                         mNoTV.setVisibility(View.GONE);
-                    } else if (mPage == 5){ // if Accepted Activity
+                    } else if (mPage == 5){ // if Accepted Activity, handle Cancel button.
                         mFabNo.show();
                         mNoTV.setVisibility(View.VISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -310,9 +349,9 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mYesTV.setVisibility(View.GONE);
                         mFabReopen.setVisibility(View.GONE);
                         mReopenTV.setVisibility(View.GONE);
-                    } else if(mPage == 2
+                    } else if(mPage == 2 // if Received Tab (for canceled or rejected demands, handle Resend button).
                             && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
-                                || mDemand.getStatus().equals(Constants.REJECT_STATUS))) { // if Received Tab (canceled or rejected demand)
+                                || mDemand.getStatus().equals(Constants.REJECT_STATUS))) {
                         mFabResend.show();
                         mResendTV.setVisibility(View.VISIBLE);
                         mFabNo.setVisibility(View.GONE);
@@ -343,13 +382,11 @@ public class ViewDemandActivity extends AppCompatActivity {
             }
         });
 
-        if (mPage == -1
-                || mPage == 1
-                || mPage == 0
-                || (mPage == 2
-                    && !(mDemand.getStatus().equals(Constants.CANCEL_STATUS)
-                        || mDemand.getStatus().equals(Constants.REJECT_STATUS)))
-                || mPage == 6){
+        if ( mPage == -1 ||
+                mPage == Constants.RECEIVED_VIEW ||
+                mPage == 0 ||
+                (mPage == Constants.SENT_VIEW && !(mDemand.getStatus().equals(Constants.CANCEL_STATUS) ||mDemand.getStatus().equals(Constants.REJECT_STATUS))) ||
+                mPage == 6){
             mFabMenu.hide();
             mFabReject.hide();
             mFabNo.hide();
@@ -469,18 +506,57 @@ public class ViewDemandActivity extends AppCompatActivity {
     }
 
     private void showDemandStatus(String status) {
-        if (status.equals("A"))
-            mStatusTV.setText("Essa demanda foi Aceita");
-        else if (status.equals("C"))
-            mStatusTV.setText("Essa demanda foi Cancelada");
-        else if (status.equals("P"))
-            mStatusTV.setText("Essa demanda foi Adiada");
-        else if (status.equals("R"))
-            mStatusTV.setText("Essa demanda foi Reaberta");
-        else if (status.equals("X"))
-            mStatusTV.setText("Essa demanda foi Rejeitada");
-        else
-            mStatusTV.setText("Essa demanda ainda não foi avaliada");
+        int drawable;
+        String description;
+        int color;
+
+        switch (status){
+            case Constants.ACCEPT_STATUS: //Accepted
+                description = "Essa demanda foi aceita";
+                drawable = R.drawable.ic_check_circle_black_24dp;
+                color = ContextCompat.getColor(this,R.color.green);
+                break;
+            case Constants.REJECT_STATUS: //Rejected
+            case Constants.CANCEL_STATUS: //Cancelled
+                description = "Essa demanda foi cancelada";
+                drawable = R.drawable.ic_cancel_black_24dp;
+                color = ContextCompat.getColor(this,R.color.red);
+                break;
+            case Constants.POSTPONE_STATUS: //Postponed
+                description = "Essa demanda foi adiada";
+                drawable = R.drawable.ic_alarm_add_black_24dp;
+                color = ContextCompat.getColor(this,R.color.yellow);
+                break;
+            case Constants.REOPEN_STATUS: //Reopen
+            case Constants.UNDEFINE_STATUS: //Undefined
+                description = "Essa demanda ainda não foi avaliada";
+                drawable = R.drawable.ic_fiber_manual_record_black_24dp;
+                color = ContextCompat.getColor(this,R.color.gray);
+                break;
+            case Constants.RESEND_STATUS: //Resent
+                description = "Essa demanda foi reenviada";
+                drawable = R.drawable.ic_send_black_24dp;
+                color = ContextCompat.getColor(this,R.color.blue);
+                break;
+            default:
+                description = "Essa demanda ainda não foi avaliada";
+                drawable = R.drawable.ic_fiber_manual_record_black_24dp;
+                color = ContextCompat.getColor(this,R.color.gray);
+        }
+
+        Drawable objDrawable;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            objDrawable = getDrawable(drawable);
+        } else {
+            objDrawable = getResources().getDrawable(drawable);
+        }
+        objDrawable = objDrawable.mutate();
+
+        mStatusTV.setText(description);
+       // mStatusTV.setCompoundDrawablesWithIntrinsicBounds(0,0, drawable,0);
+        mStatusTV.setCompoundDrawablesWithIntrinsicBounds(null,null, objDrawable,null);
+        mStatusTV.getCompoundDrawables()[2].setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        //TODO: Drawable changing colors in all app
     }
 
     private void setDemandStatus(String status){
@@ -498,6 +574,24 @@ public class ViewDemandActivity extends AppCompatActivity {
         if (importance.equals("Urgente")) color = ContextCompat.getColor(this,R.color.darkred);
         if (importance.equals("Importante")) color = ContextCompat.getColor(this,R.color.dyellow);
         mImportanceTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public void setPostponeTime(int postponeTime) {
+        // Set an alarm notification.
+        Intent receiverIntent = new Intent(this, AlarmReceiver.class);
+        receiverIntent.putExtra(Constants.INTENT_DEMAND, mDemand);
+        receiverIntent.putExtra(Constants.INTENT_PAGE, mPage);
+        PendingIntent alarmSender = PendingIntent.getBroadcast(this, 0, receiverIntent, 0);
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.MINUTE, postponeTime); // TODO: Change to Days when ready.
+        long timeInMillis = c.getTimeInMillis();
+        Log.e(TAG, "Time in millis:" + timeInMillis);
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        am.set(AlarmManager.RTC_WAKEUP, timeInMillis, alarmSender);
+
+        // Change status state on server.
+        setDemandStatus(Constants.POSTPONE_STATUS);
     }
 
     private class SendDemandTask extends  AsyncTask<Void, Void, String>{

@@ -75,7 +75,6 @@ public class SuperiorFragment extends Fragment {
         else Log.e(TAG, "Logged User id not found!");
     }
 
-
     @Override
     public void onPause() {
         super.onPause();
@@ -97,6 +96,9 @@ public class SuperiorFragment extends Fragment {
 
         if (mUserId != -1) loadAdminList(mUserId);
         else Log.e(TAG, "Logged User id not found!");
+
+        mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
+        mSwipeRefresh.setEnabled(false);
 
         /*
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);

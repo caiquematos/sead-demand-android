@@ -47,7 +47,9 @@
                     android:layout_marginTop="2dp"
                     android:textStyle="italic"
                     android:text="Essa demanda foi cancelada"
-                    android:layout_gravity="right" />
+                    android:layout_gravity="right"
+                    android:gravity="center"
+                    android:drawableRight="@drawable/ic_fiber_manual_record_black_24dp"/>
             </LinearLayout>
     </LinearLayout>
 

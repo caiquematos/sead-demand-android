@@ -64,7 +64,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
 
             if (false) {
-                scheduleJob(remoteMessage.getData());
+                scheduleJob(remoteMessage.getData(),Constants.INSERT_JOB_TAG);
             } else {
                 handleNow(remoteMessage.getData());
             }
@@ -84,14 +84,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
      * Schedule a job using FirebaseJobDispatcher.
      * @param data
      */
-    private void scheduleJob(Map<String, String> data) {
+    private void scheduleJob(Map<String, String> data, String tag) {
         Bundle myExtrasBundle = doMapToBundle(data);
         Log.e(TAG, "Bundle:" + myExtrasBundle.toString());
 
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         Job myJob = dispatcher.newJobBuilder()
                 .setService(MyJobService.class)
-                .setTag(Constants.INSERT_JOB_TAG)
+                .setTag(tag)
                 .setReplaceCurrent(false)
                 .setExtras(myExtrasBundle)
                 .build();

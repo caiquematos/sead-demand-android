@@ -1,5 +1,8 @@
 package com.example.caiqu.demand.Entities;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.example.caiqu.demand.Tools.CommonUtils;
 
 import org.json.JSONException;

@@ -5,8 +5,14 @@
 
     <item
         android:id="@+id/main_admin_accepted"
-        android:orderInCategory="97"
+        android:orderInCategory="96"
         android:title="@string/main_admin_accepted"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/main_admin_postponed"
+        android:orderInCategory="97"
+        android:title="Demandas Adiadas"
         app:showAsAction="never" />
 
     <item

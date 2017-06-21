@@ -1,5 +1,5 @@
 package com.example.caiqu.demand.Tools;
 
-public enum Enum {
+public enum Level {
     URGENT, IMPORTANT, REGULAR
 }

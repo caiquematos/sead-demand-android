@@ -85,28 +85,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             intent.putExtra("STATUS", "A");
             startActivity(intent);
         }
-        if (id == R.id.main_cancelled){
-            intent.putExtra("TYPE", "U"); // Demands I canceled as User
-            intent.putExtra("STATUS", "C");
-            startActivity(intent);
-        }
         */
+        String status = "";
 
-        if (id == R.id.main_admin_accepted){
-            intent.putExtra("TYPE", Constants.INTENT_ADMIN_TYPE); // Demands I accepted as Admin
-            intent.putExtra("STATUS", Constants.ACCEPT_STATUS);
-            startActivity(intent);
+        switch(id){
+            case R.id.main_admin_accepted:
+                status = Constants.ACCEPT_STATUS;
+                break;
+            case R.id.main_admin_rejected:
+                status = Constants.REJECT_STATUS;
+                break;
+            case R.id.main_admin_cancelled:
+                status = Constants.CANCEL_STATUS;
+                break;
+            case R.id.main_admin_postponed:
+                status = Constants.POSTPONE_STATUS;
+                break;
         }
-        if (id == R.id.main_admin_rejected){
-            intent.putExtra("TYPE", Constants.INTENT_ADMIN_TYPE); // Demands I rejected as Admin
-            intent.putExtra("STATUS", Constants.REJECT_STATUS);
-            startActivity(intent);
-        }
-        if (id == R.id.main_admin_cancelled){
-            intent.putExtra("TYPE", Constants.INTENT_ADMIN_TYPE); // Demands I canceled as Admin
-            intent.putExtra("STATUS", Constants.CANCEL_STATUS);
-            startActivity(intent);
-        }
+
+        intent.putExtra("TYPE", Constants.INTENT_ADMIN_TYPE); // Demands viewed as Admin
+        intent.putExtra("STATUS", status);
+        startActivity(intent);
 
         return super.onOptionsItemSelected(item);
     }

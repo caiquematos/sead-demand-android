@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.RequiresApi;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
@@ -16,10 +17,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.caiqu.demand.Activities.ViewDemandActivity;
+import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.FCM.MyJobService;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -112,7 +118,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
             @Override
             public void onClick(View v) {
                 //change color in order to indicate seen status
-                if((mPage == 1 || mPage == 3) && demand.getSeen().equals(Constants.NO_SEEN)){
+                if((mPage == Constants.RECEIVED_VIEW || mPage == Constants.ADMIN_VIEW) && demand.getSeen().equals(Constants.NO_SEEN)){
                     v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
                     TextView subject = (TextView) v.findViewById(R.id.demand_title);
                     subject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
@@ -153,11 +159,24 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         }
     }
 
-
     private void markAsSeen(Demand demand, int position){
-        if (mSeenTask == null){
-            mSeenTask = new SeenTask(demand, position);
-            mSeenTask.execute();
+        // Mark locally.
+        CommonUtils.updateColumnDB(
+                FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
+                Constants.YES_SEEN,
+                demand,
+                Constants.UPDATE_READ,
+                mContext
+        );
+
+        // Attempt to mark on server
+        if(CommonUtils.isOnline(mContext)) {
+            if (mSeenTask == null){
+                mSeenTask = new SeenTask(demand, position);
+                mSeenTask.execute();
+            }
+        } else {
+            CommonUtils.handleLater(demand,Constants.MARK_AS_READ_JOB_TAG, mContext);
         }
     }
 
@@ -193,7 +212,6 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 e.printStackTrace();
             }
 
-            //TODO: Make this persistent for a while
             if (success) mDemandList.get(position).setSeen(Constants.YES_SEEN);
         }
     }

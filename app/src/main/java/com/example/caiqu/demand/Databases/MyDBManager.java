@@ -17,7 +17,6 @@ import java.util.List;
  * Created by caiqu on 29/05/2017.
  */
 
-// TODO: Check created_at and updated_at for correct type.
 // TODO: Once in a while check if there are users not attached to any demand: delete them!
 // TODO: Create method to list all rows for each table.
 

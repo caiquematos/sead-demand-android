@@ -1,13 +1,20 @@
 package com.example.caiqu.demand.FCM;
 
 
+import android.content.ContentValues;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.util.Log;
 
+import com.example.caiqu.demand.Adapters.DemandAdapter;
 import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Databases.MyDBManager;
 import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.Entities.User;
+import com.example.caiqu.demand.R;
+import com.example.caiqu.demand.Tools.CommonUtils;
+import com.example.caiqu.demand.Tools.Constants;
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
@@ -22,46 +29,135 @@ import java.util.List;
 
 public class MyJobService extends JobService {
     private String TAG = getClass().getSimpleName();
+    private SeenTask mSeenTask;
+    private StatusTask mStatusTask;
 
     @Override
     public boolean onStartJob(JobParameters params) {
         Bundle bundle = params.getExtras();
-        try {
-            JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
-            JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
-            JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
+        String tag = params.getTag();
+        int demandId = bundle.getInt(Constants.INTENT_DEMAND_SERVER_ID);
+        Log.e(TAG, "Job Tag:" + tag);
 
-            User sender = User.build(senderJson);
-            User receiver =User.build(receiverJson);
-            Demand demand = Demand.build(sender, receiver, demandJson);
-
-            Log.e(TAG, "demand:" + demand.toString()
-                    + " sender:" + sender.toString()
-                    + " receiver:" + receiver.toString()
-            );
-
-            MyDBManager myDBManager = new MyDBManager(this);
-            Log.e(TAG, "New row inserted:" + myDBManager.addDemand(demand));
-
-            List<Demand> demands;
-
-            String selection = FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " = ?";
-            String[] args = {"1"};
-            demands = myDBManager.searchDemands(selection,args);
-
-            for (int index = 0; index < demands.size(); index++)
-            Log.e(TAG, "Demanda " + index + ":" + demands.get(index).toString() + "\n");
-
-        } catch (JSONException e) {
-            e.printStackTrace();
+        // TODO: Send Task.
+        switch (tag) {
+            case Constants.MARK_AS_READ_JOB_TAG:
+                return attemptToMarkAsSeen(demandId);
+            case Constants.UPDATE_JOB_TAG:
+                String status = bundle.getString(Constants.INTENT_DEMAND_STATUS);
+                return attemptToUpdateStatus(demandId, status);
         }
 
-        return false;
+        return true;
+
+    }
+
+    private boolean attemptToMarkAsSeen(int id){
+        if (mSeenTask == null){
+            mSeenTask = new SeenTask(id);
+            mSeenTask.execute();
+        } else {
+            Log.e(TAG, "Mark-as-seen task running already!");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean attemptToUpdateStatus(int id, String status){
+        if (mStatusTask == null){
+            mStatusTask = new StatusTask(id, status);
+            mStatusTask.execute();
+        } else {
+            Log.e(TAG, "Update-status task running already!");
+            return false;
+        }
+        return true;
     }
 
     @Override
     public boolean onStopJob(JobParameters params) {
         return false;
+    }
+
+    public class SeenTask extends AsyncTask<Void, Void, String> {
+        private int demandId;
+
+        public SeenTask(int demandId) {
+            this.demandId = demandId;
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            ContentValues values = new ContentValues();
+            values.put("demand", demandId);
+            return CommonUtils.POST("/demand/mark-as-read/", values);
+        }
+
+        @Override
+        protected void onPostExecute(String jsonResponse) {
+            super.onPostExecute(jsonResponse);
+            mSeenTask = null;
+            JSONObject jsonObject;
+            boolean success = false;
+
+            Log.e(TAG, "Mark as seen json response: " + jsonResponse);
+
+            try {
+                jsonObject = new JSONObject(jsonResponse);
+                success = jsonObject.getBoolean("success");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            if (success) Log.d(TAG, "Job mark as seen successful");
+        }
+    }
+
+    public class StatusTask extends AsyncTask<Void, Void, String> {
+        private int id;
+        private String status;
+
+        public StatusTask(int id, String status) {
+            this.id = id;
+            this.status = status;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            ContentValues values = new ContentValues();
+            values.put("demand", id);
+            values.put("status", status);
+            return CommonUtils.POST("/demand/set-status/", values);
+        }
+
+        @Override
+        protected void onPostExecute(String jsonResponse) {
+            super.onPostExecute(jsonResponse);
+            mStatusTask = null;
+            JSONObject jsonObject;
+            boolean success = false;
+
+            Log.e(TAG, jsonResponse);
+
+            try {
+                jsonObject = new JSONObject(jsonResponse);
+                success = jsonObject.getBoolean("success");
+            } catch (JSONException e) {
+                Log.e(TAG, getString(R.string.server_error));
+                e.printStackTrace();
+            }
+
+            if (success) {
+                // No need to broadcast change, since local changes are made before server.
+            } else {
+                Log.e(TAG, getString(R.string.server_error));
+            }
+        }
     }
 
 }
