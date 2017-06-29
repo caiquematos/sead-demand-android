@@ -55,12 +55,14 @@ public class CreateDemandActivity extends AppCompatActivity{
     private String mReceiverName;
     private SharedPreferences mPrefs;
     private int mPage;
+    private int mMenuType;
     private FloatingActionButton mFab;
     private List<String> mAutocompleteArray;
 
     public CreateDemandActivity() {
         this.mActivity = this;
-        this.mPage = 0;
+        this.mPage = Constants.CREATE_PAGE;
+        this.mMenuType = Constants.SHOW_NO_MENU;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -321,6 +323,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                 Intent intent = new Intent(mActivity, ViewDemandActivity.class);
                 intent.putExtra(Constants.INTENT_ACTIVITY, mActivity.getClass().getSimpleName());
                 intent.putExtra(Constants.INTENT_PAGE, mPage);
+                intent.putExtra(Constants.INTENT_MENU, mMenuType);
                 intent.putExtra(Constants.INTENT_DEMAND, demandResponse);
                 finish();
                 mActivity.startActivity(intent);

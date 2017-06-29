@@ -66,7 +66,8 @@ public class ViewDemandActivity extends AppCompatActivity {
     private TextView mRejectTV;
     private TextView mResendTV;
     private TextView mDoneTV;
-    private int mPage; //identifies which activity called this one
+    private int mPage; // Identifies which activity called this one.
+    private int mMenuType; // Identifies which type of menu to be shown.
     private boolean mTurned;
     private SendDemandTask mDemandTask;
     private Demand mDemand;
@@ -90,9 +91,17 @@ public class ViewDemandActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Before any change, get intent data.
+
         Intent intent = getIntent();
         mDemand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
+        mPage = intent.getIntExtra(Constants.INTENT_PAGE, -1);
+        mMenuType = intent.getIntExtra(Constants.INTENT_MENU, -1);
         Log.e(TAG, "Demand intent:" + mDemand.toString());
+        Log.e(TAG, "Menu number: " + mMenuType);
+        Log.e(TAG, "Page number: " + mPage);
+
+        // Get object references.
 
         mSubjectTV = (TextView) findViewById(R.id.view_demand_subject);
         mImportanceTV = (TextView) findViewById(R.id.view_demand_importance);
@@ -103,7 +112,10 @@ public class ViewDemandActivity extends AppCompatActivity {
         mDescriptionTV = (TextView) findViewById(R.id.view_demand_description);
         mPDDemand = new ProgressDialog(mActivity);
 
-        mImportanceTV.setClickable(true);
+        // Finally set changes.
+
+        setImportanceColor(mDemand.getImportance());
+
         mImportanceTV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -119,13 +131,11 @@ public class ViewDemandActivity extends AppCompatActivity {
                 mImportanceDialog.show();
             }
         });
+        if (mPage == Constants.ADMIN_PAGE) mImportanceTV.setClickable(true);
+        else mImportanceTV.setClickable(false);
 
-        String importance = mDemand.getImportance();
-        setImportanceColor(importance);
-        mPage = intent.getIntExtra(Constants.INTENT_PAGE, -1);
-        Log.e(TAG, "Page number: " + mPage);
-
-        if (mPage == 0) Snackbar.make(mSubjectTV, R.string.send_demand_success, Snackbar.LENGTH_LONG)
+        if (mPage == Constants.CREATE_PAGE)
+            Snackbar.make(mSubjectTV, R.string.send_demand_success, Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show();
 
         mSubjectTV.setText(mDemand.getSubject().toUpperCase());
@@ -257,6 +267,7 @@ public class ViewDemandActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (mTurned) { // When 'close menu' button is hit.
+                    Log.e(TAG, "mTurned true. In first if");
                     ViewCompat.animate(mFabMenu).
                             rotation(0f).
                             withLayer().
@@ -264,7 +275,22 @@ public class ViewDemandActivity extends AppCompatActivity {
                             setInterpolator(new OvershootInterpolator()).
                             start();
                     mTurned = false;
-                    if (mPage == 4) { // if Canceled Activity, handle button Reopen.
+                    if (mMenuType == Constants.SHOW_DONE_MENU){
+                        mFabDone.hide();
+                        mDoneTV.setVisibility(View.INVISIBLE);
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                        mFabResend.setVisibility(View.GONE);
+                        mResendTV.setVisibility(View.GONE);
+                    } else if (mMenuType == Constants.SHOW_REOPEN_MENU) { // Canceled Activity
                         mFabReopen.hide();
                         mReopenTV.setVisibility(View.INVISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -277,7 +303,9 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mNoTV.setVisibility(View.GONE);
                         mFabResend.setVisibility(View.GONE);
                         mResendTV.setVisibility(View.GONE);
-                    } else if (mPage == 5){ // if Accepted Activity, handle button Cancel.
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
+                    } else if (mMenuType == Constants.SHOW_CANCEL_MENU){ // Accepted Activity.
                         mFabNo.hide();
                         mNoTV.setVisibility(View.INVISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -290,9 +318,9 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mReopenTV.setVisibility(View.GONE);
                         mFabResend.setVisibility(View.GONE);
                         mResendTV.setVisibility(View.GONE);
-                    } else if(mPage == 2 // if Received Tab (for canceled or rejected demands, handle Resend button).
-                            && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
-                                || mDemand.getStatus().equals(Constants.REJECT_STATUS))) {
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
+                    } else if(mMenuType == Constants.SHOW_RESEND_MENU) {
                         mFabResend.hide();
                         mResendTV.setVisibility(View.INVISIBLE);
                         mFabNo.setVisibility(View.GONE);
@@ -305,7 +333,11 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mYesTV.setVisibility(View.GONE);
                         mFabReopen.setVisibility(View.GONE);
                         mReopenTV.setVisibility(View.GONE);
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
                     } else {
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
                         mFabReopen.setVisibility(View.GONE);
                         mReopenTV.setVisibility(View.GONE);
                         mFabNo.setVisibility(View.GONE);
@@ -320,6 +352,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mYesTV.setVisibility(View.INVISIBLE);
                     }
                 } else { // When 'open menu' button is hit.
+                    Log.e(TAG, "mTurned false. In first else");
                     ViewCompat.animate(mFabMenu).
                             rotation(135f).
                             withLayer().
@@ -327,7 +360,20 @@ public class ViewDemandActivity extends AppCompatActivity {
                             setInterpolator(new OvershootInterpolator()).
                             start();
                     mTurned = true;
-                    if (mPage == 4) { // if Canceled Activity, handle Reopen button.
+                    if (mMenuType == Constants.SHOW_DONE_MENU) {
+                        mFabDone.show();
+                        mDoneTV.setVisibility(View.VISIBLE);
+                        mFabReopen.setVisibility(View.GONE);
+                        mReopenTV.setVisibility(View.GONE);
+                        mFabReject.setVisibility(View.GONE);
+                        mRejectTV.setVisibility(View.GONE);
+                        mFabLater.setVisibility(View.GONE);
+                        mLaterTV.setVisibility(View.GONE);
+                        mFabYes.setVisibility(View.GONE);
+                        mYesTV.setVisibility(View.GONE);
+                        mFabNo.setVisibility(View.GONE);
+                        mNoTV.setVisibility(View.GONE);
+                    } else if (mMenuType == Constants.SHOW_REOPEN_MENU) { // Canceled Activity.
                         mFabReopen.show();
                         mReopenTV.setVisibility(View.VISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -338,7 +384,9 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mYesTV.setVisibility(View.GONE);
                         mFabNo.setVisibility(View.GONE);
                         mNoTV.setVisibility(View.GONE);
-                    } else if (mPage == 5){ // if Accepted Activity, handle Cancel button.
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
+                    } else if (mMenuType == Constants.SHOW_CANCEL_MENU){ // Accepted Activity.
                         mFabNo.show();
                         mNoTV.setVisibility(View.VISIBLE);
                         mFabReject.setVisibility(View.GONE);
@@ -349,9 +397,9 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mYesTV.setVisibility(View.GONE);
                         mFabReopen.setVisibility(View.GONE);
                         mReopenTV.setVisibility(View.GONE);
-                    } else if(mPage == 2 // if Received Tab (for canceled or rejected demands, handle Resend button).
-                            && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
-                                || mDemand.getStatus().equals(Constants.REJECT_STATUS))) {
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
+                    } else if(mMenuType == Constants.SHOW_RESEND_MENU) {
                         mFabResend.show();
                         mResendTV.setVisibility(View.VISIBLE);
                         mFabNo.setVisibility(View.GONE);
@@ -364,7 +412,11 @@ public class ViewDemandActivity extends AppCompatActivity {
                         mYesTV.setVisibility(View.GONE);
                         mFabReopen.setVisibility(View.GONE);
                         mReopenTV.setVisibility(View.GONE);
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
                     } else {
+                        mFabDone.setVisibility(View.GONE);
+                        mDoneTV.setVisibility(View.GONE);
                         mFabReopen.setVisibility(View.GONE);
                         mReopenTV.setVisibility(View.GONE);
                         mFabNo.setVisibility(View.GONE);
@@ -382,20 +434,19 @@ public class ViewDemandActivity extends AppCompatActivity {
             }
         });
 
-        if ( mPage == -1 ||
-                mPage == Constants.RECEIVED_VIEW ||
-                mPage == 0 ||
-                (mPage == Constants.SENT_VIEW && !(mDemand.getStatus().equals(Constants.CANCEL_STATUS) ||mDemand.getStatus().equals(Constants.REJECT_STATUS))) ||
-                mPage == 6){
+        // Select which activities has no menu
+        if ( mMenuType == Constants.SHOW_NO_MENU || mMenuType == -1 ){
+            Log.e(TAG, "In second if");
             mFabMenu.hide();
+            mFabDone.hide();
             mFabReject.hide();
             mFabNo.hide();
             mFabLater.hide();
             mFabYes.hide();
             mFabReopen.hide();
             mFabResend.hide();
-            mImportanceTV.setClickable(false);
-        }else{
+        }else{ // Hide menu when screen scrolled (for activities with menu)
+            Log.e(TAG, "In second else");
             mScrollView = findViewById(R.id.view_demand_scroll_view);
             mScrollView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
                 @Override
@@ -511,12 +562,26 @@ public class ViewDemandActivity extends AppCompatActivity {
         int color;
 
         switch (status){
-            case Constants.ACCEPT_STATUS: //Accepted
+            case Constants.LATE_STATUS: // Late.
+                description = "Essa demanda está atrasada";
+                drawable = R.drawable.ic_alarm_off_black_24dp;
+                color = ContextCompat.getColor(this,R.color.colorPrimary);
+                break;
+            case Constants.DONE_STATUS: // Done.
+                description = "Essa demanda foi concluída";
+                drawable = R.drawable.ic_assignment_turned_in_white_24dp;
+                color = ContextCompat.getColor(this,R.color.darkgreen);
+                break;
+            case Constants.ACCEPT_STATUS: // Accepted.
                 description = "Essa demanda foi aceita";
                 drawable = R.drawable.ic_check_circle_black_24dp;
                 color = ContextCompat.getColor(this,R.color.green);
                 break;
             case Constants.REJECT_STATUS: //Rejected
+                description = "Essa demanda foi rejeitada";
+                drawable = R.drawable.ic_cancel_black_24dp;
+                color = ContextCompat.getColor(this,R.color.darkred);
+                break;
             case Constants.CANCEL_STATUS: //Cancelled
                 description = "Essa demanda foi cancelada";
                 drawable = R.drawable.ic_cancel_black_24dp;
@@ -524,8 +589,8 @@ public class ViewDemandActivity extends AppCompatActivity {
                 break;
             case Constants.POSTPONE_STATUS: //Postponed
                 description = "Essa demanda foi adiada";
-                drawable = R.drawable.ic_alarm_add_black_24dp;
-                color = ContextCompat.getColor(this,R.color.yellow);
+                drawable = R.drawable.ic_alarm_black_24dp;
+                color = ContextCompat.getColor(this,R.color.darkyellow);
                 break;
             case Constants.REOPEN_STATUS: //Reopen
             case Constants.UNDEFINE_STATUS: //Undefined
@@ -553,10 +618,8 @@ public class ViewDemandActivity extends AppCompatActivity {
         objDrawable = objDrawable.mutate();
 
         mStatusTV.setText(description);
-       // mStatusTV.setCompoundDrawablesWithIntrinsicBounds(0,0, drawable,0);
         mStatusTV.setCompoundDrawablesWithIntrinsicBounds(null,null, objDrawable,null);
         mStatusTV.getCompoundDrawables()[2].setColorFilter(color, PorterDuff.Mode.SRC_IN);
-        //TODO: Drawable changing colors in all app
     }
 
     private void setDemandStatus(String status){
@@ -580,9 +643,11 @@ public class ViewDemandActivity extends AppCompatActivity {
     public void setPostponeTime(int postponeTime) {
         // Set an alarm notification.
         Intent receiverIntent = new Intent(this, AlarmReceiver.class);
+        receiverIntent.putExtra(Constants.ALARM_TYPE_KEY, Constants.POSTPONE_ALARM_TAG);
         receiverIntent.putExtra(Constants.INTENT_DEMAND, mDemand);
         receiverIntent.putExtra(Constants.INTENT_PAGE, mPage);
-        PendingIntent alarmSender = PendingIntent.getBroadcast(this, 0, receiverIntent, 0);
+        receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_TRIO_MENU);
+        PendingIntent alarmSender = PendingIntent.getBroadcast(this, mDemand.getId(), receiverIntent, 0);
         Calendar c = Calendar.getInstance();
         c.add(Calendar.MINUTE, postponeTime); // TODO: Change to Days when ready.
         long timeInMillis = c.getTimeInMillis();
@@ -766,7 +831,7 @@ public class ViewDemandActivity extends AppCompatActivity {
             JSONObject jsonObject;
             boolean success = false;
 
-            Log.e("ON POST EX VIEW DEMAND", jsonResponse);
+            Log.e(TAG, jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);

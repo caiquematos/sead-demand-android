@@ -50,6 +50,7 @@ public class StatusActivity extends AppCompatActivity {
 
     public StatusActivity() {
         this.mActivity = this;
+        this.mPage = Constants.STATUS_PAGE;
     }
 
     @Override
@@ -73,49 +74,41 @@ public class StatusActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mPage = -1;
-
         Intent intent = getIntent();
         mType = intent.getStringExtra("TYPE"); // U - user, A - Admin
-        mStatus = intent.getStringExtra("STATUS"); // A - Accepted, C - Cancelled, X - Rejected, P - Postponed
+        mStatus = intent.getStringExtra("STATUS"); // A - Accepted, C - Cancelled, X - Rejected, P - Postponed, D - Done.
         Log.d(TAG, "Status: " + mStatus + " Type: " + mType);
+
+        // Handle Screen Title.
+        String title = "Demandas";
         switch (mType) {
             case Constants.INTENT_USER_TYPE:
                 switch (mStatus) {
-                    case Constants.ACCEPT_STATUS:
-                        mPage = 5;
-                        setTitle("Demandas Aceitas");
+                    case Constants.DONE_STATUS:
+                        title = "Demandas Cocluídas";
                         break;
-                    case Constants.REJECT_STATUS:
-                        mPage = 6;
-                        setTitle("Demandas Rejeitadas");
-                        break;
-                    case Constants.CANCEL_STATUS:
-                        mPage = 4; // This makes menu REOPEN visible
-                        setTitle("Demandas Canceladas");
                 }
                 break;
             case Constants.INTENT_ADMIN_TYPE:
-                String title = "Demandas";
                 switch (mStatus) {
                     case Constants.ACCEPT_STATUS:
-                        mPage = 5;
                         title = "Demandas Aceitas";
                         break;
                     case Constants.REJECT_STATUS:
-                        mPage = 6;
                         title = "Demandas Rejeitadas";
                         break;
                     case Constants.CANCEL_STATUS:
-                        mPage = 4; // This makes menu REOPEN visible
                         title = "Demandas Canceladas";
                         break;
                     case Constants.POSTPONE_STATUS:
-                        mPage = 3;
                         title = "Demandas Adiadas";
+                        break;
+                    case Constants.DONE_STATUS:
+                        title = "Demandas Cocluídas";
+                        break;
                 }
-                setTitle(title);
         }
+        setTitle(title);
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         mUserEmail = mPrefs.getString(Constants.LOGGED_USER_EMAIL,"");
@@ -280,10 +273,8 @@ public class StatusActivity extends AppCompatActivity {
                     }
                     break;
                 case Constants.UPDATE_STATUS:
-                    if (position >= 0) {
+                    if (position >= 0 && !demand.getStatus().equals(mStatus)) {
                         mDemandSet.remove(position);
-                        mDemandSet.add(0,demand);
-                        //mDemandSet.get(position).setStatus(demand.getStatus());
                     }
                     break;
             }

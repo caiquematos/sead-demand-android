@@ -36,47 +36,69 @@ public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.e(TAG, "On AlarmReceiver");
+        String type = intent.getExtras().getString(Constants.ALARM_TYPE_KEY);
+        Log.e(TAG, "Alarm Type:" + type);
         Demand demand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
         Log.e(TAG, "Demand intent:" + demand.toString());
+        String title = "";
+        int drawable = -1;
+        String status = Constants.UNDEFINE_STATUS;
+
+        switch (type) {
+            case Constants.POSTPONE_ALARM_TAG:
+                title = "Avaliar Demanda!";
+                drawable = R.drawable.ic_alarm_black_24dp;
+                status = Constants.UNDEFINE_STATUS;
+                break;
+            case Constants.DUE_TIME_ALARM_TAG:
+                title = "Fim do Prazo!";
+                drawable = R.drawable.ic_alarm_off_black_24dp;
+                status = Constants.LATE_STATUS;
+                break;
+        }
+
+        // Change demand status.
+        demand.setStatus(status);
+        attemptToChangeStatus(demand, context);
 
         Intent targetIntent = new Intent(context, ViewDemandActivity.class);
         targetIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         targetIntent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
         targetIntent.putExtra(Constants.INTENT_PAGE, intent.getExtras().getInt(Constants.INTENT_PAGE));
+        targetIntent.putExtra(Constants.INTENT_MENU, intent.getExtras().getInt(Constants.INTENT_MENU));
         targetIntent.putExtra(Constants.INTENT_DEMAND, demand);
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
         stackBuilder.addNextIntentWithParentStack((new Intent(context, MainActivity.class)));
         stackBuilder.addNextIntent(targetIntent);
 
+        int notificationId = demand.getId();
+
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(
-                0,
+                notificationId,
                 PendingIntent.FLAG_UPDATE_CURRENT
         );
 
-        int notificationId = demand.getId();
-
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context)
-                .setSmallIcon(R.drawable.ic_alarm_add_black_24dp)
-                .setContentTitle("Avaliar Demanda!")
+                .setSmallIcon(drawable)
+                .setContentTitle(title)
                 .setContentText(demand.getSubject())
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(resultPendingIntent);
 
-        // Change demand back to Undefined.
-        attemptToChangeStatus(demand, Constants.UNDEFINE_STATUS, context);
-
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(context.NOTIFICATION_SERVICE);
         notificationManager.notify(notificationId, notificationBuilder.build());
     }
 
-    private void attemptToChangeStatus(Demand demand, String status, Context context){
+    private void attemptToChangeStatus(Demand demand, Context context){
+        Log.e(TAG, "Demand status:" + demand.getStatus());
+
         // Mark locally.
         CommonUtils.updateColumnDB(
                 FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
-                status,
+                demand.getStatus(),
                 demand,
                 Constants.UPDATE_STATUS,
                 context
@@ -85,7 +107,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         // Attempt to mark on server
         if(CommonUtils.isOnline(context)) {
             if (mStatusTask == null){
-                mStatusTask = new StatusTask(demand.getId(), status);
+                mStatusTask = new StatusTask(demand.getId(), demand.getStatus());
                 mStatusTask.execute();
             }
         } else {
@@ -133,6 +155,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             }
 
             if (success) {
+                Log.e(TAG, "Status successfully changed.");
                 // No need to broadcast change, since local changes are made before server.
             } else {
                 Log.e(TAG, "Server problem!");

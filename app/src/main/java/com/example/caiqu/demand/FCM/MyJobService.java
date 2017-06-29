@@ -36,47 +36,38 @@ public class MyJobService extends JobService {
     public boolean onStartJob(JobParameters params) {
         Bundle bundle = params.getExtras();
         String tag = params.getTag();
+        String type = bundle.getString(Constants.JOB_TYPE_KEY);
         int demandId = bundle.getInt(Constants.INTENT_DEMAND_SERVER_ID);
-        Log.e(TAG, "Job Tag:" + tag);
+        Log.e(TAG, "Job Tag:" + tag + " Job Type:" + type + " Demand Id:" + demandId);
 
-        // TODO: Send Task.
-        switch (tag) {
+        // TODO: Send Task. Verify list of jobs!
+        switch (type) {
             case Constants.MARK_AS_READ_JOB_TAG:
-                return attemptToMarkAsSeen(demandId);
+                return !attemptToMarkAsSeen(demandId);
             case Constants.UPDATE_JOB_TAG:
                 String status = bundle.getString(Constants.INTENT_DEMAND_STATUS);
-                return attemptToUpdateStatus(demandId, status);
+                return !attemptToUpdateStatus(demandId, status);
         }
 
-        return true;
+        return false; // Answers the question: "Is there still work going on?"
 
     }
 
     private boolean attemptToMarkAsSeen(int id){
-        if (mSeenTask == null){
-            mSeenTask = new SeenTask(id);
-            mSeenTask.execute();
-        } else {
-            Log.e(TAG, "Mark-as-seen task running already!");
-            return false;
-        }
+        mSeenTask = new SeenTask(id);
+        mSeenTask.execute();
         return true;
     }
 
     private boolean attemptToUpdateStatus(int id, String status){
-        if (mStatusTask == null){
-            mStatusTask = new StatusTask(id, status);
-            mStatusTask.execute();
-        } else {
-            Log.e(TAG, "Update-status task running already!");
-            return false;
-        }
+        mStatusTask = new StatusTask(id, status);
+        mStatusTask.execute();
         return true;
     }
 
     @Override
     public boolean onStopJob(JobParameters params) {
-        return false;
+        return false; // Answers the question: "Should this job be retried?"
     }
 
     public class SeenTask extends AsyncTask<Void, Void, String> {

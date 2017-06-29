@@ -55,7 +55,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // messages. For more see: https://firebase.google.com/docs/cloud-messaging/concept-options
         // [END_EXCLUDE]
 
-        // TODO(developer): Handle FCM messages here.
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
         Log.d(TAG, "From: " + remoteMessage.getFrom());
 
@@ -77,8 +76,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
     }
-
-    // [END receive_message]
 
     /**
      * Schedule a job using FirebaseJobDispatcher.
@@ -176,7 +173,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Log.d(TAG, "Short lived task is done.");
     }
 
-
     /**
      * Create and show a simple notification containing the received FCM message.
      *
@@ -215,6 +211,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
         intent.putExtra(Constants.INTENT_PAGE, Integer.parseInt(data.get("page")));
+        intent.putExtra(Constants.INTENT_MENU, Integer.parseInt(data.get("menu")));
         intent.putExtra(Constants.INTENT_DEMAND, demand);
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
@@ -222,11 +219,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         stackBuilder.addNextIntent(intent);
 
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(
-                0,
+                notificationId,
                 PendingIntent.FLAG_UPDATE_CURRENT
                 );
-
-      //  PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent, PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)

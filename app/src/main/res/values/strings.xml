@@ -58,4 +58,5 @@
     <string name="reject">Rejeitar</string>
     <string name="demandas_rejeitadas">Demandas Rejeitadas</string>
     <string name="resend_button">Reenviar</string>
+    <string name="main_admin_done">Demandas Concluídas</string>
 </resources>

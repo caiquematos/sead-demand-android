@@ -135,6 +135,7 @@ public class SuperiorFragment extends Fragment {
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " != ?)) AND ( "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? )";
 
         String[] args = {
@@ -144,6 +145,7 @@ public class SuperiorFragment extends Fragment {
                 "" + adminId,
                 Constants.REOPEN_STATUS,
                 Constants.UNDEFINE_STATUS,
+                Constants.LATE_STATUS,
                 Constants.RESEND_STATUS
         };
 
@@ -258,6 +260,8 @@ public class SuperiorFragment extends Fragment {
                         mDemandSet.remove(position);
                         mDemandSet.add(0,demand);
                         //mDemandSet.get(position).setStatus(demand.getStatus());
+                    } else {
+                        loadAdminList(mUserId); // TODO: Maybe check status value instead in order to make less work.
                     }
                     break;
             }

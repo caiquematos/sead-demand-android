@@ -214,7 +214,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/rounded_corner"
                 android:padding="2dp"
-                android:text="Feita"
+                android:text="Concluir"
                 android:textColor="@color/white"
                 android:visibility="gone" />
 

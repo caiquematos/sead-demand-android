@@ -23,7 +23,7 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:gravity="top|start"
-            android:layout_weight="85">
+            android:layout_weight="80">
 
             <TextView
                 android:id="@+id/demand_title"
@@ -61,14 +61,25 @@
             android:layout_width="15dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_weight="10"
+            android:layout_weight="15"
             android:gravity="center">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:gravity="top|end"
+                android:orientation="vertical"
                 android:layout_weight="50">
+
+                <TextView
+                    android:id="@+id/demand_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorPrimary"
+                    android:textSize="10dp"
+                    android:maxLines="1"
+                    android:text="12/05/17"
+                    />
 
                 <TextView
                     android:id="@+id/demand_time"
@@ -76,7 +87,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorPrimary"
                     android:textSize="10dp"
-                    android:text="12:00 PM"
+                    android:text="12:00"
                     />
 
             </LinearLayout>

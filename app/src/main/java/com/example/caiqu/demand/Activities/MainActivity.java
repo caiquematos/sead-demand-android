@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TabLayout tabLayout = (TabLayout) findViewById(R.id.mainTabLayout);
         tabLayout.setSelectedTabIndicatorColor(Color.WHITE);
         tabLayout.setTabTextColors(ContextCompat.getColor(this,R.color.transwhite), Color.WHITE);
+        tabLayout.removeTabAt(2);
         tabLayout.setupWithViewPager(mViewPager);
     }
 
@@ -89,6 +90,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String status = "";
 
         switch(id){
+            case R.id.main_admin_done:
+                status = Constants.DONE_STATUS;
+                break;
             case R.id.main_admin_accepted:
                 status = Constants.ACCEPT_STATUS;
                 break;

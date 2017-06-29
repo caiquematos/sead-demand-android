@@ -4,6 +4,12 @@
     tools:context="com.example.caiqu.demand.Activities.MainActivity">
 
     <item
+        android:id="@+id/main_admin_done"
+        android:orderInCategory="95"
+        android:title="@string/main_admin_done"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/main_admin_accepted"
         android:orderInCategory="96"
         android:title="@string/main_admin_accepted"

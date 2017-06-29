@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Bundle;
 import android.support.annotation.RequiresApi;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
@@ -19,13 +18,9 @@ import android.widget.TextView;
 import com.example.caiqu.demand.Activities.ViewDemandActivity;
 import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Entities.Demand;
-import com.example.caiqu.demand.FCM.MyJobService;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
-import com.firebase.jobdispatcher.FirebaseJobDispatcher;
-import com.firebase.jobdispatcher.GooglePlayDriver;
-import com.firebase.jobdispatcher.Job;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -63,23 +58,30 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         // Log.e("On ViewHolder", "Position:" +position + " Seen:" + demand.getSeen());
 
         switch (demand.getStatus()){
-            case Constants.ACCEPT_STATUS: //Accepted
+            case Constants.DONE_STATUS: // Done.
+                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.darkgreen));
+                break;
+            case Constants.ACCEPT_STATUS: // Accepted.
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.green));
                 break;
-            case Constants.REJECT_STATUS: //Rejected
-            case Constants.CANCEL_STATUS: //Cancelled
+            case Constants.REJECT_STATUS: // Rejected.
+                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.darkred));
+                break;
+            case Constants.CANCEL_STATUS: // Cancelled.
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.red));
                 break;
-            case Constants.POSTPONE_STATUS: //Postponed
+            case Constants.POSTPONE_STATUS: // Postponed.
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.yellow));
                 break;
-            case Constants.REOPEN_STATUS: //Reopen
-            case Constants.UNDEFINE_STATUS: //Undefined
+            case Constants.REOPEN_STATUS: // Reopen.
+            case Constants.UNDEFINE_STATUS: // Undefined.
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.gray));
                 break;
-            case Constants.RESEND_STATUS: //Resent
+            case Constants.RESEND_STATUS: // Resent.
                 holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.blue));
                 break;
+            case Constants.LATE_STATUS: // Late.
+                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.primary_dark));
         }
 
         switch (demand.getImportance()){
@@ -96,11 +98,11 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         // Log.e("On DemandAdap", "Page: " + mPage);
         //For tab sent the name to show should be who the demand was sent
         String user;
-        if (mPage == 2) user = demand.getReceiver().getName();
+        if (mPage == Constants.SENT_PAGE) user = demand.getReceiver().getName();
         else user = demand.getSender().getName();
 
         //If demand was already seen by the receiver change color of background and title
-        if (demand.getSeen().equals("Y")) {
+        if (demand.getSeen().equals(Constants.YES_SEEN)) {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
             holder.mSubject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
         } else {
@@ -111,14 +113,15 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         holder.mSubject.setText(demand.getSubject());
         holder.mUser.setText(user);
         holder.mDescription.setText(demand.getDescription());
-        holder.mTime.setText(CommonUtils.formatDate(demand.getCreatedAt()));
+        holder.mTime.setText(CommonUtils.formatTime(demand.getCreatedAt()));
+        holder.mDate.setText(CommonUtils.formatDate(demand.getCreatedAt()));
 
         holder.itemView.setClickable(true);
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //change color in order to indicate seen status
-                if((mPage == Constants.RECEIVED_VIEW || mPage == Constants.ADMIN_VIEW) && demand.getSeen().equals(Constants.NO_SEEN)){
+                if((mPage == Constants.ADMIN_PAGE || mPage == Constants.RECEIVED_PAGE) && demand.getSeen().equals(Constants.NO_SEEN)){
                     v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
                     TextView subject = (TextView) v.findViewById(R.id.demand_title);
                     subject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
@@ -127,7 +130,39 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 }
                 Intent intent = new Intent(mContext, ViewDemandActivity.class);
                 intent.putExtra(Constants.INTENT_ACTIVITY, mContext.getClass().getSimpleName());
+                int menuType = -1;
+                switch(mPage){
+                    case Constants.RECEIVED_PAGE:
+                        menuType = Constants.SHOW_NO_MENU;
+                        if (demand.getStatus().equals(Constants.ACCEPT_STATUS))
+                            menuType = Constants.SHOW_DONE_MENU;
+                        break;
+                    case Constants.SENT_PAGE:
+                        menuType = Constants.SHOW_NO_MENU;
+                        if (demand.getStatus().equals(Constants.CANCEL_STATUS) || demand.getStatus().equals(Constants.REJECT_STATUS))
+                            menuType = Constants.SHOW_RESEND_MENU;
+                        break;
+                    case Constants.ADMIN_PAGE:
+                        menuType = Constants.SHOW_TRIO_MENU;
+                        break;
+                    case Constants.STATUS_PAGE:
+                        switch (demand.getStatus()) {
+                            case Constants.ACCEPT_STATUS:
+                                menuType = Constants.SHOW_CANCEL_MENU;
+                                break;
+                            case Constants.REJECT_STATUS:
+                                menuType = Constants.SHOW_NO_MENU;
+                                break;
+                            case Constants.CANCEL_STATUS:
+                                menuType = Constants.SHOW_REOPEN_MENU;
+                                break;
+                            case Constants.POSTPONE_STATUS:
+                                menuType = Constants.SHOW_TRIO_MENU;
+                        }
+                        break;
+                }
                 intent.putExtra(Constants.INTENT_PAGE, mPage);
+                intent.putExtra(Constants.INTENT_MENU, menuType);
                 intent.putExtra(Constants.INTENT_DEMAND, demand);
                 mContext.startActivity(intent);
             }
@@ -144,6 +179,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         TextView mUser;
         TextView mDescription;
         TextView mTime;
+        TextView mDate;
         View mTag;
         ImageView mImportance;
 
@@ -155,6 +191,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
             mSubject = (TextView) view.findViewById(R.id.demand_title);
             mUser = (TextView) view.findViewById(R.id.demand_user);
             mDescription = (TextView) view.findViewById(R.id.demand_content);
+            mDate = (TextView) view.findViewById(R.id.demand_date);
             mTime = (TextView) view.findViewById(R.id.demand_time);
         }
     }

@@ -76,7 +76,6 @@ public class ReceivedFragment extends Fragment{
         else Log.e(TAG, "Logged User id not found!");
     }
 
-
     @Override
     public void onPause() {
         super.onPause();
@@ -134,10 +133,14 @@ public class ReceivedFragment extends Fragment{
     private void loadReceiverList(int receiverId){
         String selection = FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " = ? AND ("
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? )";
         String[] args = {
                 "" + receiverId,
                 Constants.ACCEPT_STATUS,
+                Constants.DONE_STATUS,
+                Constants.LATE_STATUS,
                 Constants.CANCEL_STATUS
         };
 

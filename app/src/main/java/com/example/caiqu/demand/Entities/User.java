@@ -31,8 +31,8 @@ public class User implements Serializable{
         setSuperior(superior);
         setStatus(status);
         setGcm(gcm);
-        setCreatedAt(CommonUtils.datify(createdAt));
-        setUpdatedAt(CommonUtils.datify(updatedAt));
+        setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
+        setUpdatedAt(CommonUtils.convertTimestampToDate(updatedAt));
     }
 
     public User(String email, String password, String name, String superior, String position, String gcm) {

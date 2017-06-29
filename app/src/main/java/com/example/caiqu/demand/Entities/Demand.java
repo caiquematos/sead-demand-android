@@ -1,18 +1,12 @@
 package com.example.caiqu.demand.Entities;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.example.caiqu.demand.Tools.CommonUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 
 public class Demand implements Serializable {
     private long localId;
@@ -82,8 +76,8 @@ public class Demand implements Serializable {
         setStatus(status);
         setImportance(importance);
         setSeen(seen);
-        setCreatedAt(CommonUtils.datify(created_at));
-        setUpdatedAt(CommonUtils.datify(updated_at));
+        setCreatedAt(CommonUtils.convertTimestampToDate(created_at));
+        setUpdatedAt(CommonUtils.convertTimestampToDate(updated_at));
     }
 
     public String getSeen() {
