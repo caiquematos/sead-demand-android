@@ -37,8 +37,8 @@ public class Constants {
 
     // Predefined Variables.
     public static String[] JOB_POSITIONS = {"Ponta", "Coordenador", "Diretor", "Secretário"};
-    public static int[] POSTPONE_OPTIONS = {1, 2, 3, 4}; // Amount in days.
-    public static int[] DUE_TIME = {1, 2, 3, 4}; // According to Demand Prior. 3, 8, 15, >= 15 (inclusive).
+    public static int[] POSTPONE_OPTIONS = {1, 3, 5, 7}; // Amount in days.
+    public static int[] DUE_TIME = {3, 8, 15, 20}; // According to Demand Prior. 3, 8, 15, >= 15 (inclusive).
     public static String[] DEMAND_PRIOR_NAME = {
             "Muito Alta",
             "Alta",
@@ -92,6 +92,7 @@ public class Constants {
     public static final String INTENT_USER_TYPE = "intent-user-type";
     public static final String INTENT_ADMIN_TYPE = "intent-admin-type";
     public static final String INTENT_STORAGE_TYPE = "intent_storage_type";
+    public static final String INTENT_REJECT_PREDEFINED_REASON = "intent_reject_predefined_reason";
     public static final String INTENT_REJECT_REASON_INDEX = "intent_reject_reason_index";
     public static final String INTENT_REJECT_REASON_COMMENT = "intent_reject_reason_comment";
 
@@ -104,6 +105,7 @@ public class Constants {
 	public static final String UPDATE_PRIOR = "update_prior";
 	public static final String UPDATE_READ = "update_read";
 	public static final String UNLOCK_USER = "unlock-user-request";
+	public static final String ACKNOWLEDGE = "acknowledge";
 
     // Broadcast parameters.
     public static final String BROADCAST_RECEIVER_FRAG = "broadcast_receiver";
@@ -114,5 +116,10 @@ public class Constants {
 
     // Activity for result.
     public static final int REJECT_DEMAND = 1;
+
+    // Predefined Reasons.
+    public static final int REASON_OTHER_POSITION = 0;
+    public static final String REASON_OTHER_TYPE = "O";
+    public static final String REASON_PREDEFINED_TYPE = "P";
 
 }

@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.PredefinedReason;
 import com.example.caiqu.demand.Entities.Reason;
 import com.example.caiqu.demand.Entities.User;
 
@@ -17,9 +18,6 @@ import java.util.List;
 /**
  * Created by caiqu on 29/05/2017.
  */
-
-// TODO: Once in a while check if there are users not attached to any demand: delete them!
-// TODO: Create method to list all rows for each table.
 
 public class MyDBManager {
     private String TAG = getClass().getSimpleName();
@@ -40,11 +38,11 @@ public class MyDBManager {
         ContentValues values = new ContentValues();
 
         // If there is a reason, add it.
-        Reason reason = demand.getReason();
+        PredefinedReason reason = demand.getReason();
         if(reason != null){
             if(addReason(reason) < 0) Log.e(TAG, "Reason not added! Prob it exists already.");
             else Log.e(TAG, "Reason added successfully!");
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID, demand.getReason().getId());
+            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID, demand.getReason().getServerId());
         }
 
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID, demand.getId());
@@ -106,21 +104,20 @@ public class MyDBManager {
     }
 
     // If reason already exists, then update it.
-    public long addReason(Reason reason){
+    public long addReason(PredefinedReason reason){
 
         ContentValues values = new ContentValues();
 
-        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID, reason.getId());
-        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID, reason.getDemandId());
-        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS, reason.getStatus());
-        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON, reason.getReasonIndex());
-        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT, reason.getComment());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID, reason.getServerId());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_TYPE, reason.getType());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_TITLE, reason.getTitle());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_DESCRIPTION, reason.getDescription());
         values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT,
-                new Timestamp(reason.getCreated_at().getTime()).toString());
+                new Timestamp(reason.getCreatedAt().getTime()).toString());
         values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT,
-                new Timestamp(reason.getUpdated_at().getTime()).toString());
+                new Timestamp(reason.getUpdatedAt().getTime()).toString());
 
-        if(findReasonByServerId(reason.getId()) == null) {
+        if(findReasonByServerId((int) reason.getServerId()) == null) {
             mDB = mMyDbHelper.getWritableDatabase();
             long newRowId = mDB.insert(FeedReaderContract.ReasonEntry.TABLE_NAME, null, values);
 
@@ -129,7 +126,7 @@ public class MyDBManager {
             return newRowId;
         }else{
             mDB.close();
-            return updateReason(reason.getId(),values);
+            return updateReason((int) reason.getServerId(),values);
         }
     }
 
@@ -268,8 +265,8 @@ public class MyDBManager {
             return null;
         }
 
-    public Reason findReasonByServerId(int id){
-            List<Reason> reasons;
+    public PredefinedReason findReasonByServerId(int id){
+            List<PredefinedReason> reasons;
             String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ? ";
             String [] args = {"" + id};
 
@@ -333,7 +330,7 @@ public class MyDBManager {
             // Search for local instances of users
             User sender = findUserByServerId(senderId);
             User receiver = findUserByServerId(receiverId);
-            Reason reason = findReasonByServerId(reasonId);
+            PredefinedReason reason = findReasonByServerId(reasonId);
 
             if(sender != null && receiver != null){
                 Demand demand = new Demand(
@@ -430,15 +427,14 @@ public class MyDBManager {
         return users;
     }
 
-    public List<Reason> searchReasons(String selection, String[] selectionArgs){
+    public List<PredefinedReason> searchReasons(String selection, String[] selectionArgs){
 
         String[] projection = {
                 FeedReaderContract.ReasonEntry._ID,
                 FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID,
-                FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID,
-                FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS,
-                FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON,
-                FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_TYPE,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_TITLE,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_DESCRIPTION,
                 FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT,
                 FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT
         };
@@ -458,25 +454,23 @@ public class MyDBManager {
                 sortOrder
         );
 
-        List<Reason> reasons = new ArrayList<>();
+        List<PredefinedReason> reasons = new ArrayList<>();
 
         while(cursor.moveToNext()) {
-            long itemId = cursor.getLong(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry._ID));
-            int reasonId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID));
-            int demand = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID));
-            String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS));
-            int reasonIndex = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON));
-            String comment = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT));
+            long localId = cursor.getLong(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry._ID));
+            int serverId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID));
+            String type = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_TYPE));
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_TITLE));
+            String description = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_DESCRIPTION));
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT));
 
-            Reason reason = new Reason(
-                    itemId,
-                    reasonId,
-                    demand,
-                    status,
-                    reasonIndex,
-                    comment,
+            PredefinedReason reason = new PredefinedReason(
+                    localId,
+                    serverId,
+                    type,
+                    title,
+                    description,
                     created_at,
                     updated_at
             );
@@ -503,5 +497,15 @@ public class MyDBManager {
         String[] selectionArgs = {"" + id};
         mDB.delete(FeedReaderContract.UserEntry.TABLE_NAME, selection, selectionArgs);
         mDB.close();
+    }
+
+    public void deleteAllTables(){
+        mDB = mMyDbHelper.getWritableDatabase();
+        String dropQuery = "DELETE FROM " + FeedReaderContract.DemandEntry.TABLE_NAME;
+        mDB.execSQL(dropQuery);
+        dropQuery = "DELETE FROM " + FeedReaderContract.UserEntry.TABLE_NAME;
+        mDB.execSQL(dropQuery);
+        dropQuery = "DELETE FROM " + FeedReaderContract.ReasonEntry.TABLE_NAME;
+        mDB.execSQL(dropQuery);
     }
 }

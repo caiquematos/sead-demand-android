@@ -1,38 +1,31 @@
 package com.example.caiqu.demand.Activities;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.example.caiqu.demand.Adapters.FixedTabsPageAdapter;
 import com.example.caiqu.demand.Databases.MyDBManager;
 import com.example.caiqu.demand.Entities.User;
-import com.example.caiqu.demand.Fragments.ReceivedFragment;
-import com.example.caiqu.demand.Fragments.SentFragment;
-import com.example.caiqu.demand.Fragments.SuperiorFragment;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
@@ -51,12 +44,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Activity mActivity;
     private LogoutTask mLogoutTask;
     private User mCurrentUser;
+    private AlertDialog.Builder mLogoffAlert;
 
     public MainActivity() {
         this.mActivity = this;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -128,13 +121,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Intent intent;
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            attemptLogout();
+        if (id == R.id.action_logoff) {
+            mLogoffAlert = new AlertDialog.Builder(this);
+            mLogoffAlert.setTitle(getString(R.string.logoff_alert_title));
+            mLogoffAlert.setMessage(getString(R.string.logoff_warning));
+            mLogoffAlert.setPositiveButton("sim", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    attemptLogout();
+                }
+            });
+            mLogoffAlert.setNegativeButton("cancelar", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                }
+            });
+            mLogoffAlert.create();
+            mLogoffAlert.show();
             return true;
         }
 
         if (id == R.id.main_admin_requests) {
             intent = new Intent(getApplicationContext(), RequestActivity.class);
+            startActivity(intent);
+            return true;
+        }
+
+        if (id == R.id.main_admin_reasons) {
+            intent = new Intent(getApplicationContext(), CreateReasonActivity.class);
             startActivity(intent);
             return true;
         }
@@ -175,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void attemptLogout() {
         if (!CommonUtils.isOnline(mActivity)) {
-           // Snackbar.make(mEmailSignInButton, R.string.internet_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
+            Snackbar.make(mFab, R.string.internet_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
             return;
         }
 
@@ -185,6 +200,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             return;
         }
+    }
+
+    @Override
+    public void onClick(View v) {
+
     }
 
 
@@ -229,20 +249,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 userJson = jsonObject.getJSONObject("user");
 
                 user = User.build(userJson);
-                Log.d(TAG, "user response email:" + user.getEmail());
-
+                Log.d(TAG, "user response email:" + user.toString());
             } catch (JSONException e) {
-                Snackbar.make(findViewById(R.id.email_sign_in_button), R.string.server_error, Snackbar.LENGTH_LONG)
+                Snackbar.make(mFab, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
 
             if (success && user != null) {
-
                 SharedPreferences.Editor editor = mPrefs.edit();
                 editor.putBoolean(Constants.IS_LOGGED,false);
                 if (editor.commit()){
-                    Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
+                    Log.d(TAG,"User logged off prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
                 } else {
                     Log.d(TAG,"Could not save prefs!");
                 }
@@ -250,6 +268,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (mPDLogout.isShowing()){
                     mPDLogout.dismiss();
                 }
+                resetAppData();
                 startActivity(intent);
                 finish();
             } else {
@@ -268,8 +287,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    @Override
-    public void onClick(View v) {
-
+    private void resetAppData() {
+        Log.e(TAG, "Reset App data.");
+        MyDBManager myDBManager = new MyDBManager(this);
+        myDBManager.deleteAllTables();
+        mPrefs.edit().clear().apply();
     }
 }

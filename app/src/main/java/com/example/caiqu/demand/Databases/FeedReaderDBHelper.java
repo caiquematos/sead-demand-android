@@ -54,10 +54,9 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
             "CREATE TABLE " + FeedReaderContract.ReasonEntry.TABLE_NAME + " (" +
                     FeedReaderContract.ReasonEntry._ID + " INTEGER PRIMARY KEY," +
                     FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " INTEGER UNIQUE," +
-                    FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID + " INTEGER," +
-                    FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS + " CHAR(2)," +
-                    FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON + " INTEGER," +
-                    FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT + " TEXT," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_TYPE + " CHAR(2)," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_TITLE + " INTEGER," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
                     FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT + " TIMESTAMP," +
                     FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT + " TIMESTAMP)";
 
@@ -77,14 +76,18 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL(SQL_DELETE_REASONS_TABLE);
-        db.execSQL(SQL_DELETE_USERS_TABLE);
-        db.execSQL(SQL_DELETE_DEMANDS_TABLE);
+        onDelete(db);
         onCreate(db);
     }
 
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         super.onDowngrade(db, oldVersion, newVersion);
+    }
+
+    public void onDelete(SQLiteDatabase db){
+        db.execSQL(SQL_DELETE_REASONS_TABLE);
+        db.execSQL(SQL_DELETE_USERS_TABLE);
+        db.execSQL(SQL_DELETE_DEMANDS_TABLE);
     }
 }

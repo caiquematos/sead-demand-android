@@ -13,7 +13,7 @@ public class Demand implements Serializable {
     private int id;
     private User sender;
     private User receiver;
-    private Reason reason;
+    private PredefinedReason reason;
     private String prior;
     private String subject;
     private String description;
@@ -36,12 +36,12 @@ public class Demand implements Serializable {
                 json.getString("receiverEmail")
         );
 
-       Reason reason = null;
+       PredefinedReason reason = null;
 
         return Demand.build(sender, receiver, reason, json);
     }
 
-    public static Demand build(User sender, User receiver, Reason reason, JSONObject json) throws JSONException {
+    public static Demand build(User sender, User receiver, PredefinedReason reason, JSONObject json) throws JSONException {
 
         return new Demand(
                 -1,
@@ -64,7 +64,7 @@ public class Demand implements Serializable {
             int demandId,
             User sender,
             User receiver,
-            Reason reason,
+            PredefinedReason reason,
             String prior,
             String subject,
             String description,
@@ -95,7 +95,7 @@ public class Demand implements Serializable {
         this.archive = archive;
     }
 
-    public Reason getReason() {
+    public PredefinedReason getReason() {
         return reason;
     }
 
@@ -207,7 +207,7 @@ public class Demand implements Serializable {
         return receiver;
     }
 
-    public void setReason(Reason reason) {
+    public void setReason(PredefinedReason reason) {
         this.reason = reason;
     }
 }

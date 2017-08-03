@@ -3,10 +3,9 @@ package com.example.caiqu.demand.Activities;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
@@ -33,7 +32,7 @@ public class FirstActivity extends AppCompatActivity {
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
 
-        //Generate FCM Token and save it on Shared Preferences
+        // Generate FCM Token and save it on Shared Preferences.
         String token = FirebaseInstanceId.getInstance().getToken();
         Log.e(TAG, "Token generated:" + token);
         SharedPreferences.Editor editor = mPrefs.edit();
@@ -44,7 +43,6 @@ public class FirstActivity extends AppCompatActivity {
         } else {
             Log.d(TAG, "Shared Prefs Fcm token not saved!");
         }
-
 
         if (isPlayServiceAvailable()) {
             try {
@@ -69,8 +67,7 @@ public class FirstActivity extends AppCompatActivity {
     }
 
     private void checkLogin() throws InterruptedException {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        boolean isLogged = prefs.getBoolean(Constants.IS_LOGGED,false);
+        boolean isLogged = mPrefs.getBoolean(Constants.IS_LOGGED,false);
         Log.e(TAG, "User logged:" + isLogged);
 
         if (!isLogged){

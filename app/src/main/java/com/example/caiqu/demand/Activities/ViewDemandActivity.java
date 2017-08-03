@@ -10,7 +10,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.icu.util.Calendar;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,11 +24,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
 import com.example.caiqu.demand.Entities.Demand;
-import com.example.caiqu.demand.Entities.Reason;
+import com.example.caiqu.demand.Entities.PredefinedReason;
 import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.Handlers.AlarmReceiver;
 import com.example.caiqu.demand.R;
@@ -38,6 +38,8 @@ import com.example.caiqu.demand.Tools.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Calendar;
 
 public class ViewDemandActivity extends AppCompatActivity {
     private final String TAG = getClass().getSimpleName();
@@ -86,8 +88,6 @@ public class ViewDemandActivity extends AppCompatActivity {
         mActivity = this;
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -175,10 +175,10 @@ public class ViewDemandActivity extends AppCompatActivity {
             public void onClick(View v) {
                 mPriorDialog = new AlertDialog.Builder(mActivity);
                 mPriorDialog.setTitle("Mudar para:");
-                mPriorDialog.setItems(Constants.DEMAND_PRIOR_NAME, new DialogInterface.OnClickListener(){
+                mPriorDialog.setItems(getResources().getStringArray(R.array.array_status), new DialogInterface.OnClickListener(){
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        setDemandPrior(Constants.DEMAND_PRIOR_NAME[which]);
+                        setDemandPrior(CommonUtils.getPriorTag(which));
                     }
                 });
                 mPriorDialog.create();
@@ -486,7 +486,7 @@ public class ViewDemandActivity extends AppCompatActivity {
             }
         });
 
-        // Select which activities has no menu
+        // Select which activities has no menu.
         if ( mMenuType == Constants.SHOW_NO_MENU || mMenuType == -1 ){
             Log.e(TAG, "In second if");
             mFabMenu.hide();
@@ -497,89 +497,94 @@ public class ViewDemandActivity extends AppCompatActivity {
             mFabYes.hide();
             mFabReopen.hide();
             mFabResend.hide();
-        }else{ // Hide menu when screen scrolled (for activities with menu)
+        }else{ // Hide menu when screen scrolled (for activities with menu).
             Log.e(TAG, "In second else");
             mScrollView = findViewById(R.id.view_demand_scroll_view);
-            mScrollView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+            mScrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
                 @Override
-                public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                    if(scrollY > 0){
-                        if(mTurned){
-                            ViewCompat.animate(mFabMenu).
-                                    rotation(0f).
-                                    withLayer().
-                                    setDuration(800).
-                                    setInterpolator(new OvershootInterpolator()).
-                                    setListener(new ViewPropertyAnimatorListener() {
-                                        @Override
-                                        public void onAnimationStart(View view) {
-                                            if (mPage == 4) { // if Canceled Activity
-                                                mFabReopen.hide();
-                                                mReopenTV.setVisibility(View.INVISIBLE);
-                                                mFabReject.setVisibility(View.GONE);
-                                                mRejectTV.setVisibility(View.GONE);
-                                                mFabLater.setVisibility(View.GONE);
-                                                mLaterTV.setVisibility(View.GONE);
-                                                mFabYes.setVisibility(View.GONE);
-                                                mYesTV.setVisibility(View.GONE);
-                                                mFabNo.setVisibility(View.GONE);
-                                                mNoTV.setVisibility(View.GONE);
-                                            } else if (mPage == 5){ // if Accepted Activity
-                                                mFabNo.hide();
-                                                mNoTV.setVisibility(View.INVISIBLE);
-                                                mFabReject.setVisibility(View.GONE);
-                                                mRejectTV.setVisibility(View.GONE);
-                                                mFabLater.setVisibility(View.GONE);
-                                                mLaterTV.setVisibility(View.GONE);
-                                                mFabYes.setVisibility(View.GONE);
-                                                mYesTV.setVisibility(View.GONE);
-                                                mFabReopen.setVisibility(View.GONE);
-                                                mReopenTV.setVisibility(View.GONE);
-                                            } else if(mPage == 2
-                                                    && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
-                                                        || mDemand.getStatus().equals(Constants.REJECT_STATUS))) { // if Received Tab (canceled demand)
-                                                mFabResend.hide();
-                                                mResendTV.setVisibility(View.INVISIBLE);
-                                                mFabNo.setVisibility(View.GONE);
-                                                mNoTV.setVisibility(View.GONE);
-                                                mFabReject.setVisibility(View.GONE);
-                                                mRejectTV.setVisibility(View.GONE);
-                                                mFabLater.setVisibility(View.GONE);
-                                                mLaterTV.setVisibility(View.GONE);
-                                                mFabYes.setVisibility(View.GONE);
-                                                mYesTV.setVisibility(View.GONE);
-                                                mFabReopen.setVisibility(View.GONE);
-                                                mReopenTV.setVisibility(View.GONE);
-                                            } else {
-                                                mFabReject.hide();
-                                                mRejectTV.setVisibility(View.INVISIBLE);
-                                                mFabLater.hide();
-                                                mLaterTV.setVisibility(View.INVISIBLE);
-                                                mFabYes.hide();
-                                                mYesTV.setVisibility(View.INVISIBLE);
-                                            }
-                                        }
-
-                                        @Override
-                                        public void onAnimationEnd(View view) {
-                                            mTurned = false;
-                                            mFabMenu.hide();
-                                        }
-
-                                        @Override
-                                        public void onAnimationCancel(View view) {
-                                            mTurned = true;
-                                        }
-                                    }).
-                                    start();
-                        }else {
-                            mFabMenu.hide();
-                        }
-                    } else{
-                        mFabMenu.show();
-                    }
+                public void onScrollChanged() {
+                    int scrollY = mScrollView.getScrollY();
+                    hideMenuOnScroll( scrollY);
                 }
             });
+        }
+    }
+
+    private void hideMenuOnScroll(int scrollY) {
+        if(scrollY > 0){
+            if(mTurned){
+                ViewCompat.animate(mFabMenu).
+                        rotation(0f).
+                        withLayer().
+                        setDuration(800).
+                        setInterpolator(new OvershootInterpolator()).
+                        setListener(new ViewPropertyAnimatorListener() {
+                            @Override
+                            public void onAnimationStart(View view) {
+                                if (mPage == 4) { // if Canceled Activity
+                                    mFabReopen.hide();
+                                    mReopenTV.setVisibility(View.INVISIBLE);
+                                    mFabReject.setVisibility(View.GONE);
+                                    mRejectTV.setVisibility(View.GONE);
+                                    mFabLater.setVisibility(View.GONE);
+                                    mLaterTV.setVisibility(View.GONE);
+                                    mFabYes.setVisibility(View.GONE);
+                                    mYesTV.setVisibility(View.GONE);
+                                    mFabNo.setVisibility(View.GONE);
+                                    mNoTV.setVisibility(View.GONE);
+                                } else if (mPage == 5){ // if Accepted Activity
+                                    mFabNo.hide();
+                                    mNoTV.setVisibility(View.INVISIBLE);
+                                    mFabReject.setVisibility(View.GONE);
+                                    mRejectTV.setVisibility(View.GONE);
+                                    mFabLater.setVisibility(View.GONE);
+                                    mLaterTV.setVisibility(View.GONE);
+                                    mFabYes.setVisibility(View.GONE);
+                                    mYesTV.setVisibility(View.GONE);
+                                    mFabReopen.setVisibility(View.GONE);
+                                    mReopenTV.setVisibility(View.GONE);
+                                } else if(mPage == 2
+                                        && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
+                                        || mDemand.getStatus().equals(Constants.REJECT_STATUS))) { // if Received Tab (canceled demand)
+                                    mFabResend.hide();
+                                    mResendTV.setVisibility(View.INVISIBLE);
+                                    mFabNo.setVisibility(View.GONE);
+                                    mNoTV.setVisibility(View.GONE);
+                                    mFabReject.setVisibility(View.GONE);
+                                    mRejectTV.setVisibility(View.GONE);
+                                    mFabLater.setVisibility(View.GONE);
+                                    mLaterTV.setVisibility(View.GONE);
+                                    mFabYes.setVisibility(View.GONE);
+                                    mYesTV.setVisibility(View.GONE);
+                                    mFabReopen.setVisibility(View.GONE);
+                                    mReopenTV.setVisibility(View.GONE);
+                                } else {
+                                    mFabReject.hide();
+                                    mRejectTV.setVisibility(View.INVISIBLE);
+                                    mFabLater.hide();
+                                    mLaterTV.setVisibility(View.INVISIBLE);
+                                    mFabYes.hide();
+                                    mYesTV.setVisibility(View.INVISIBLE);
+                                }
+                            }
+
+                            @Override
+                            public void onAnimationEnd(View view) {
+                                mTurned = false;
+                                mFabMenu.hide();
+                            }
+
+                            @Override
+                            public void onAnimationCancel(View view) {
+                                mTurned = true;
+                            }
+                        }).
+                        start();
+            }else {
+                mFabMenu.hide();
+            }
+        } else{
+            mFabMenu.show();
         }
     }
 
@@ -588,13 +593,11 @@ public class ViewDemandActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == Constants.REJECT_DEMAND) {
             if (resultCode == RESULT_OK) {
-                int reasonIndex = data.getIntExtra(Constants.INTENT_REJECT_REASON_INDEX, -1);
-                String reasonComment = data.getStringExtra(Constants.INTENT_REJECT_REASON_COMMENT);
+                PredefinedReason predefinedReason =
+                        (PredefinedReason) data.getSerializableExtra(Constants.INTENT_REJECT_PREDEFINED_REASON);
                 attemptRejectDemand(
                         mDemand.getId(),
-                        Constants.REJECT_STATUS,
-                        reasonIndex,
-                        reasonComment
+                        predefinedReason
                         );
             }
         }
@@ -623,9 +626,14 @@ public class ViewDemandActivity extends AppCompatActivity {
         setPriorColor(prior);
     }
 
-    private void attemptRejectDemand(int id, String status, int reason, String comment){
+    private void attemptRejectDemand(int demandId, PredefinedReason predefinedReason){
         if (mRejectTask == null && CommonUtils.isOnline(mActivity)){
-            mRejectTask = new RejectTask(id,status,reason,comment);
+            mRejectTask = new RejectTask(
+                    demandId,
+                    (int) predefinedReason.getServerId(),
+                    predefinedReason.getTitle(),
+                    predefinedReason.getDescription()
+            );
             mRejectTask.execute();
         } else {
             Snackbar.make(mFabReject, R.string.internet_error, Snackbar.LENGTH_LONG)
@@ -711,22 +719,21 @@ public class ViewDemandActivity extends AppCompatActivity {
     }
 
     private void showDemandReason(Demand demand) {
-        Reason reason = demand.getReason();
+        // TODO: show only a clickable title. When clicked show complete reason.
+        PredefinedReason reason = demand.getReason();
         String reasonString;
-        String[] reasonArray = getResources().getStringArray(R.array.array_reject_dialog_reasons);
         if (reason != null) {
-            reasonString = "Motivo n."
-                    + reason.getReasonIndex()
-                    + ": "
-                    + reasonArray[reason.getReasonIndex()];
-            if(reason.getReasonIndex() == 4)
-                reasonString = reasonString.concat(" - " + reason.getComment());
+            reasonString = "Ref.: "
+                    + reason.getServerId()
+                    + " - ("
+                    + reason.getTitle()
+                    + ") "
+                    + reason.getDescription();
             mReason.setText(reasonString);
             mReason.setVisibility(View.VISIBLE);
         } else {
             mReason.setVisibility(View.GONE);
         }
-
     }
 
     private void setDemandStatus(String status){
@@ -747,7 +754,6 @@ public class ViewDemandActivity extends AppCompatActivity {
         mPriorTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     public void setPostponeTime(int postponeTime) {
         // Set an alarm notification.
         Intent receiverIntent = new Intent(this, AlarmReceiver.class);
@@ -757,7 +763,7 @@ public class ViewDemandActivity extends AppCompatActivity {
         receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_TRIO_MENU);
         PendingIntent alarmSender = PendingIntent.getBroadcast(this, mDemand.getId(), receiverIntent, 0);
         Calendar c = Calendar.getInstance();
-        c.add(Calendar.MINUTE, postponeTime); // TODO: Change to Days when ready.
+        c.add(Calendar.DAY_OF_YEAR, postponeTime);
         long timeInMillis = c.getTimeInMillis();
         Log.e(TAG, "Time in millis:" + timeInMillis);
         AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
@@ -954,12 +960,12 @@ public class ViewDemandActivity extends AppCompatActivity {
                 receiverJson = jsonObject.getJSONObject("receiver");
                 demandJson = jsonObject.getJSONObject("demand");
 
-                Reason reason;
+                PredefinedReason reason;
                 JSONObject reasonJson;
 
                 if(jsonObject.has("reason")){
                     reasonJson = jsonObject.getJSONObject("reason");
-                    reason = Reason.build(reasonJson);
+                    reason = PredefinedReason.build(reasonJson);
                     Log.e(TAG, " reason:" + reason.toString());
                 }else{
                     reason = null;
@@ -1030,15 +1036,16 @@ public class ViewDemandActivity extends AppCompatActivity {
 
     public class RejectTask extends AsyncTask<Void, Void, String> {
         private int id;
-        private String status;
-        private int reasonIndex;
-        private String reasonComment;
+        private int reasonId;
+        private String reasonTitle;
+        private String reasonDescription;
 
-        public RejectTask(int id, String status, int reasonIndex, String reasonComment) {
+        public RejectTask(int id, int reasonId, String reasonTitle,
+                          String reasonDescription) {
             this.id = id;
-            this.status = status;
-            this.reasonIndex = reasonIndex;
-            this.reasonComment = reasonComment;
+            this.reasonId = reasonId;
+            this.reasonTitle = reasonTitle;
+            this.reasonDescription = reasonDescription;
         }
 
         @Override
@@ -1052,10 +1059,10 @@ public class ViewDemandActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
-            values.put("demand", id);
-            values.put("status", status);
-            values.put("reason", reasonIndex);
-            values.put("comment", reasonComment);
+            values.put("demandId", id);
+            values.put("reasonId", reasonId);
+            values.put("reasonTitle", reasonTitle);
+            values.put("reasonDescription", reasonDescription);
             return CommonUtils.POST("/demand/set-status-to-reject/", values);
         }
 
@@ -1080,11 +1087,11 @@ public class ViewDemandActivity extends AppCompatActivity {
                 demandJson = jsonObject.getJSONObject("demand");
 
                 JSONObject reasonJson;
-                Reason reason;
+                PredefinedReason reason;
 
                 if(jsonObject.has("reason")){
                     reasonJson = jsonObject.getJSONObject("reason");
-                    reason = Reason.build(reasonJson);
+                    reason = PredefinedReason.build(reasonJson);
                     Log.e(TAG, " reason:" + reason.toString());
                 }else{
                     reason = null;
@@ -1114,7 +1121,7 @@ public class ViewDemandActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
                 showDemandStatus(demandResponse.getStatus());
                 showDemandReason(demandResponse);
-                Log.e(TAG, "demand reason: " + demandResponse.getReason().getReasonIndex());
+                Log.e(TAG, "demand reason: " + demandResponse.getReason().getTitle());
             } else {
                 Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();

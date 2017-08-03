@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="top|start">
+
+        <TextView
+            android:id="@+id/reason_item_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textColor="@color/primary_text"
+            android:lines="1"
+            android:ellipsize="end"
+            android:text="Admin Reason"/>
+
+        <TextView
+            android:id="@+id/reason_item_reference_number"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:textStyle="bold"
+            android:ellipsize="end"
+            android:text="N# 1001"/>
+
+        <TextView
+            android:id="@+id/reason_item_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/secondary_text"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:text="Aqui você pode ler o conteudo da demanda. como o motivo para que foi criada, e algumas observações a respeito. final da demanda."
+            android:lines="1"
+            />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_centerVertical="true"
+        android:layout_marginTop="@dimen/divider_margin"
+        android:layout_marginBottom="@dimen/divider_margin"
+        android:background="@color/divider" />
+
+</LinearLayout>

@@ -49,6 +49,7 @@
             android:name=".Activities.ViewDemandActivity"
             android:label="@string/title_activity_view_demand"
             android:parentActivityName=".Activities.MainActivity"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -105,6 +106,15 @@
         <activity
             android:name=".Activities.ArchiveActivity"
             android:label="@string/title_activity_archive_acitivity"
+            android:parentActivityName=".Activities.MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.caiqu.demand.Activities.MainActivity" />
+        </activity>
+        <activity
+            android:name=".Activities.CreateReasonActivity"
+            android:label="@string/title_activity_reason"
             android:parentActivityName=".Activities.MainActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data

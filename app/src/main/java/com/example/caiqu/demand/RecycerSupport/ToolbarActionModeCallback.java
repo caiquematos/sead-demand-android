@@ -1,7 +1,5 @@
-package com.example.caiqu.demand.RecycerSuport;
+package com.example.caiqu.demand.RecycerSupport;
 
-import android.app.Activity;
-import android.content.Context;
 import android.os.Build;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MenuItemCompat;
@@ -10,15 +8,11 @@ import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.example.caiqu.demand.Activities.MainActivity;
 import com.example.caiqu.demand.Adapters.DemandAdapter;
-import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.Fragments.ReceivedFragment;
 import com.example.caiqu.demand.Fragments.SentFragment;
 import com.example.caiqu.demand.Fragments.SuperiorFragment;
 import com.example.caiqu.demand.R;
-
-import java.util.List;
 
 /**
  * Created by caiqu on 28/07/2017.

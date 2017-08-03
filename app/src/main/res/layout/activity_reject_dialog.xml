@@ -34,12 +34,29 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
+                <ProgressBar
+                    android:id="@+id/reject_progress_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/text_margin"
+                    android:backgroundTint="@color/accent"/>
+
                 <Spinner
                     android:id="@+id/reject_dialog_reason_spinner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:layout_marginBottom="@dimen/text_margin" />
+
+                <EditText
+                    android:id="@+id/reject_reason_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/text_margin"
-                    android:entries="@array/array_reject_dialog_reasons"></Spinner>
+                    android:visibility="gone"
+                    android:inputType="text"
+                    android:hint="@string/reason_title"
+                    android:maxLines="1"/>
 
                 <EditText
                     android:id="@+id/reject_dialog_reason_edit"

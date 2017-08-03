@@ -9,12 +9,20 @@
         android:title="@string/archived_demands_item"/>
 
     <group android:id="@+id/main_admin_group">
+
         <item
             android:id="@+id/main_admin_requests"
-            android:orderInCategory="94"
+            android:orderInCategory="95"
             android:title="@string/permission_requests"
             android:icon="@drawable/ic_account_box_white_24dp"
             app:showAsAction="always" />
+
+        <item
+            android:id="@+id/main_admin_reasons"
+            android:orderInCategory="94"
+            android:title="@string/permission_requests"
+            android:icon="@drawable/ic_playlist_add_white_24dp"
+            app:showAsAction="always"/>
 
         <item
             android:id="@+id/main_admin_done"
@@ -48,7 +56,7 @@
     </group>
 
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/action_logoff"
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />

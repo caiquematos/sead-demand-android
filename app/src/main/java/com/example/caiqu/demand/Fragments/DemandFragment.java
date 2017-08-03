@@ -12,8 +12,8 @@ import android.widget.Toast;
 import com.example.caiqu.demand.Adapters.DemandAdapter;
 import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.Interfaces.RecyclerClickListener;
-import com.example.caiqu.demand.RecycerSuport.RecyclerTouchListener;
-import com.example.caiqu.demand.RecycerSuport.ToolbarActionModeCallback;
+import com.example.caiqu.demand.RecycerSupport.RecyclerTouchListener;
+import com.example.caiqu.demand.RecycerSupport.ToolbarActionModeCallback;
 import com.example.caiqu.demand.Tools.CommonUtils;
 
 import java.util.List;

@@ -36,7 +36,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class CreateDemandActivity extends AppCompatActivity{
@@ -58,6 +57,7 @@ public class CreateDemandActivity extends AppCompatActivity{
     private int mMenuType;
     private FloatingActionButton mFab;
     private List<String> mAutocompleteArray;
+    private User mCurrentUser;
 
     public CreateDemandActivity() {
         this.mActivity = this;
@@ -65,7 +65,6 @@ public class CreateDemandActivity extends AppCompatActivity{
         this.mMenuType = Constants.SHOW_NO_MENU;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -350,15 +349,17 @@ public class CreateDemandActivity extends AppCompatActivity{
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mPDDemand.setMessage("Buscando colaboradores...");
+            mPDDemand.setMessage(getString(R.string.create_receiver_dialog));
             mPDDemand.setCancelable(false);
             mPDDemand.show();
+            mCurrentUser = CommonUtils.getCurrentUserPreference(getApplicationContext());
         }
 
         @Override
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
             values.put("position", this.mJobPosition);
+            values.put("user", mCurrentUser.getId());
             String response = CommonUtils.POST("/user/employee/", values);
             return response;
         }
@@ -400,9 +401,13 @@ public class CreateDemandActivity extends AppCompatActivity{
                         android.R.layout.simple_dropdown_item_1line, mAutocompleteArray);
                 mReceiverView.setAdapter(adapter);
 
-                if (mAutocompleteArray.isEmpty())
+                if (mAutocompleteArray.isEmpty()){
+                    mReceiverView.setEnabled(false);
                     Snackbar.make(mPositionView, R.string.position_error, Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
+                } else {
+                    mReceiverView.setEnabled(true);
+                }
             }else{
                 Snackbar.make(mPositionView, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
@@ -413,5 +418,4 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         }
     }
-
 }

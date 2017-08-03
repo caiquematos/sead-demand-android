@@ -166,7 +166,6 @@ public class User implements Serializable{
                 ", name='" + name + '\'' +
                 ", status='" + status + '\'' +
                 ", position='" + position + '\'' +
-                ", superiorEmail='" + superiorEmail + '\'' +
                 ", gcm='" + gcm + '\'' +
                 ", createdAt=" + createdAt +
                 '}';

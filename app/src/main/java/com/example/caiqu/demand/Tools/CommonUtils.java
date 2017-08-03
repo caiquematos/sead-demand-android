@@ -1,7 +1,5 @@
 package com.example.caiqu.demand.Tools;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +12,7 @@ import android.util.Log;
 import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Databases.MyDBManager;
 import com.example.caiqu.demand.Entities.Demand;
-import com.example.caiqu.demand.Entities.Reason;
+import com.example.caiqu.demand.Entities.PredefinedReason;
 import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.FCM.MyJobService;
 import com.example.caiqu.demand.Handlers.AlarmReceiver;
@@ -240,7 +238,7 @@ public class CommonUtils {
     // Only for test purposes.
     public static void listAllReasonsDB(Context context){
         MyDBManager myDBManager = new MyDBManager(context);
-        List<Reason> reasons;
+        List<PredefinedReason> reasons;
 
         String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ?";
         String[] args = {"1"};
@@ -444,7 +442,7 @@ public class CommonUtils {
             default:
                 postponeTime = Constants.DUE_TIME[0];
         }
-        c.add(Calendar.MINUTE, postponeTime - Constants.DUE_TIME_PREVIOUS_WARNING); // TODO: Change to Days when ready.
+        c.add(Calendar.DAY_OF_YEAR, postponeTime - Constants.DUE_TIME_PREVIOUS_WARNING);
         Log.e(TAG, "Warn Due time:" + c.getTime().toString());
         long timeInMillis = c.getTimeInMillis();
         Log.e(TAG, "Time in millis:" + timeInMillis);
@@ -478,7 +476,7 @@ public class CommonUtils {
 
         Calendar c = Calendar.getInstance();
         Log.e(TAG, "(Due time) Now:" + c.getTime().toString());
-        c.add(Calendar.MINUTE, Constants.DUE_TIME_PREVIOUS_WARNING); // TODO: Change to Days when ready.
+        c.add(Calendar.DAY_OF_YEAR, Constants.DUE_TIME_PREVIOUS_WARNING);
         Log.e(TAG, "Due time:" + c.getTime().toString());
         long timeInMillis = c.getTimeInMillis();
         Log.e(TAG, "Time in millis:" + timeInMillis);
@@ -505,7 +503,6 @@ public class CommonUtils {
     // Handle demand changes when there is no internet connection
     public static void handleLater(Demand demand, String type, Context context){
         Bundle bundle = new Bundle();
-        // TODO: Make Demand parcelable at some point.
         //bundle.putSerializable(Constants.INTENT_DEMAND, demand);
         bundle.putInt(Constants.INTENT_DEMAND_SERVER_ID, demand.getId());
         bundle.putString(Constants.INTENT_DEMAND_STATUS, demand.getStatus());

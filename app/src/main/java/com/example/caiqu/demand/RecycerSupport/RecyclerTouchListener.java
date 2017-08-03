@@ -1,4 +1,4 @@
-package com.example.caiqu.demand.RecycerSuport;
+package com.example.caiqu.demand.RecycerSupport;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;

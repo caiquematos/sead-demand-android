@@ -64,8 +64,18 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         // Log.e("On DemandAdapt", "Page: " + mPage);
         //For tab sent the name to show should be who the demand was sent
         String user;
-        if (mPage == Constants.SENT_PAGE) user = demand.getReceiver().getName();
-        else user = demand.getSender().getName();
+        if (mPage == Constants.SENT_PAGE) user = "Para: " + demand.getReceiver().getName();
+        else user = "De: " + demand.getSender().getName();
+
+        String receiver;
+        if (mPage == Constants.ADMIN_PAGE || mPage == Constants.STATUS_PAGE) {
+            user = "De: " + demand.getSender().getName();
+            receiver = "Para: " + demand.getReceiver().getName();
+            holder.user_receiver.setText(receiver);
+            holder.user_receiver.setVisibility(View.VISIBLE);
+        }
+
+        holder.user.setText(user);
 
         //If demand was already seen by the receiver change color of background and title
         if (demand.getSeen().equals(Constants.YES)) {
@@ -77,20 +87,10 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         }
 
         holder.subject.setText(demand.getSubject());
-        holder.user.setText(user);
         holder.description.setText(demand.getDescription());
         holder.time.setText(CommonUtils.formatTime(demand.getCreatedAt()));
         holder.date.setText(CommonUtils.formatDate(demand.getCreatedAt()));
 
-        /*
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mSelectedItemsIds.get(position)) markDemandSelected(holder);
-                else showDemand(holder.itemView,position);
-            }
-        });
-        */
         if (mSelectedItemsIds.get(position)) markDemandSelected(holder);
     }
 
@@ -275,6 +275,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
     public class ViewHolder extends RecyclerView.ViewHolder {
         TextView subject;
         TextView user;
+        TextView user_receiver;
         TextView description;
         TextView time;
         TextView date;
@@ -288,6 +289,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
             prior_tag = view.findViewById(R.id.demand_prior_tag);
             subject = (TextView) view.findViewById(R.id.demand_title);
             user = (TextView) view.findViewById(R.id.demand_user);
+            user_receiver = (TextView) view.findViewById(R.id.demand_user_receiver);
             description = (TextView) view.findViewById(R.id.demand_content);
             date = (TextView) view.findViewById(R.id.demand_date);
             time = (TextView) view.findViewById(R.id.demand_time);

@@ -42,10 +42,9 @@ public class FeedReaderContract {
     public static class ReasonEntry implements BaseColumns {
         public static final String TABLE_NAME = "reasons";
         public static final String COLUMN_NAME_REASON_ID = "reason_id"; // Online db id.
-        public static final String COLUMN_NAME_DEMAND_ID = "demand_id";
-        public static final String COLUMN_NAME_STATUS = "status";
-        public static final String COLUMN_NAME_REASON = "reason";
-        public static final String COLUMN_NAME_COMMENT = "comment";
+        public static final String COLUMN_NAME_TYPE = "type";
+        public static final String COLUMN_NAME_TITLE = "title";
+        public static final String COLUMN_NAME_DESCRIPTION = "description";
         public static final String COLUMN_NAME_USER_CREATED_AT = "created_at";
         public static final String COLUMN_NAME_USER_UPDATED_AT = "updated_at";
     }

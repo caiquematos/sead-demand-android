@@ -22,7 +22,7 @@ import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.Interfaces.RecyclerClickListener;
 import com.example.caiqu.demand.R;
-import com.example.caiqu.demand.RecycerSuport.RecyclerTouchListener;
+import com.example.caiqu.demand.RecycerSupport.RecyclerTouchListener;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
 

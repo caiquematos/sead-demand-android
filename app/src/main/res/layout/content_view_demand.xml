@@ -32,22 +32,12 @@
                     android:text="Criar Banco de Dados de Certificados de Matrícula"/>
 
                 <TextView
-                    android:id="@+id/view_demand_prior"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Urgente"
-                    android:gravity="center"
-                    android:drawableLeft="@drawable/ic_error_black_24dp" />
-
-                <TextView
                     android:id="@+id/view_demand_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textStyle="italic"
                     android:text="Essa demanda foi cancelada"
-                    android:layout_gravity="right"
+                    android:layout_gravity="left"
                     android:gravity="center"
                     android:drawableRight="@drawable/ic_fiber_manual_record_black_24dp"/>
 
@@ -57,10 +47,18 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textStyle="italic"
                     android:text="Motivo: A demanda não corresponde a esse setor. Caso o texto seja maior, preencher o espaço abaixo."
-                    android:layout_gravity="right"
-                    android:gravity="right"/>
+                    android:layout_gravity="left"
+                    android:gravity="left"/>
+
+                <TextView
+                    android:id="@+id/view_demand_prior"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Urgente"
+                    android:gravity="center"
+                    android:drawableLeft="@drawable/ic_error_black_24dp" />
             </LinearLayout>
     </LinearLayout>
 
