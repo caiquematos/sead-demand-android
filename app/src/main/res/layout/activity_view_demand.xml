@@ -127,7 +127,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/rounded_corner"
                 android:padding="2dp"
-                android:text="@string/reject"
+                android:text="@string/reject_button"
                 android:textColor="@color/white"
                 android:visibility="invisible" />
 

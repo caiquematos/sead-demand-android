@@ -1,62 +1,108 @@
 <resources>
-    <string name="app_name">SEaD</string>
-    <string name="action_settings">Sair</string>
-    <string name="main_accepted">Demandas Aceitas</string>
-    <string name="main_cancelled">Demandas Canceladas</string>
+    <string name="app_name">SEAD</string>
+    <string name="dummy_content">DEMANDA\nSEAD</string>
 
-    <!-- Strings related toName create demand -->
-    <string name="title_activity_scrolling">Criar Demanda</string>
+    <!-- Strings related to create demand -->
     <string name="large_text">
         "Entre com as informações referentes ao destinatário e à demanda."
     </string>
     <string-array name="array_status">
-        <item>Regular</item>
-        <item>Importante</item>
-        <item>Urgente</item>
+        <item>muito alta</item>
+        <item>alta</item>
+        <item>média</item>
+        <item>baixa</item>
     </string-array>
-    <string name="title_activity_login">Sign in</string>
 
-    <!-- Strings related toName login -->
+    <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
-    <string name="action_sign_in">Entrar</string>
-    <string name="action_sign_up">Regitrar</string>
-    <string name="action_sign_in_short">Sign in</string>
-    <string name="error_invalid_email">This email address is invalid</string>
-    <string name="error_invalid_password">This password is too short</string>
-    <string name="error_incorrect_password">This password is incorrect</string>
-    <string name="error_field_required">Esse campo deve ser preenchido</string>
-    <string name="permission_rationale">"Contacts permissions are needed for providing email
-        completions."
-    </string>
 
-    <!-- Strings relates toName Home Activity -->
-    <string name="title_activity_home">SeAD</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">SeAD\nDEMANDA</string>
-    <string name="title_activity_register">Sign Up</string>
-    <string name="prompt_name">Name</string>
-    <string name="prompt_confirm">Password (confirm)</string>
-    <string name="register_category">Posição</string>
-    <string name="register_superior">Superior</string>
-    <string name="login_register_button">cadastre-se aqui</string>
+    <!-- Field feedback messages -->
+    <string name="error_invalid_email">Endereço de e-mail inválido</string>
+    <string name="error_invalid_password">Senha muito curta</string>
+    <string name="error_incorrect_password">Senha incorreta</string>
+    <string name="error_field_required">Esse campo deve ser preenchido</string>
+    <string name="permission_rationale">"Contatos."</string>
+
+    <!-- Activity titles -->
+    <string name="title_activity_scrolling">Criar Demanda</string>
+    <string name="fist_title">SEAD\nDEMANDA</string>
+    <string name="title_activity_home">SEAD</string>
+    <string name="title_activity_login">Entrar</string>
+    <string name="title_activity_register">Registrar</string>
     <string name="title_activity_view_demand"></string>
     <string name="title_activity_status">Demandas</string>
+
+    <!-- Strings relates toName Home Activity -->
+    <string name="dummy_button">Dummy Button</string>
+    <string name="prompt_name">Nome</string>
+    <string name="prompt_confirm">Senha (confirmar)</string>
+    <string name="register_category">Posição</string>
+    <string name="register_superior">Superior</string>
+
+    <!-- Action Buttons -->
+    <string name="action_sign_in">Entrar</string>
+    <string name="action_sign_up">Regitrar</string>
+    <string name="action_sign_in_short">Entrar</string>
+    <string name="login_register_button">cadastre-se aqui</string>
     <string name="cancel_button">Cancelar</string>
     <string name="postpone_button">Adiar</string>
-    <string name="accept_button">Aceitar</string>
-    <string name="fist_title">SEaD\nDEMANDA</string>
+    <string name="accept_button">Deferir</string>
+    <string name="reopen_button">Reabrir</string>
+    <string name="reject_button">Indeferir</string>
+    <string name="resend_button">Reenviar</string>
+
+    <string name="main_accepted">Deferidas</string>
+    <string name="main_cancelled">Canceladas</string>
+
+    <!-- Feedback messages -->
     <string name="error_send_demand_receiver">Selecione uma das opções sugeridas</string>
     <string name="internet_error">Por favor conecte-se à internet!</string>
-    <string name="position_error">Esta posição ainda não possui superiorEmail</string>
+    <string name="position_error">Esta posição ainda não possui superior</string>
     <string name="server_error">Erro no servidor. Por favor tente mais tarde.</string>
     <string name="send_demand_error">Erro ao enviar demanda. Por favor tente mais tarde.</string>
     <string name="send_demand_success">Demanda enviada com sucesso.</string>
-    <string name="main_admin_accepted">Demandas Aceitas</string>
-    <string name="main_admin_cancelled">Demandas Canceladas</string>
-    <string name="reopen_button">Reabrir</string>
-    <string name="reject">Rejeitar</string>
-    <string name="demandas_rejeitadas">Demandas Rejeitadas</string>
-    <string name="resend_button">Reenviar</string>
-    <string name="main_admin_done">Demandas Concluídas</string>
+
+    <!-- Menu items -->
+    <string name="rejected_demands">Indeferidas</string>
+    <string name="accepted_demands">Deferidas</string>
+    <string name="canceled_demands">Canceladas</string>
+    <string name="done_demands">Concluídas</string>
+    <string name="postponed_demands">Adiadas</string>
+    <string name="action_settings">Sair</string>
+    <string name="permission_requests">Requisições</string>
+    <string name="user_unlocked">Desbloqueado</string>
+    <string name="user_locked">Aguardando desbloqueio...</string>
+    <string name="prior_title_field">Prioridade</string>
+    <string name="assunto">subject_field_hint</string>
+    <string name="subject_field_hint">Assunto</string>
+    <string name="descritpion_field_hint">Descrição</string>
+    <string name="position_field_title">Posição</string>
+
+    <!-- Demand Status Info-->
+    <string name="late_demand_info">Essa demanda está atrasada</string>
+    <string name="done_demand_info">Essa demanda foi concluída</string>
+    <string name="accepted_demand_info">Essa demanda foi deferida</string>
+    <string name="rejected_demand_info">Essa demanda foi indeferida</string>
+    <string name="canceled_demand_info">Essa demanda foi cancelada</string>
+    <string name="postponed_demand_info">Essa demanda foi adiada</string>
+    <string name="reopen_demand_info">Essa demanda foi reaberta</string>
+    <string name="undefined_demand_info">Essa demanda ainda está indefinida</string>
+    <string name="resent_demand_info">Essa demanda foi reenviada</string>
+
+    <!-- Reject Dialog -->
+    <string-array name="array_reject_dialog_reasons">
+        <item>Motivo 1</item>
+        <item>Motivo 2</item>
+        <item>Motivo 3</item>
+        <item>Motivo 4</item>
+        <item>Outro</item>
+    </string-array>
+    <string name="reject_dialog_reason_edit_hint">Digite o motivo (max. 512 caracteres)</string>
+    <string name="title_activity_reject_dialog">Indeferir a demanda?</string>
+    <string name="progress_dialog_wait">Por favor aguarde...</string>
+    <string name="archive_menu">Arquivar</string>
+    <string name="title_activity_archive_acitivity">Demandas Arquivadas</string>
+    <string name="archived_demands_item">Arquivadas</string>
+
 </resources>

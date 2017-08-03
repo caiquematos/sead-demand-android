@@ -24,6 +24,7 @@ import com.example.caiqu.demand.Adapters.DemandAdapter;
 import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Databases.MyDBManager;
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
@@ -39,19 +40,13 @@ import java.util.List;
  * Created by caiqu on 04/05/2017.
  */
 
-public class SuperiorFragment extends Fragment {
-    public String TAG = getClass().getSimpleName();
+public class SuperiorFragment extends DemandFragment {
     public static final String ARG_PAGE = "SuperiorFragment";
-    int mPage;
-    private RecyclerView mRecyclerView;
-    private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
-    private List<Demand> mDemandSet;
-    private GetDemandTask mGetDemandTask;
     private SharedPreferences mPrefs;
     private SwipeRefreshLayout mSwipeRefresh;
-    private String mUserEmail;
-    private int mUserId;
+    private User mCurrentUser;
+    private int mCurrentUserId;
 
     public static SuperiorFragment newInstance( int page ) {
         Bundle args = new Bundle();
@@ -71,7 +66,12 @@ public class SuperiorFragment extends Fragment {
     public void onResume() {
         super.onResume();
         getActivity().registerReceiver(broadcastReceiver, new IntentFilter(Constants.BROADCAST_ADMIN_FRAG));
-        if (mUserId != -1) loadAdminList(mUserId);
+        if (mCurrentUserId != -1){
+            List<User> usersUnderMySupervision = fetchUsersUnderMySupervision(mCurrentUserId);
+            if (usersUnderMySupervision != null)
+                if (usersUnderMySupervision.size() > 0)
+                    loadAdminList(usersUnderMySupervision);
+        }
         else Log.e(TAG, "Logged User id not found!");
     }
 
@@ -88,66 +88,85 @@ public class SuperiorFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_all_demand, container, false);
         mPrefs = getActivity().getSharedPreferences(getContext().getPackageName(), Context.MODE_PRIVATE);
-        mUserEmail = mPrefs.getString(Constants.LOGGED_USER_EMAIL,"");
-        mUserId = mPrefs.getInt(Constants.LOGGED_USER_ID,-1);
+
+        // Fetch info about current user logged
+        try {
+            JSONObject userJson = new JSONObject(mPrefs.getString(Constants.USER_PREFERENCES, ""));
+            mCurrentUser = User.build(userJson);
+            mCurrentUserId = mCurrentUser.getId();
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Failed to get user from preferences!!!");
+        }
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.all_demand_recycler);
         mLayoutManager = new LinearLayoutManager(getContext());
 
-        if (mUserId != -1) loadAdminList(mUserId);
-        else Log.e(TAG, "Logged User id not found!");
+        if (mCurrentUserId != -1){
+            List<User> usersUnderMySupervision = fetchUsersUnderMySupervision(mCurrentUserId);
+            if (usersUnderMySupervision != null)
+                if (usersUnderMySupervision.size() > 0)
+                    loadAdminList(usersUnderMySupervision);
+        } else Log.e(TAG, "Logged User id not found!");
+
+        implementRecyclerViewClickListener();
 
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
         mSwipeRefresh.setEnabled(false);
 
-        /*
-        mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                if(mGetDemandTask == null && CommonUtils.isOnline(getContext())){
-                    mGetDemandTask = new GetDemandTask(mUserEmail, getView());
-                    mGetDemandTask.execute();
-                } else {
-                    mSwipeRefresh.setRefreshing(false);
-                    Snackbar.make(mSwipeRefresh, R.string.internet_error, Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-            }
-        });
-
-        if (CommonUtils.isOnline(getContext())) {
-            mGetDemandTask = new GetDemandTask(mUserEmail, view);
-            mGetDemandTask.execute();
-        } else {
-            Snackbar.make(view, R.string.internet_error, Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-        }
-        */
-
         return view;
     }
 
-    private void loadAdminList(int adminId){
-        String selection = "(( " + FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " = ? AND "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " = ? ) OR ( "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " != ? AND "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " != ?)) AND ( "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? )";
+    private List<User> fetchUsersUnderMySupervision(int superiorId) {
+        List<User> users;
+
+        String selection = FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR + " = ?";
 
         String[] args = {
-                "" + adminId,
-                "" + adminId,
-                "" + adminId,
-                "" + adminId,
-                Constants.REOPEN_STATUS,
-                Constants.UNDEFINE_STATUS,
-                Constants.LATE_STATUS,
-                Constants.RESEND_STATUS
+                "" + superiorId,
         };
+
+        MyDBManager myDBManager = new MyDBManager(getContext());
+        users = myDBManager.searchUsers(selection,args);
+
+        return users;
+    }
+
+    private void loadAdminList(List<User> usersUnderMySupervision){
+
+        String selection = "";
+        ArrayList<String> argsArray = new ArrayList<>();
+
+        selection = selection.concat("(");
+        for(int i = 0; i < usersUnderMySupervision.size(); i++){
+            if(i > 0)  selection = selection.concat(" OR ");
+            selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " = ?");
+            argsArray.add("" + usersUnderMySupervision.get(i).getId());
+        }
+        selection = selection.concat(")");
+        selection = selection.concat( " AND ");
+        selection = selection.concat("(");
+        selection = selection.concat( FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                        + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                        + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                        + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ?" );
+        selection = selection.concat(")");
+
+        argsArray.add(Constants.REOPEN_STATUS);
+        argsArray.add(Constants.UNDEFINE_STATUS);
+        argsArray.add(Constants.LATE_STATUS);
+        argsArray.add(Constants.RESEND_STATUS);
+
+        selection = selection.concat(" AND ");
+        selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " = ?");
+
+        Log.e(TAG, "selection:" + selection.toString());
+
+        argsArray.add("" + false);
+
+        String[] args = new String[argsArray.size()];
+        for (int j = 0; j < args.length; j++) args[j] = argsArray.get(j);
+        Log.e(TAG, "args:" + argsArray.toString());
 
         MyDBManager myDBManager = new MyDBManager(getContext());
         mDemandSet = myDBManager.searchDemands(selection,args);
@@ -156,74 +175,6 @@ public class SuperiorFragment extends Fragment {
 
         mAdapter = new DemandAdapter(mDemandSet,getActivity(), mPage);
         mRecyclerView.setAdapter(mAdapter);
-    }
-
-    private class GetDemandTask extends AsyncTask<Void, Void, String> {
-        private final String userEmail;
-        private final View view;
-
-        public GetDemandTask(String userEmail, View view) {
-            this.userEmail = userEmail;
-            this.view = view;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mSwipeRefresh.setRefreshing(true);
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-            ContentValues values = new ContentValues();
-            values.put("email", userEmail);
-            return CommonUtils.POST("/demand/list-admin-received/", values);
-        }
-
-        @Override
-        protected void onPostExecute(String jsonResponse) {
-            super.onPostExecute(jsonResponse);
-            mGetDemandTask = null;
-
-            JSONObject jsonObject;
-            JSONArray jsonArray = null;
-            boolean success = false;
-
-            Log.d("ON SENT TAB POST EXEC", "string json: " + jsonResponse);
-
-            try {
-                jsonObject = new JSONObject(jsonResponse);
-                success = jsonObject.getBoolean("success");
-                jsonArray = jsonObject.getJSONArray("list");
-            } catch (JSONException e) {
-                Snackbar.make(view, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                e.printStackTrace();
-            }
-
-            if (success) {
-                mDemandSet =  new ArrayList<>();
-                for(int i=0; i < jsonArray.length(); i++){
-                    try {
-                        JSONObject json = jsonArray.getJSONObject(i);
-                        mDemandSet.add(Demand.build(json));
-                        Log.d("ON DEMAND", "" + json.toString());
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                mRecyclerView.setLayoutManager(mLayoutManager);
-
-                mAdapter = new DemandAdapter(mDemandSet,getActivity(), mPage);
-                mRecyclerView.setAdapter(mAdapter);
-
-                mSwipeRefresh.setRefreshing(false);
-            } else {
-                mSwipeRefresh.setRefreshing(false);
-                Snackbar.make(view, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
-            }
-
-        }
     }
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -243,11 +194,11 @@ public class SuperiorFragment extends Fragment {
                     if(position >= 0) mDemandSet.remove(position);
                     mDemandSet.add(0,demand);
                     break;
-                case Constants.UPDATE_IMPORTANCE:
+                case Constants.UPDATE_PRIOR:
                     if (position >= 0) {
                         mDemandSet.remove(position);
                         mDemandSet.add(0,demand);
-                        //mDemandSet.get(position).setImportance(demand.getImportance());
+                        //mDemandSet.get(position).setPrior(demand.getPrior());
                     }
                     break;
                 case Constants.UPDATE_READ:
@@ -261,7 +212,11 @@ public class SuperiorFragment extends Fragment {
                         mDemandSet.add(0,demand);
                         //mDemandSet.get(position).setStatus(demand.getStatus());
                     } else {
-                        loadAdminList(mUserId); // TODO: Maybe check status value instead in order to make less work.
+                        List<User> usersUnderMySupervision = fetchUsersUnderMySupervision(mCurrentUserId);
+                        if (usersUnderMySupervision != null)
+                            if (usersUnderMySupervision.size() > 0)
+                                loadAdminList(usersUnderMySupervision);
+                        // TODO: Maybe check status value instead in order to make less work.
                     }
                     break;
             }

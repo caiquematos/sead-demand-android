@@ -1,40 +1,68 @@
 package com.example.caiqu.demand.Activities;
 
+import android.app.Activity;
+import android.app.Fragment;
 import android.app.ProgressDialog;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.example.caiqu.demand.Adapters.FixedTabsPageAdapter;
+import com.example.caiqu.demand.Databases.MyDBManager;
+import com.example.caiqu.demand.Entities.User;
+import com.example.caiqu.demand.Fragments.ReceivedFragment;
+import com.example.caiqu.demand.Fragments.SentFragment;
+import com.example.caiqu.demand.Fragments.SuperiorFragment;
 import com.example.caiqu.demand.R;
+import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    private String TAG = getClass().getSimpleName();
     private ProgressDialog mPDLogout;
     private ViewPager mViewPager;
     private FloatingActionButton mFab;
-    private PagerAdapter mPagerAdapter;
+    private FixedTabsPageAdapter mPagerAdapter;
+    private SharedPreferences mPrefs;
+    private String mUserJobPosition;
+    private Activity mActivity;
+    private LogoutTask mLogoutTask;
+    private User mCurrentUser;
+
+    public MainActivity() {
+        this.mActivity = this;
+    }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
 
         mFab = (FloatingActionButton) findViewById(R.id.main_fab);
         mFab.setOnClickListener(new View.OnClickListener() {
@@ -55,14 +83,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TabLayout tabLayout = (TabLayout) findViewById(R.id.mainTabLayout);
         tabLayout.setSelectedTabIndicatorColor(Color.WHITE);
         tabLayout.setTabTextColors(ContextCompat.getColor(this,R.color.transwhite), Color.WHITE);
-        tabLayout.removeTabAt(2);
         tabLayout.setupWithViewPager(mViewPager);
+        tabLayout.getTabAt(0).setIcon(R.drawable.ic_call_received_white_24dp);
+        tabLayout.getTabAt(1).setIcon(R.drawable.ic_call_made_white_24dp);
+        tabLayout.getTabAt(2).setIcon(R.drawable.ic_supervisor_account_white_24dp);
+
+        // If this user belongs to "ponta" job position, hide admin tab.
+        mUserJobPosition = mPrefs.getString(Constants.LOGGED_USER_JOB_POSITION,"");
+        Log.e(TAG, "on create " + mUserJobPosition);
+        if (mUserJobPosition.equals(Constants.JOB_POSITIONS[0])) tabLayout.removeTabAt(2);
+
+        // Fetch info about current user logged
+        try {
+            JSONObject userJson = new JSONObject(mPrefs.getString(Constants.USER_PREFERENCES, ""));
+            mCurrentUser = User.build(userJson);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Failed to get user from preferences!!!");
+        }
+    }
+
+    public android.support.v4.app.Fragment getFragment(int pos){
+        return mPagerAdapter.getItem(pos);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        Log.e(TAG, "on create options " + mUserJobPosition);
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        if( mUserJobPosition.equals(Constants.JOB_POSITIONS[0]))
+            menu.setGroupVisible(R.id.main_admin_group,false);
+
         return true;
     }
 
@@ -72,7 +125,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        Intent intent = new Intent(getApplicationContext(), StatusActivity.class);
+        Intent intent;
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
@@ -80,14 +133,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return true;
         }
 
-        /*
-        if (id == R.id.main_accepted){
-            intent.putExtra("TYPE", "U"); // Demands I accepted as User
-            intent.putExtra("STATUS", "A");
+        if (id == R.id.main_admin_requests) {
+            intent = new Intent(getApplicationContext(), RequestActivity.class);
             startActivity(intent);
+            return true;
         }
-        */
+
+        if (id == R.id.main_archived_demands) {
+            intent = new Intent(getApplicationContext(), ArchiveActivity.class);
+            startActivity(intent);
+            return true;
+        }
+
         String status = "";
+        intent = new Intent(getApplicationContext(), StatusActivity.class);
 
         switch(id){
             case R.id.main_admin_done:
@@ -115,24 +174,98 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void attemptLogout() {
-        mPDLogout = new ProgressDialog(this);
-        mPDLogout.setMessage("Por favor aguarde");
-        mPDLogout.setCancelable(false);
-        mPDLogout.show();
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                prefs.edit().putBoolean(Constants.IS_LOGGED, false).apply();
+        if (!CommonUtils.isOnline(mActivity)) {
+           // Snackbar.make(mEmailSignInButton, R.string.internet_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
+            return;
+        }
+
+        if (mLogoutTask == null){
+            mLogoutTask = new LogoutTask(mCurrentUser.getEmail());
+            mLogoutTask.execute();
+        } else {
+            return;
+        }
+    }
+
+
+    public class LogoutTask extends AsyncTask<Void, Void, String> {
+
+        private final String mEmail;
+
+        LogoutTask(String email) {
+            mEmail = email;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDLogout = new ProgressDialog(mActivity);
+            mPDLogout.setMessage("Por favor aguarde...");
+            mPDLogout.setCancelable(false);
+            mPDLogout.show();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            ContentValues values = new ContentValues();
+            values.put("email", mEmail);
+            String response = CommonUtils.POST("/user/logout/", values);
+            return response;
+        }
+
+        @Override
+        protected void onPostExecute(String jsonResponse) {
+            mLogoutTask = null;
+            JSONObject jsonObject;
+            JSONObject userJson;
+            User user = null;
+            boolean success = false;
+
+            Log.d(TAG, "string json response: " + jsonResponse);
+
+            try {
+                jsonObject = new JSONObject(jsonResponse);
+                success = jsonObject.getBoolean("success");
+                userJson = jsonObject.getJSONObject("user");
+
+                user = User.build(userJson);
+                Log.d(TAG, "user response email:" + user.getEmail());
+
+            } catch (JSONException e) {
+                Snackbar.make(findViewById(R.id.email_sign_in_button), R.string.server_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+                e.printStackTrace();
+            }
+
+            if (success && user != null) {
+
+                SharedPreferences.Editor editor = mPrefs.edit();
+                editor.putBoolean(Constants.IS_LOGGED,false);
+                if (editor.commit()){
+                    Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
+                } else {
+                    Log.d(TAG,"Could not save prefs!");
+                }
+                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
                 if (mPDLogout.isShowing()){
                     mPDLogout.dismiss();
                 }
-                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
                 startActivity(intent);
                 finish();
+            } else {
+                if (mPDLogout.isShowing()){
+                    mPDLogout.dismiss();
+                }
             }
-        }, 2000);
+        }
+
+        @Override
+        protected void onCancelled() {
+            mLogoutTask = null;
+            if (mPDLogout.isShowing()){
+                mPDLogout.dismiss();
+            }
+        }
     }
 
     @Override

@@ -40,19 +40,12 @@ import java.util.List;
  * Created by caiqu on 09/03/2017.
  */
 
-public class ReceivedFragment extends Fragment{
-    public String TAG = getClass().getSimpleName();
+public class ReceivedFragment extends DemandFragment{
     public static final String ARG_PAGE = "RECEIVED_DEMAND";
-    private RecyclerView mRecyclerView;
-    public RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
-    public List<Demand> mDemandSet;
-    private GetDemandTask mGetDemandTask;
     private SharedPreferences mPrefs;
     private SwipeRefreshLayout mSwipeRefresh;
-    private String mUserEmail;
     private int mUserId;
-    private int mPage;
 
     public static ReceivedFragment newInstance(int page){
         Bundle args = new Bundle();
@@ -90,7 +83,6 @@ public class ReceivedFragment extends Fragment{
         View view = inflater.inflate(R.layout.fragment_all_demand, container, false);
 
         mPrefs = getActivity().getSharedPreferences(getContext().getPackageName(), Context.MODE_PRIVATE);
-        mUserEmail = mPrefs.getString(Constants.LOGGED_USER_EMAIL,"");
         mUserId = mPrefs.getInt(Constants.LOGGED_USER_ID,-1);
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.all_demand_recycler);
@@ -99,33 +91,11 @@ public class ReceivedFragment extends Fragment{
         if (mUserId != -1) loadReceiverList(mUserId);
         else Log.e(TAG, "Logged User id not found!");
 
+
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
         mSwipeRefresh.setEnabled(false);
 
-        /*
-        mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                if(mGetDemandTask == null && CommonUtils.isOnline(getContext())){
-                    mGetDemandTask = new GetDemandTask(mUserEmail, getView());
-                    mGetDemandTask.execute();
-                } else {
-                    mSwipeRefresh.setRefreshing(false);
-                    Snackbar.make(mSwipeRefresh, R.string.internet_error, Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-            }
-        });
-
-        if (CommonUtils.isOnline(getContext())) {
-            mGetDemandTask = new GetDemandTask(mUserEmail, view);
-            mGetDemandTask.execute();
-        } else {
-            Snackbar.make(view, R.string.internet_error, Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-        }
-        */
+        implementRecyclerViewClickListener();
 
         return view;
     }
@@ -136,12 +106,16 @@ public class ReceivedFragment extends Fragment{
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? )";
+        selection = selection.concat(" AND ");
+        selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " = ?");
+
         String[] args = {
                 "" + receiverId,
                 Constants.ACCEPT_STATUS,
                 Constants.DONE_STATUS,
                 Constants.LATE_STATUS,
-                Constants.CANCEL_STATUS
+                Constants.CANCEL_STATUS,
+                "" + false
         };
 
         MyDBManager myDBManager = new MyDBManager(getContext());
@@ -170,11 +144,11 @@ public class ReceivedFragment extends Fragment{
                     if(position >= 0) mDemandSet.remove(position);
                     mDemandSet.add(0,demand);
                     break;
-                case Constants.UPDATE_IMPORTANCE:
+                case Constants.UPDATE_PRIOR:
                     if (position >= 0) {
                         mDemandSet.remove(position);
                         mDemandSet.add(0,demand);
-                        //mDemandSet.get(position).setImportance(demand.getImportance());
+                        //mDemandSet.get(position).setPrior(demand.getPrior());
                     }
                     break;
                 case Constants.UPDATE_READ:
@@ -194,72 +168,4 @@ public class ReceivedFragment extends Fragment{
             mAdapter.notifyDataSetChanged();
         }
     };
-
-    private class GetDemandTask extends AsyncTask<Void, Void, String> {
-        private final String userEmail;
-        private final View view;
-
-        public GetDemandTask(String userEmail, View view) {
-            this.userEmail = userEmail;
-            this.view = view;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mSwipeRefresh.setRefreshing(true);
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-            ContentValues values = new ContentValues();
-            values.put("email", userEmail);
-            return CommonUtils.POST("/demand/list-received/", values);
-        }
-
-        @Override
-        protected void onPostExecute(String jsonResponse) {
-            super.onPostExecute(jsonResponse);
-            mGetDemandTask = null;
-
-            JSONObject jsonObject;
-            JSONArray jsonArray = null;
-            boolean success = false;
-
-            Log.d("ON RECEI TAB POST EXEC", "string json: " + jsonResponse);
-
-            try {
-                jsonObject = new JSONObject(jsonResponse);
-                success = jsonObject.getBoolean("success");
-                jsonArray = jsonObject.getJSONArray("list");
-            } catch (JSONException e) {
-                Snackbar.make(view, "Server Problem", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                e.printStackTrace();
-            }
-
-            if (success) {
-                mDemandSet =  new ArrayList<>();
-                for(int i=0; i < jsonArray.length(); i++){
-                    try {
-                        JSONObject json = jsonArray.getJSONObject(i);
-                        mDemandSet.add(Demand.build(json));
-                        Log.d("ON DEMAND", "" + json.toString());
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                mRecyclerView.setLayoutManager(mLayoutManager);
-
-                mAdapter = new DemandAdapter(mDemandSet,getActivity(), mPage);
-                mRecyclerView.setAdapter(mAdapter);
-
-                mSwipeRefresh.setRefreshing(false);
-            } else {
-                mSwipeRefresh.setRefreshing(false);
-                Snackbar.make(view, "Problema no servidor. Tente mais tarde.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-            }
-
-        }
-    }
 }

@@ -35,7 +35,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="@dimen/text_margin"
                     android:layout_marginRight="@dimen/text_margin"
-                    android:text="Posição"
+                    android:text="@string/position_field_title"
                     android:textSize="18dp"/>
 
                 <Spinner
@@ -60,11 +60,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="@dimen/text_margin"
                     android:layout_marginRight="@dimen/text_margin"
-                    android:text="Importância"
+                    android:text="@string/prior_title_field"
                     android:textSize="18dp"/>
 
                 <Spinner
-                    android:id="@+id/demand_importance_spinner"
+                    android:id="@+id/demand_prior_spinner"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_marginLeft="@dimen/text_margin"
@@ -108,7 +108,7 @@
                 android:layout_marginLeft="@dimen/text_margin"
                 android:layout_marginRight="@dimen/text_margin"
                 android:inputType="text"
-                android:hint="Assunto"
+                android:hint="@string/subject_field_hint"
                 android:maxLines="1"/>
 
         </android.support.design.widget.TextInputLayout>
@@ -125,7 +125,7 @@
                 android:layout_marginRight="@dimen/text_margin"
                 android:layout_marginTop="@dimen/text_margin"
                 android:gravity="start"
-                android:hint="Descrição"
+                android:hint="@string/descritpion_field_hint"
                 android:maxLength="1024"
                 android:scrollbars="vertical"/>
 

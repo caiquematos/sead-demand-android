@@ -13,11 +13,13 @@ public class Demand implements Serializable {
     private int id;
     private User sender;
     private User receiver;
-    private String importance;
+    private Reason reason;
+    private String prior;
     private String subject;
     private String description;
     private String status;
     private String seen;
+    private boolean archive;
     private Date createdAt;
     private Date updatedAt;
 
@@ -34,17 +36,20 @@ public class Demand implements Serializable {
                 json.getString("receiverEmail")
         );
 
-        return Demand.build(sender, receiver, json);
+       Reason reason = null;
+
+        return Demand.build(sender, receiver, reason, json);
     }
 
-    public static Demand build(User sender, User receiver, JSONObject json) throws JSONException {
+    public static Demand build(User sender, User receiver, Reason reason, JSONObject json) throws JSONException {
 
         return new Demand(
                 -1,
                 json.getInt("id"),
                 sender,
                 receiver,
-                json.getString("importance"),
+                reason,
+                json.getString("prior"),
                 json.getString("subject"),
                 json.getString("description"),
                 json.getString("status"),
@@ -59,7 +64,8 @@ public class Demand implements Serializable {
             int demandId,
             User sender,
             User receiver,
-            String importance,
+            Reason reason,
+            String prior,
             String subject,
             String description,
             String status,
@@ -71,13 +77,26 @@ public class Demand implements Serializable {
         setId(demandId);
         setSender(sender);
         setReceiver(receiver);
+        setReason(reason);
         setSubject(subject);
         setDescription(description);
         setStatus(status);
-        setImportance(importance);
+        setPrior(prior);
         setSeen(seen);
         setCreatedAt(CommonUtils.convertTimestampToDate(created_at));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updated_at));
+    }
+
+    public boolean isArchive() {
+        return archive;
+    }
+
+    public void setArchive(boolean archive) {
+        this.archive = archive;
+    }
+
+    public Reason getReason() {
+        return reason;
     }
 
     public String getSeen() {
@@ -96,12 +115,12 @@ public class Demand implements Serializable {
         this.id = id;
     }
 
-    public String getImportance() {
-        return importance;
+    public String getPrior() {
+        return prior;
     }
 
-    public void setImportance(String importance) {
-        this.importance = importance;
+    public void setPrior(String prior) {
+        this.prior = prior;
     }
 
     public String getSubject() {
@@ -148,7 +167,7 @@ public class Demand implements Serializable {
                 + " " + getId()
                 + " " + getStatus()
                 + " " + getSeen()
-                + " " + getImportance()
+                + " " + getPrior()
                 + " " + getCreatedAt()
                 + " " + getUpdatedAt()
                 + " " + getSubject()
@@ -186,5 +205,9 @@ public class Demand implements Serializable {
 
     public User getReceiver() {
         return receiver;
+    }
+
+    public void setReason(Reason reason) {
+        this.reason = reason;
     }
 }

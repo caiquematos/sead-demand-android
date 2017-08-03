@@ -15,11 +15,13 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_DEMAND_ID = "demand_id"; // Online db id.
         public static final String COLUMN_NAME_SENDER_ID = "sender_id";
         public static final String COLUMN_NAME_RECEIVER_ID = "receiver_id";
+        public static final String COLUMN_NAME_REASON_ID = "reason_id";
         public static final String COLUMN_NAME_SUBJECT = "subject";
         public static final String COLUMN_NAME_DESCRIPTION = "description";
         public static final String COLUMN_NAME_STATUS = "status";
-        public static final String COLUMN_NAME_IMPORTANCE = "importance";
+        public static final String COLUMN_NAME_PRIOR = "prior";
         public static final String COLUMN_NAME_SEEN = "seen";
+        public static final String COLUMN_NAME_ARCHIVE = "archive";
         public static final String COLUMN_NAME_CREATED_AT = "created_at";
         public static final String COLUMN_NAME_UPDATED_AT = "updated_a";
     }
@@ -33,6 +35,17 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_USER_STATUS = "status";
         public static final String COLUMN_NAME_USER_SUPERIOR = "superior";
         public static final String COLUMN_NAME_USER_FCM = "fcm";
+        public static final String COLUMN_NAME_USER_CREATED_AT = "created_at";
+        public static final String COLUMN_NAME_USER_UPDATED_AT = "updated_at";
+    }
+
+    public static class ReasonEntry implements BaseColumns {
+        public static final String TABLE_NAME = "reasons";
+        public static final String COLUMN_NAME_REASON_ID = "reason_id"; // Online db id.
+        public static final String COLUMN_NAME_DEMAND_ID = "demand_id";
+        public static final String COLUMN_NAME_STATUS = "status";
+        public static final String COLUMN_NAME_REASON = "reason";
+        public static final String COLUMN_NAME_COMMENT = "comment";
         public static final String COLUMN_NAME_USER_CREATED_AT = "created_at";
         public static final String COLUMN_NAME_USER_UPDATED_AT = "updated_at";
     }

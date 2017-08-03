@@ -19,11 +19,13 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
                     FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID + " INTEGER UNIQUE," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " INTEGER," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " INTEGER," +
+                    FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID + " INTEGER," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT + " VARCHAR(60)," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " CHAR(2)," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN + " CHAR(2)," +
-                    FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE + " VARCHAR(12)," +
+                    FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR + " VARCHAR(12)," +
+                    FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " BOOLEAN DEFAULT false," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT + " TIMESTAMP," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT + " TIMESTAMP)";
 
@@ -47,20 +49,37 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
     private static final String SQL_DELETE_USERS_TABLE =
             "DROP TABLE IF EXISTS " + FeedReaderContract.UserEntry.TABLE_NAME;
 
+    // Table reasons queries.
+    private static final String SQL_CREATE_REASONS_TABLE =
+            "CREATE TABLE " + FeedReaderContract.ReasonEntry.TABLE_NAME + " (" +
+                    FeedReaderContract.ReasonEntry._ID + " INTEGER PRIMARY KEY," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " INTEGER UNIQUE," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID + " INTEGER," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS + " CHAR(2)," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON + " INTEGER," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT + " TEXT," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT + " TIMESTAMP," +
+                    FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT + " TIMESTAMP)";
+
+    private static final String SQL_DELETE_REASONS_TABLE =
+            "DROP TABLE IF EXISTS " + FeedReaderContract.ReasonEntry.TABLE_NAME;
+
     public FeedReaderDBHelper(Context context){
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL(SQL_CREATE_DEMANDS_TABLE);
         db.execSQL(SQL_CREATE_USERS_TABLE);
+        db.execSQL(SQL_CREATE_REASONS_TABLE);
+        db.execSQL(SQL_CREATE_DEMANDS_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL(SQL_DELETE_DEMANDS_TABLE);
+        db.execSQL(SQL_DELETE_REASONS_TABLE);
         db.execSQL(SQL_DELETE_USERS_TABLE);
+        db.execSQL(SQL_DELETE_DEMANDS_TABLE);
         onCreate(db);
     }
 

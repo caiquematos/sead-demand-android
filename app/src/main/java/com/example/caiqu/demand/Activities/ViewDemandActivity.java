@@ -29,6 +29,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.Reason;
 import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.Handlers.AlarmReceiver;
 import com.example.caiqu.demand.R;
@@ -42,12 +43,13 @@ public class ViewDemandActivity extends AppCompatActivity {
     private final String TAG = getClass().getSimpleName();
 
     private TextView mSubjectTV;
-    private TextView mImportanceTV;
+    private TextView mPriorTV;
     private TextView mStatusTV;
     private TextView mSenderTV;
     private TextView mReceiverTV;
     private TextView mTimeTV;
     private TextView mDescriptionTV;
+    private TextView mReason;
     private View mScrollView;
     private StatusTask mStatusTask;
     private ProgressDialog mPDDemand;
@@ -73,9 +75,11 @@ public class ViewDemandActivity extends AppCompatActivity {
     private Demand mDemand;
     private AlertDialog.Builder mAlert;
     private String mAlertType;
-    private ImportanceTask mImportanceTask;
-    private AlertDialog.Builder mImportanceDialog;
+    private PriorTask mPriorTask;
+    private AlertDialog.Builder mPriorDialog;
     private AlertDialog.Builder mPostponeDialog;
+    private boolean mShouldCancelAlarm = false;
+    private RejectTask mRejectTask;
     ViewDemandActivity mActivity;
 
     public ViewDemandActivity() {
@@ -90,6 +94,7 @@ public class ViewDemandActivity extends AppCompatActivity {
         setContentView(R.layout.activity_view_demand);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         // Before any change, get intent data.
 
@@ -101,45 +106,93 @@ public class ViewDemandActivity extends AppCompatActivity {
         Log.e(TAG, "Menu number: " + mMenuType);
         Log.e(TAG, "Page number: " + mPage);
 
+        // Setting activity title.
+        String activityTitle;
+        switch(mPage) {
+            case Constants.ADMIN_PAGE:
+                activityTitle = "Demanda (admin)";
+                break;
+            case Constants.RECEIVED_PAGE:
+                activityTitle = "Demanda Recebida";
+                break;
+            case Constants.SENT_PAGE:
+                activityTitle = "Demanda Enviada";
+                break;
+            case Constants.STATUS_PAGE:
+                switch (mDemand.getStatus()){
+                    case Constants.DONE_STATUS:
+                        activityTitle = "Demanda Concluída (admin)";
+                        break;
+                    case Constants.ACCEPT_STATUS:
+                        activityTitle = "Demanda Deferida (admin)";
+                        break;
+                    case Constants.POSTPONE_STATUS:
+                        activityTitle = "Demanda Adiada (admin)";
+                        break;
+                    case Constants.CANCEL_STATUS:
+                        activityTitle = "Demanda Cancelada (admin)";
+                        break;
+                    case Constants.REJECT_STATUS:
+                        activityTitle = "Demanda Indeferida (admin)";
+                        break;
+                    // These last two won't be be accessed so far.
+                    case Constants.UNDEFINE_STATUS:
+                        activityTitle = "Demanda Não Definida (admin)";
+                        break;
+                    case Constants.LATE_STATUS:
+                        activityTitle = "Demanda Atrasada (admin)";
+                        break;
+                    // These last two.
+                    default:
+                        activityTitle = "Demanda (admin)";
+                }
+                break;
+            case Constants.CREATE_PAGE:
+            default:
+                activityTitle = "Demanda";
+        }
+
+        setTitle(activityTitle);
+
         // Get object references.
 
         mSubjectTV = (TextView) findViewById(R.id.view_demand_subject);
-        mImportanceTV = (TextView) findViewById(R.id.view_demand_importance);
+        mPriorTV = (TextView) findViewById(R.id.view_demand_prior);
         mStatusTV = (TextView) findViewById(R.id.view_demand_status);
         mSenderTV = (TextView) findViewById(R.id.view_demand_sender);
         mReceiverTV = (TextView) findViewById(R.id.view_demand_receiver);
         mTimeTV = (TextView) findViewById(R.id.view_demand_time);
         mDescriptionTV = (TextView) findViewById(R.id.view_demand_description);
+        mReason = (TextView) findViewById(R.id.view_demand_reason);
         mPDDemand = new ProgressDialog(mActivity);
 
         // Finally set changes.
 
-        setImportanceColor(mDemand.getImportance());
+        showDemandPrior(mDemand.getPrior());
 
-        mImportanceTV.setOnClickListener(new View.OnClickListener() {
+        mPriorTV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mImportanceDialog = new AlertDialog.Builder(mActivity);
-                mImportanceDialog.setTitle("Mudar para:");
-                mImportanceDialog.setItems(Constants.DEMAND_IMPORTANCE, new DialogInterface.OnClickListener(){
+                mPriorDialog = new AlertDialog.Builder(mActivity);
+                mPriorDialog.setTitle("Mudar para:");
+                mPriorDialog.setItems(Constants.DEMAND_PRIOR_NAME, new DialogInterface.OnClickListener(){
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        setDemandImportance(Constants.DEMAND_IMPORTANCE[which]);
+                        setDemandPrior(Constants.DEMAND_PRIOR_NAME[which]);
                     }
                 });
-                mImportanceDialog.create();
-                mImportanceDialog.show();
+                mPriorDialog.create();
+                mPriorDialog.show();
             }
         });
-        if (mPage == Constants.ADMIN_PAGE) mImportanceTV.setClickable(true);
-        else mImportanceTV.setClickable(false);
+        if (mPage == Constants.ADMIN_PAGE) mPriorTV.setClickable(true);
+        else mPriorTV.setClickable(false);
 
         if (mPage == Constants.CREATE_PAGE)
             Snackbar.make(mSubjectTV, R.string.send_demand_success, Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show();
 
         mSubjectTV.setText(mDemand.getSubject().toUpperCase());
-        mImportanceTV.setText(mDemand.getImportance());
         mSenderTV.setText("De: " + mDemand.getSender().getName());
         mReceiverTV.setText("Para: " + mDemand.getReceiver().getName());
         mTimeTV.setText(CommonUtils.formatDate(mDemand.getCreatedAt()));
@@ -170,7 +223,7 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabYes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mAlert.setTitle("Aceitar a demanda?");
+                mAlert.setTitle("Deferir a demanda?");
                 mAlertType = Constants.ACCEPT_STATUS;
                 mAlert.show();
             }
@@ -234,9 +287,8 @@ public class ViewDemandActivity extends AppCompatActivity {
         mFabReject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mAlert.setTitle("Rejeitar a demanda?");
-                mAlertType = Constants.REJECT_STATUS;
-                mAlert.show();
+                Intent intent = new Intent(mActivity, RejectDialogActivity.class);
+                startActivityForResult(intent,Constants.REJECT_DEMAND);
             }
         }); //Reject
 
@@ -531,19 +583,54 @@ public class ViewDemandActivity extends AppCompatActivity {
         }
     }
 
-    private void setDemandImportance(String s) {
-        if (mImportanceTask == null && CommonUtils.isOnline(mActivity)){
-            mImportanceTask = new ImportanceTask(mDemand.getId(), s);
-            mImportanceTask.execute();
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == Constants.REJECT_DEMAND) {
+            if (resultCode == RESULT_OK) {
+                int reasonIndex = data.getIntExtra(Constants.INTENT_REJECT_REASON_INDEX, -1);
+                String reasonComment = data.getStringExtra(Constants.INTENT_REJECT_REASON_COMMENT);
+                attemptRejectDemand(
+                        mDemand.getId(),
+                        Constants.REJECT_STATUS,
+                        reasonIndex,
+                        reasonComment
+                        );
+            }
+        }
+    }
+
+    @Override
+    public boolean onSupportNavigateUp(){
+        finish();
+        return true;
+    }
+
+    private void setDemandPrior(String s) {
+        if (mPriorTask == null && CommonUtils.isOnline(mActivity)){
+            mPriorTask = new PriorTask(mDemand.getId(), s);
+            mPriorTask.execute();
         } else {
-            Snackbar.make(mImportanceTV, R.string.internet_error, Snackbar.LENGTH_LONG)
+            Snackbar.make(mPriorTV, R.string.internet_error, Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
         }
     }
 
-    private void showDemandImportance(String importance) {
-        mImportanceTV.setText(importance);
-        setImportanceColor(importance);
+    private void showDemandPrior(String prior) {
+        Log.e(TAG, "Prior tag:" + prior);
+        Log.e(TAG, "Prior name:" + CommonUtils.getPriorName(prior, this));
+        mPriorTV.setText(CommonUtils.getPriorName(prior, this));
+        setPriorColor(prior);
+    }
+
+    private void attemptRejectDemand(int id, String status, int reason, String comment){
+        if (mRejectTask == null && CommonUtils.isOnline(mActivity)){
+            mRejectTask = new RejectTask(id,status,reason,comment);
+            mRejectTask.execute();
+        } else {
+            Snackbar.make(mFabReject, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
     }
 
     private void attemptSendDemand(){
@@ -558,53 +645,54 @@ public class ViewDemandActivity extends AppCompatActivity {
 
     private void showDemandStatus(String status) {
         int drawable;
-        String description;
+        int description;
         int color;
 
         switch (status){
             case Constants.LATE_STATUS: // Late.
-                description = "Essa demanda está atrasada";
+                description = R.string.late_demand_info;
                 drawable = R.drawable.ic_alarm_off_black_24dp;
                 color = ContextCompat.getColor(this,R.color.colorPrimary);
                 break;
             case Constants.DONE_STATUS: // Done.
-                description = "Essa demanda foi concluída";
+                description = R.string.done_demand_info;
                 drawable = R.drawable.ic_assignment_turned_in_white_24dp;
                 color = ContextCompat.getColor(this,R.color.darkgreen);
                 break;
             case Constants.ACCEPT_STATUS: // Accepted.
-                description = "Essa demanda foi aceita";
+                description = R.string.accepted_demand_info;
                 drawable = R.drawable.ic_check_circle_black_24dp;
                 color = ContextCompat.getColor(this,R.color.green);
                 break;
             case Constants.REJECT_STATUS: //Rejected
-                description = "Essa demanda foi rejeitada";
+                description = R.string.rejected_demand_info;
                 drawable = R.drawable.ic_cancel_black_24dp;
                 color = ContextCompat.getColor(this,R.color.darkred);
+                showDemandReason(mDemand);
                 break;
             case Constants.CANCEL_STATUS: //Cancelled
-                description = "Essa demanda foi cancelada";
+                description = R.string.canceled_demand_info;
                 drawable = R.drawable.ic_cancel_black_24dp;
                 color = ContextCompat.getColor(this,R.color.red);
                 break;
             case Constants.POSTPONE_STATUS: //Postponed
-                description = "Essa demanda foi adiada";
+                description = R.string.postponed_demand_info;
                 drawable = R.drawable.ic_alarm_black_24dp;
                 color = ContextCompat.getColor(this,R.color.darkyellow);
                 break;
             case Constants.REOPEN_STATUS: //Reopen
             case Constants.UNDEFINE_STATUS: //Undefined
-                description = "Essa demanda ainda não foi avaliada";
+                description = R.string.undefined_demand_info;
                 drawable = R.drawable.ic_fiber_manual_record_black_24dp;
                 color = ContextCompat.getColor(this,R.color.gray);
                 break;
             case Constants.RESEND_STATUS: //Resent
-                description = "Essa demanda foi reenviada";
+                description = R.string.resent_demand_info;
                 drawable = R.drawable.ic_send_black_24dp;
                 color = ContextCompat.getColor(this,R.color.blue);
                 break;
             default:
-                description = "Essa demanda ainda não foi avaliada";
+                description = R.string.undefined_demand_info;
                 drawable = R.drawable.ic_fiber_manual_record_black_24dp;
                 color = ContextCompat.getColor(this,R.color.gray);
         }
@@ -617,9 +705,28 @@ public class ViewDemandActivity extends AppCompatActivity {
         }
         objDrawable = objDrawable.mutate();
 
-        mStatusTV.setText(description);
+        mStatusTV.setText(getString(description));
         mStatusTV.setCompoundDrawablesWithIntrinsicBounds(null,null, objDrawable,null);
         mStatusTV.getCompoundDrawables()[2].setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }
+
+    private void showDemandReason(Demand demand) {
+        Reason reason = demand.getReason();
+        String reasonString;
+        String[] reasonArray = getResources().getStringArray(R.array.array_reject_dialog_reasons);
+        if (reason != null) {
+            reasonString = "Motivo n."
+                    + reason.getReasonIndex()
+                    + ": "
+                    + reasonArray[reason.getReasonIndex()];
+            if(reason.getReasonIndex() == 4)
+                reasonString = reasonString.concat(" - " + reason.getComment());
+            mReason.setText(reasonString);
+            mReason.setVisibility(View.VISIBLE);
+        } else {
+            mReason.setVisibility(View.GONE);
+        }
+
     }
 
     private void setDemandStatus(String status){
@@ -632,18 +739,19 @@ public class ViewDemandActivity extends AppCompatActivity {
         }
     }
 
-    private void setImportanceColor(String importance) {
+    private void setPriorColor(String prior) {
         int color = ContextCompat.getColor(this,R.color.dGreen);
-        if (importance.equals("Urgente")) color = ContextCompat.getColor(this,R.color.darkred);
-        if (importance.equals("Importante")) color = ContextCompat.getColor(this,R.color.dyellow);
-        mImportanceTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        if (prior.equals(Constants.VERY_HIGH_PRIOR_TAG)) color = ContextCompat.getColor(this,R.color.darkred);
+        if (prior.equals(Constants.HIGH_PRIOR_TAG)) color = ContextCompat.getColor(this,R.color.Red);
+        if (prior.equals(Constants.MEDIUM_PRIOR_TAG)) color = ContextCompat.getColor(this,R.color.dyellow);
+        mPriorTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void setPostponeTime(int postponeTime) {
         // Set an alarm notification.
         Intent receiverIntent = new Intent(this, AlarmReceiver.class);
-        receiverIntent.putExtra(Constants.ALARM_TYPE_KEY, Constants.POSTPONE_ALARM_TAG);
+        receiverIntent.setType(Constants.POSTPONE_ALARM_TAG);
         receiverIntent.putExtra(Constants.INTENT_DEMAND, mDemand);
         receiverIntent.putExtra(Constants.INTENT_PAGE, mPage);
         receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_TRIO_MENU);
@@ -706,7 +814,7 @@ public class ViewDemandActivity extends AppCompatActivity {
 
                 User sender = User.build(senderJson);
                 User receiver = User.build(receiverJson);
-                demandResponse = Demand.build(sender, receiver, demandJson);
+                demandResponse = Demand.build(sender, receiver, null, demandJson);
 
                 Log.e(TAG,
                         "Json Resend Response:" + demandResponse.toString()
@@ -737,19 +845,19 @@ public class ViewDemandActivity extends AppCompatActivity {
         }
     }
 
-    private class ImportanceTask extends AsyncTask<Void, Void, String>{
+    private class PriorTask extends AsyncTask<Void, Void, String>{
         private int id;
-        private String importance;
+        private String prior;
 
-        public ImportanceTask(int id, String importance) {
+        public PriorTask(int id, String prior) {
             this.id = id;
-            this.importance = importance;
+            this.prior = prior;
         }
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mPDDemand.setMessage("Por favor aguarde");
+            mPDDemand.setMessage("Por favor aguarde...");
             mPDDemand.setCancelable(false);
             mPDDemand.show();
         }
@@ -758,24 +866,24 @@ public class ViewDemandActivity extends AppCompatActivity {
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
             values.put("demand", id);
-            values.put("importance", importance);
-            return CommonUtils.POST("/demand/set-importance/", values);
+            values.put("prior", prior);
+            return CommonUtils.POST("/demand/set-prior/", values);
         }
 
         @Override
         protected void onPostExecute(String jsonResponse) {
             super.onPostExecute(jsonResponse);
-            mImportanceTask = null;
+            mPriorTask = null;
             JSONObject jsonObject;
             boolean success = false;
 
-            Log.e("ON POST EX VIEW DEMAND", jsonResponse);
+            Log.e(TAG, "POST DEMAND:" + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
             } catch (JSONException e) {
-                Snackbar.make(mImportanceTV, R.string.server_error, Snackbar.LENGTH_LONG)
+                Snackbar.make(mPriorTV, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
@@ -784,7 +892,7 @@ public class ViewDemandActivity extends AppCompatActivity {
 
             if (success) {
                 message = "Demanda modificada com sucesso";
-                showDemandImportance(importance);
+                showDemandPrior(prior);
             } else {
                 message = String.valueOf(R.string.server_error);
             }
@@ -814,6 +922,8 @@ public class ViewDemandActivity extends AppCompatActivity {
             mPDDemand.setMessage("Por favor aguarde");
             mPDDemand.setCancelable(false);
             mPDDemand.show();
+            // If in this instant demand is "postponed", then make it cancel its alarm.
+            if(mDemand.getStatus().equals(Constants.POSTPONE_STATUS)) mShouldCancelAlarm = true;
         }
 
         @Override
@@ -829,6 +939,10 @@ public class ViewDemandActivity extends AppCompatActivity {
             super.onPostExecute(jsonResponse);
             mStatusTask = null;
             JSONObject jsonObject;
+            JSONObject demandJson;
+            JSONObject senderJson;
+            JSONObject receiverJson;
+            Demand demandResponse = null;
             boolean success = false;
 
             Log.e(TAG, jsonResponse);
@@ -836,6 +950,24 @@ public class ViewDemandActivity extends AppCompatActivity {
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
+                senderJson = jsonObject.getJSONObject("sender");
+                receiverJson = jsonObject.getJSONObject("receiver");
+                demandJson = jsonObject.getJSONObject("demand");
+
+                Reason reason;
+                JSONObject reasonJson;
+
+                if(jsonObject.has("reason")){
+                    reasonJson = jsonObject.getJSONObject("reason");
+                    reason = Reason.build(reasonJson);
+                    Log.e(TAG, " reason:" + reason.toString());
+                }else{
+                    reason = null;
+                }
+
+                User sender = User.build(senderJson);
+                User receiver = User.build(receiverJson);
+                demandResponse = Demand.build(sender, receiver, reason, demandJson);
             } catch (JSONException e) {
                 Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
@@ -845,12 +977,13 @@ public class ViewDemandActivity extends AppCompatActivity {
             String message;
 
             if (success) {
-                switch(status){
+                switch(demandResponse.getStatus()){
                     case Constants.ACCEPT_STATUS:
-                        message = "Demanda Aceita com Sucesso.";
+                        message = "Demanda Deferida com Sucesso.";
                         break;
                     case Constants.POSTPONE_STATUS:
                         message = "Demanda Adiada com Sucesso.";
+                        mShouldCancelAlarm = false;
                         break;
                     case Constants.CANCEL_STATUS:
                         message = "Demanda Cancelada com Sucesso.";
@@ -859,14 +992,129 @@ public class ViewDemandActivity extends AppCompatActivity {
                         message = "Demanda Reaberta com Sucesso.";
                         break;
                      case Constants.REJECT_STATUS:
-                        message = "Demanda Rejeitada com Sucesso.";
+                        message = "Demanda Indeferida com Sucesso.";
+                        break;
+                    case Constants.DONE_STATUS:
+                        message = "Demanda Concluída com Sucesso.";
+                        Log.e(TAG, "On Done status, should cancel alarme");
+                        // We can use the same logic here for DONE status, because before a demand
+                        // is done, it would never be POSTPONE, so it is no problem.
+                        mShouldCancelAlarm = true;
                         break;
                     default:
                         message = "Feito.";
                 }
+
+                // In case status changed from postponed to another, cancel alarm.
+                if(mShouldCancelAlarm){
+                    CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.WARN_DUE_TIME_ALARM_TAG);
+                    CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.DUE_TIME_ALARM_TAG);
+                    CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.POSTPONE_ALARM_TAG);
+                    mShouldCancelAlarm = false;
+                    Log.e(TAG, "should cancel alarm was true!");
+                }
+
                 Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
-                showDemandStatus(status);
+                showDemandStatus(demandResponse.getStatus());
+            } else {
+                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+
+            if (mPDDemand.isShowing()){
+                mPDDemand.dismiss();
+            }
+        }
+    }
+
+    public class RejectTask extends AsyncTask<Void, Void, String> {
+        private int id;
+        private String status;
+        private int reasonIndex;
+        private String reasonComment;
+
+        public RejectTask(int id, String status, int reasonIndex, String reasonComment) {
+            this.id = id;
+            this.status = status;
+            this.reasonIndex = reasonIndex;
+            this.reasonComment = reasonComment;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDDemand.setMessage(getString(R.string.progress_dialog_wait));
+            mPDDemand.setCancelable(false);
+            mPDDemand.show();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            ContentValues values = new ContentValues();
+            values.put("demand", id);
+            values.put("status", status);
+            values.put("reason", reasonIndex);
+            values.put("comment", reasonComment);
+            return CommonUtils.POST("/demand/set-status-to-reject/", values);
+        }
+
+        @Override
+        protected void onPostExecute(String jsonResponse) {
+            super.onPostExecute(jsonResponse);
+            mRejectTask = null;
+            JSONObject jsonObject;
+            JSONObject demandJson;
+            JSONObject senderJson;
+            JSONObject receiverJson;
+            Demand demandResponse = null;
+            boolean success = false;
+
+            Log.e(TAG, jsonResponse);
+
+            try {
+                jsonObject = new JSONObject(jsonResponse);
+                success = jsonObject.getBoolean("success");
+                senderJson = jsonObject.getJSONObject("sender");
+                receiverJson = jsonObject.getJSONObject("receiver");
+                demandJson = jsonObject.getJSONObject("demand");
+
+                JSONObject reasonJson;
+                Reason reason;
+
+                if(jsonObject.has("reason")){
+                    reasonJson = jsonObject.getJSONObject("reason");
+                    reason = Reason.build(reasonJson);
+                    Log.e(TAG, " reason:" + reason.toString());
+                }else{
+                    reason = null;
+                }
+
+                User sender = User.build(senderJson);
+                User receiver = User.build(receiverJson);
+                demandResponse = Demand.build(sender, receiver, reason, demandJson);
+            } catch (JSONException e) {
+                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+                e.printStackTrace();
+            }
+
+            String message;
+
+            if (success) {
+                switch(demandResponse.getStatus()){
+                     case Constants.REJECT_STATUS:
+                        message = "Demanda Indeferida com Sucesso.";
+                        break;
+                    default:
+                        message = "Feito.";
+                }
+
+                Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+                showDemandStatus(demandResponse.getStatus());
+                showDemandReason(demandResponse);
+                Log.e(TAG, "demand reason: " + demandResponse.getReason().getReasonIndex());
             } else {
                 Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();

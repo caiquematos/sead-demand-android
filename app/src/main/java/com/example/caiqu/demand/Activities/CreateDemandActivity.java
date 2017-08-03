@@ -43,7 +43,7 @@ public class CreateDemandActivity extends AppCompatActivity{
     private final String TAG = getClass().getSimpleName();
 
     private Spinner mPositionView;
-    private Spinner mImportanceView;
+    private Spinner mPriorView;
     private AutoCompleteTextView mReceiverView;
     private EditText mSubjectView;
     private EditText mDescriptionView;
@@ -87,11 +87,11 @@ public class CreateDemandActivity extends AppCompatActivity{
         positionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mPositionView.setAdapter(positionAdapter);
 
-        mImportanceView = (Spinner) findViewById(R.id.demand_importance_spinner);
-        ArrayAdapter<String> importanceAdapter = new ArrayAdapter<String>(
-                this, android.R.layout.simple_spinner_item, Constants.DEMAND_IMPORTANCE);
-        importanceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mImportanceView.setAdapter(importanceAdapter);
+        mPriorView = (Spinner) findViewById(R.id.demand_prior_spinner);
+        ArrayAdapter<String> priorAdapter = new ArrayAdapter<String>(
+                this, android.R.layout.simple_spinner_item, getResources().getStringArray(R.array.array_status));
+        priorAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mPriorView.setAdapter(priorAdapter);
 
         mPositionView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -170,7 +170,8 @@ public class CreateDemandActivity extends AppCompatActivity{
         Log.d(TAG, "Receiver Index:" + mReceiverIndex);
         Log.d(TAG, "Receiver Email:" + mEmployeesEmails.get(mReceiverIndex));
 
-        User sender = new User(-1,"", senderEmail);
+
+        User sender = CommonUtils.getCurrentUserPreference(this);
         User receiver = new User(
                 mReceiverIndex,
                 "",
@@ -183,18 +184,21 @@ public class CreateDemandActivity extends AppCompatActivity{
             cancel = true;
         } else {
             Log.d(TAG, "Receiver Email:" + mEmployeesEmails.get(mReceiverIndex));
-            Date date = new Date();
+            Log.e(TAG, "Prior position:" + mPriorView.getSelectedItemPosition());
+            String priorTag = CommonUtils.getPriorTag(mPriorView.getSelectedItemPosition());
+            Log.e(TAG, "Prior Tag:" + priorTag);
 
             demand = new Demand(
                     -1,
                     -1,
                     sender,
                     receiver,
-                    mImportanceView.getSelectedItem().toString(),
+                    null,
+                    priorTag,
                     mSubjectView.getText().toString(),
                     mDescriptionView.getText().toString(),
                     Constants.UNDEFINE_STATUS,
-                    Constants.NO_SEEN,
+                    Constants.NO,
                     null,
                     null);
 
@@ -253,7 +257,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             ContentValues values = new ContentValues();
             values.put("sender", demand.getSender().getEmail());
             values.put("receiver", demand.getReceiver().getEmail());
-            values.put("importance", demand.getImportance());
+            values.put("prior", demand.getPrior());
             values.put("subject", demand.getSubject());
             values.put("description", demand.getDescription());
             return CommonUtils.POST("/demand/send/", values);
@@ -287,6 +291,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                 demandResponse = Demand.build(
                         sender,
                         receiver,
+                        null,
                         demandJson
                 );
 
@@ -310,7 +315,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                 long wasDemandStored = myDBManager.addDemand(demandResponse);
 
                 if(wasDemandStored >= 0) {
-                    CommonUtils.notifyListView(
+                    CommonUtils.notifyDemandListView(
                             demandResponse,
                             Constants.BROADCAST_SENT_FRAG,
                             Constants.INSERT_DEMAND_SENT,

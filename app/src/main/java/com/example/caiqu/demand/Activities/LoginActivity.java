@@ -21,6 +21,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -332,6 +333,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         protected void onPostExecute(String jsonResponse) {
             mAuthTask = null;
             JSONObject jsonObject;
+            JSONObject userJson = null;
             String message = "";
             User user = null;
             boolean success = false;
@@ -341,7 +343,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
-                JSONObject userJson = jsonObject.getJSONObject("user");
+                userJson = jsonObject.getJSONObject("user");
 
                 user = User.build(userJson);
                 Log.d(TAG, "user response email:" + user.getEmail());
@@ -360,12 +362,16 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 if (isUserStored >= 0) Log.e(TAG, "User stored");
 
                 SharedPreferences.Editor editor = mPrefs.edit();
+                editor.putString(Constants.USER_PREFERENCES, userJson.toString());
                 editor.putBoolean(Constants.IS_LOGGED,true);
-                editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
                 editor.putInt(Constants.LOGGED_USER_ID, user.getId());
+                editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
+                editor.putString(Constants.LOGGED_USER_JOB_POSITION, user.getPosition());
                 if (editor.commit()){
+                    Log.d(TAG,"User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
                     Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
                     Log.d(TAG,"User email prefs:" + mPrefs.getString(Constants.LOGGED_USER_EMAIL,""));
+                    Log.d(TAG,"User job position prefs:" + mPrefs.getString(Constants.LOGGED_USER_JOB_POSITION,""));
                     Log.d(TAG,"User id prefs:" + mPrefs.getInt(Constants.LOGGED_USER_ID,-1));
                 } else {
                     Log.d(TAG,"Could not save prefs!");

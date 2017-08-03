@@ -15,12 +15,12 @@ import android.util.Log;
 
 import com.example.caiqu.demand.Activities.MainActivity;
 import com.example.caiqu.demand.Activities.ViewDemandActivity;
-import com.example.caiqu.demand.Adapters.DemandAdapter;
 import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Entities.Demand;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
+import com.example.caiqu.demand.Tools.MyAlarmManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,13 +36,14 @@ public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.e(TAG, "On AlarmReceiver");
-        String type = intent.getExtras().getString(Constants.ALARM_TYPE_KEY);
+        String type = intent.getType();
         Log.e(TAG, "Alarm Type:" + type);
         Demand demand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
         Log.e(TAG, "Demand intent:" + demand.toString());
         String title = "";
         int drawable = -1;
         String status = Constants.UNDEFINE_STATUS;
+        boolean shouldStatusChange = true;
 
         switch (type) {
             case Constants.POSTPONE_ALARM_TAG:
@@ -50,16 +51,27 @@ public class AlarmReceiver extends BroadcastReceiver {
                 drawable = R.drawable.ic_alarm_black_24dp;
                 status = Constants.UNDEFINE_STATUS;
                 break;
+            case Constants.WARN_DUE_TIME_ALARM_TAG:
+                title = "Expira Amanhã!";
+                drawable = R.drawable.ic_alarm_black_24dp;
+                shouldStatusChange = false;
+                break;
             case Constants.DUE_TIME_ALARM_TAG:
-                title = "Fim do Prazo!";
+                title = "Fim do Prazo! (atrasada)";
                 drawable = R.drawable.ic_alarm_off_black_24dp;
                 status = Constants.LATE_STATUS;
                 break;
         }
 
-        // Change demand status.
-        demand.setStatus(status);
-        attemptToChangeStatus(demand, context);
+        if(shouldStatusChange) {
+            // Change demand status.
+            demand.setStatus(status);
+            attemptToChangeStatus(demand, context);
+        } else {
+            Log.e(TAG, "status change false");
+            CommonUtils.cancelDueTime(demand,context,Constants.WARN_DUE_TIME_ALARM_TAG);
+            CommonUtils.setDueTime(demand,context);
+        }
 
         Intent targetIntent = new Intent(context, ViewDemandActivity.class);
         targetIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);

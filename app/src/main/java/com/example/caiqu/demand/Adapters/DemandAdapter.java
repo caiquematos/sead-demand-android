@@ -3,12 +3,12 @@ package com.example.caiqu.demand.Adapters;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.os.Build;
-import android.support.annotation.RequiresApi;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,11 +38,13 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
     private Context mContext;
     private int mPage; //identifies which tab called it
     private SeenTask mSeenTask;
+    private SparseBooleanArray mSelectedItemsIds;
 
     public DemandAdapter(List<Demand> demandList, Context context, int page){
         this.mDemandList = demandList;
         this.mContext = context;
         this.mPage = page;
+        this.mSelectedItemsIds = new SparseBooleanArray();
     }
 
     @Override
@@ -51,122 +53,218 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         return new ViewHolder(view);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
-    public void onBindViewHolder(DemandAdapter.ViewHolder holder, final int position) {
+    public void onBindViewHolder(final DemandAdapter.ViewHolder holder, final int position) {
         final Demand demand = mDemandList.get(position);
         // Log.e("On ViewHolder", "Position:" +position + " Seen:" + demand.getSeen());
 
-        switch (demand.getStatus()){
-            case Constants.DONE_STATUS: // Done.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.darkgreen));
-                break;
-            case Constants.ACCEPT_STATUS: // Accepted.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.green));
-                break;
-            case Constants.REJECT_STATUS: // Rejected.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.darkred));
-                break;
-            case Constants.CANCEL_STATUS: // Cancelled.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.red));
-                break;
-            case Constants.POSTPONE_STATUS: // Postponed.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.yellow));
-                break;
-            case Constants.REOPEN_STATUS: // Reopen.
-            case Constants.UNDEFINE_STATUS: // Undefined.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.gray));
-                break;
-            case Constants.RESEND_STATUS: // Resent.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.blue));
-                break;
-            case Constants.LATE_STATUS: // Late.
-                holder.mTag.setBackgroundColor(ContextCompat.getColor(mContext,R.color.primary_dark));
-        }
+        showDemandStatus(demand.getStatus(), holder);
+        showDemandPrior(demand.getPrior(), holder);
 
-        switch (demand.getImportance()){
-            case "Urgente":
-                holder.mImportance.setColorFilter(ContextCompat.getColor(mContext,R.color.transred));
-                break;
-            case "Importante":
-                holder.mImportance.setColorFilter(ContextCompat.getColor(mContext,R.color.transyellow));
-                break;
-            default:
-                holder.mImportance.setColorFilter(ContextCompat.getColor(mContext,R.color.transgreen));
-        }
-
-        // Log.e("On DemandAdap", "Page: " + mPage);
+        // Log.e("On DemandAdapt", "Page: " + mPage);
         //For tab sent the name to show should be who the demand was sent
         String user;
         if (mPage == Constants.SENT_PAGE) user = demand.getReceiver().getName();
         else user = demand.getSender().getName();
 
         //If demand was already seen by the receiver change color of background and title
-        if (demand.getSeen().equals(Constants.YES_SEEN)) {
+        if (demand.getSeen().equals(Constants.YES)) {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
-            holder.mSubject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
+            holder.subject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
         } else {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(mContext,R.color.white));
-            holder.mSubject.setTextColor(ContextCompat.getColor(mContext,R.color.black));
+            holder.subject.setTextColor(ContextCompat.getColor(mContext,R.color.black));
         }
 
-        holder.mSubject.setText(demand.getSubject());
-        holder.mUser.setText(user);
-        holder.mDescription.setText(demand.getDescription());
-        holder.mTime.setText(CommonUtils.formatTime(demand.getCreatedAt()));
-        holder.mDate.setText(CommonUtils.formatDate(demand.getCreatedAt()));
+        holder.subject.setText(demand.getSubject());
+        holder.user.setText(user);
+        holder.description.setText(demand.getDescription());
+        holder.time.setText(CommonUtils.formatTime(demand.getCreatedAt()));
+        holder.date.setText(CommonUtils.formatDate(demand.getCreatedAt()));
 
-        holder.itemView.setClickable(true);
+        /*
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //change color in order to indicate seen status
-                if((mPage == Constants.ADMIN_PAGE || mPage == Constants.RECEIVED_PAGE) && demand.getSeen().equals(Constants.NO_SEEN)){
-                    v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
-                    TextView subject = (TextView) v.findViewById(R.id.demand_title);
-                    subject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
-                    demand.setSeen(Constants.YES_SEEN);
-                    markAsSeen(demand, position); // On Received demands or Admin demands
-                }
-                Intent intent = new Intent(mContext, ViewDemandActivity.class);
-                intent.putExtra(Constants.INTENT_ACTIVITY, mContext.getClass().getSimpleName());
-                int menuType = -1;
-                switch(mPage){
-                    case Constants.RECEIVED_PAGE:
-                        menuType = Constants.SHOW_NO_MENU;
-                        if (demand.getStatus().equals(Constants.ACCEPT_STATUS))
-                            menuType = Constants.SHOW_DONE_MENU;
-                        break;
-                    case Constants.SENT_PAGE:
-                        menuType = Constants.SHOW_NO_MENU;
-                        if (demand.getStatus().equals(Constants.CANCEL_STATUS) || demand.getStatus().equals(Constants.REJECT_STATUS))
-                            menuType = Constants.SHOW_RESEND_MENU;
-                        break;
-                    case Constants.ADMIN_PAGE:
-                        menuType = Constants.SHOW_TRIO_MENU;
-                        break;
-                    case Constants.STATUS_PAGE:
-                        switch (demand.getStatus()) {
-                            case Constants.ACCEPT_STATUS:
-                                menuType = Constants.SHOW_CANCEL_MENU;
-                                break;
-                            case Constants.REJECT_STATUS:
-                                menuType = Constants.SHOW_NO_MENU;
-                                break;
-                            case Constants.CANCEL_STATUS:
-                                menuType = Constants.SHOW_REOPEN_MENU;
-                                break;
-                            case Constants.POSTPONE_STATUS:
-                                menuType = Constants.SHOW_TRIO_MENU;
-                        }
-                        break;
-                }
-                intent.putExtra(Constants.INTENT_PAGE, mPage);
-                intent.putExtra(Constants.INTENT_MENU, menuType);
-                intent.putExtra(Constants.INTENT_DEMAND, demand);
-                mContext.startActivity(intent);
+                if (mSelectedItemsIds.get(position)) markDemandSelected(holder);
+                else showDemand(holder.itemView,position);
             }
         });
+        */
+        if (mSelectedItemsIds.get(position)) markDemandSelected(holder);
+    }
+
+    private void setTransferIntent(Intent intent, Demand demand) {
+        intent.putExtra(Constants.INTENT_ACTIVITY, mContext.getClass().getSimpleName());
+        int menuType = -1;
+        switch(mPage){
+            case Constants.RECEIVED_PAGE:
+                menuType = Constants.SHOW_NO_MENU;
+                if (demand.getStatus().equals(Constants.ACCEPT_STATUS)
+                        || demand.getStatus().equals(Constants.LATE_STATUS))
+                    menuType = Constants.SHOW_DONE_MENU;
+                break;
+            case Constants.SENT_PAGE:
+                menuType = Constants.SHOW_NO_MENU;
+                if (demand.getStatus().equals(Constants.CANCEL_STATUS) || demand.getStatus().equals(Constants.REJECT_STATUS))
+                    menuType = Constants.SHOW_RESEND_MENU;
+                break;
+            case Constants.ADMIN_PAGE:
+                menuType = Constants.SHOW_TRIO_MENU;
+                break;
+            case Constants.STATUS_PAGE:
+                switch (demand.getStatus()) {
+                    case Constants.ACCEPT_STATUS:
+                        menuType = Constants.SHOW_CANCEL_MENU;
+                        break;
+                    case Constants.REJECT_STATUS:
+                        menuType = Constants.SHOW_NO_MENU;
+                        break;
+                    case Constants.CANCEL_STATUS:
+                        menuType = Constants.SHOW_REOPEN_MENU;
+                        break;
+                    case Constants.POSTPONE_STATUS:
+                        menuType = Constants.SHOW_TRIO_MENU;
+                }
+                break;
+        }
+        intent.putExtra(Constants.INTENT_PAGE, mPage);
+        intent.putExtra(Constants.INTENT_MENU, menuType);
+        intent.putExtra(Constants.INTENT_DEMAND, demand);
+    }
+
+    private void setSeenStatus(View v, Demand demand, int position) {
+        if((mPage == Constants.ADMIN_PAGE || mPage == Constants.RECEIVED_PAGE) && demand.getSeen().equals(Constants.NO)){
+            v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
+            TextView subject = (TextView) v.findViewById(R.id.demand_title);
+            subject.setTextColor(ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light));
+            demand.setSeen(Constants.YES);
+            markAsSeen(demand, position); // On Received demands or Admin demands
+        }
+    }
+
+    public void showDemand(View v, int position){
+        Demand demand = mDemandList.get(position);
+        //change color in order to indicate seen status
+        setSeenStatus(v, demand, position);
+        Intent intent = new Intent(mContext, ViewDemandActivity.class);
+        setTransferIntent(intent, demand);
+        mContext.startActivity(intent);
+    }
+
+    public void toggleSelection(int position){
+        selectView(position, !mSelectedItemsIds.get(position));
+    }
+
+    public void removeSelection(){
+        mSelectedItemsIds = new SparseBooleanArray();
+        notifyDataSetChanged();
+    }
+
+    public void selectView(int position, boolean value){
+        Log.e(TAG, "Position:" + position + " Value:" + value + " Demanda:" + mDemandList.get(position).getSubject());
+        if (value) {
+            mSelectedItemsIds.put(position, value);
+        } else {
+            mSelectedItemsIds.delete(position);
+        }
+        notifyDataSetChanged();
+    }
+
+    public int getSelectedCount(){
+        return mSelectedItemsIds.size();
+    }
+
+    public SparseBooleanArray getSelectedIds(){
+        return mSelectedItemsIds;
+    }
+
+    private void markDemandSelected(ViewHolder holder) {
+        int color = ContextCompat.getColor(mContext, R.color.accent);
+        int drawable = R.drawable.ic_check_black_24dp;
+
+        Drawable objDrawable;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            objDrawable = mContext.getDrawable(drawable);
+        } else {
+            objDrawable = mContext.getResources().getDrawable(drawable);
+        }
+        objDrawable = objDrawable.mutate();
+
+        holder.statusIcon.setColorFilter(color);
+        holder.statusIcon.setImageDrawable(objDrawable);
+    }
+
+    private void showDemandPrior(String prior, ViewHolder holder) {
+        int color;
+
+        switch (prior){
+            case Constants.VERY_HIGH_PRIOR_TAG:
+                color = ContextCompat.getColor(mContext,R.color.darkred);
+                break;
+            case Constants.HIGH_PRIOR_TAG:
+                color = ContextCompat.getColor(mContext,R.color.Red);
+                break;
+            case Constants.MEDIUM_PRIOR_TAG:
+                color = ContextCompat.getColor(mContext,R.color.dyellow);
+                break;
+            default:
+                color = ContextCompat.getColor(mContext,R.color.dGreen);
+        }
+
+        holder.prior_tag.setBackgroundColor(color);
+    }
+
+    private void showDemandStatus(String status, ViewHolder holder) {
+        int color;
+        int drawable;
+
+        switch (status){
+            case Constants.DONE_STATUS: // Done.
+                drawable = R.drawable.ic_assignment_turned_in_white_24dp;
+                color = ContextCompat.getColor(mContext,R.color.darkgreen);
+                break;
+            case Constants.ACCEPT_STATUS: // Accepted.
+                drawable = R.drawable.ic_check_circle_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.green);
+                break;
+            case Constants.REJECT_STATUS: // Rejected.
+                drawable = R.drawable.ic_cancel_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.darkred);
+                break;
+            case Constants.CANCEL_STATUS: // Cancelled.
+                drawable = R.drawable.ic_cancel_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.red);
+                break;
+            case Constants.POSTPONE_STATUS: // Postponed.
+                drawable = R.drawable.ic_alarm_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.dyellow);
+                break;
+            case Constants.RESEND_STATUS: // Resent.
+                drawable = R.drawable.ic_send_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.blue);
+                break;
+            case Constants.LATE_STATUS: // Late.
+                drawable = R.drawable.ic_alarm_off_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.primary_dark);
+                break;
+            case Constants.REOPEN_STATUS: // Reopen.
+            case Constants.UNDEFINE_STATUS: // Undefined.
+            default:
+                drawable = R.drawable.ic_fiber_manual_record_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.gray);
+        }
+
+        Drawable objDrawable;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            objDrawable = mContext.getDrawable(drawable);
+        } else {
+            objDrawable = mContext.getResources().getDrawable(drawable);
+        }
+        objDrawable = objDrawable.mutate();
+
+        holder.statusIcon.setColorFilter(color);
+        holder.statusIcon.setImageDrawable(objDrawable);
     }
 
     @Override
@@ -175,24 +273,24 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
-        TextView mSubject;
-        TextView mUser;
-        TextView mDescription;
-        TextView mTime;
-        TextView mDate;
-        View mTag;
-        ImageView mImportance;
+        TextView subject;
+        TextView user;
+        TextView description;
+        TextView time;
+        TextView date;
+        View prior_tag;
+        ImageView statusIcon;
 
         public ViewHolder(View view) {
             super(view);
 
-            mImportance = (ImageView) view.findViewById(R.id.demand_importance);
-            mTag = view.findViewById(R.id.demand_tag);
-            mSubject = (TextView) view.findViewById(R.id.demand_title);
-            mUser = (TextView) view.findViewById(R.id.demand_user);
-            mDescription = (TextView) view.findViewById(R.id.demand_content);
-            mDate = (TextView) view.findViewById(R.id.demand_date);
-            mTime = (TextView) view.findViewById(R.id.demand_time);
+            statusIcon = (ImageView) view.findViewById(R.id.demand_status_icon);
+            prior_tag = view.findViewById(R.id.demand_prior_tag);
+            subject = (TextView) view.findViewById(R.id.demand_title);
+            user = (TextView) view.findViewById(R.id.demand_user);
+            description = (TextView) view.findViewById(R.id.demand_content);
+            date = (TextView) view.findViewById(R.id.demand_date);
+            time = (TextView) view.findViewById(R.id.demand_time);
         }
     }
 
@@ -200,7 +298,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         // Mark locally.
         CommonUtils.updateColumnDB(
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
-                Constants.YES_SEEN,
+                Constants.YES,
                 demand,
                 Constants.UPDATE_READ,
                 mContext
@@ -249,9 +347,10 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 e.printStackTrace();
             }
 
-            if (success) mDemandList.get(position).setSeen(Constants.YES_SEEN);
+            if (success) mDemandList.get(position).setSeen(Constants.YES);
         }
     }
+
 
 
 }

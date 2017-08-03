@@ -4,34 +4,48 @@
     tools:context="com.example.caiqu.demand.Activities.MainActivity">
 
     <item
-        android:id="@+id/main_admin_done"
-        android:orderInCategory="95"
-        android:title="@string/main_admin_done"
-        app:showAsAction="never" />
+        android:id="@+id/main_archived_demands"
+        android:orderInCategory="93"
+        android:title="@string/archived_demands_item"/>
 
-    <item
-        android:id="@+id/main_admin_accepted"
-        android:orderInCategory="96"
-        android:title="@string/main_admin_accepted"
-        app:showAsAction="never" />
+    <group android:id="@+id/main_admin_group">
+        <item
+            android:id="@+id/main_admin_requests"
+            android:orderInCategory="94"
+            android:title="@string/permission_requests"
+            android:icon="@drawable/ic_account_box_white_24dp"
+            app:showAsAction="always" />
 
-    <item
-        android:id="@+id/main_admin_postponed"
-        android:orderInCategory="97"
-        android:title="Demandas Adiadas"
-        app:showAsAction="never" />
+        <item
+            android:id="@+id/main_admin_done"
+            android:orderInCategory="95"
+            android:title="@string/done_demands"
+            app:showAsAction="never" />
 
-    <item
-        android:id="@+id/main_admin_cancelled"
-        android:orderInCategory="98"
-        android:title="@string/main_admin_cancelled"
-        app:showAsAction="never" />
+        <item
+            android:id="@+id/main_admin_accepted"
+            android:orderInCategory="96"
+            android:title="@string/accepted_demands"
+            app:showAsAction="never" />
 
-    <item
-        android:id="@+id/main_admin_rejected"
-        android:orderInCategory="99"
-        android:title="@string/demandas_rejeitadas"
-        app:showAsAction="never" />
+        <item
+            android:id="@+id/main_admin_postponed"
+            android:orderInCategory="97"
+            android:title="@string/postponed_demands"
+            app:showAsAction="never" />
+
+        <item
+            android:id="@+id/main_admin_cancelled"
+            android:orderInCategory="98"
+            android:title="@string/canceled_demands"
+            app:showAsAction="never" />
+
+        <item
+            android:id="@+id/main_admin_rejected"
+            android:orderInCategory="99"
+            android:title="@string/rejected_demands"
+            app:showAsAction="never" />
+    </group>
 
     <item
         android:id="@+id/action_settings"

@@ -14,9 +14,11 @@ import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
 import com.example.caiqu.demand.Activities.MainActivity;
+import com.example.caiqu.demand.Activities.RequestActivity;
 import com.example.caiqu.demand.Activities.ViewDemandActivity;
 import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.Reason;
 import com.example.caiqu.demand.Entities.User;
 import com.example.caiqu.demand.R;
 import com.example.caiqu.demand.Tools.CommonUtils;
@@ -38,7 +40,6 @@ import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private final String TAG = getClass().getSimpleName();
-    private final int PAGE = 3;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
@@ -113,61 +114,85 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Log.d(TAG, "Data Type: " + type);
 
-        try {
-            JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
-            JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
-            JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
-
-            User sender = User.build(senderJson);
-            User receiver = User.build(receiverJson);
-            Demand demand = Demand.build(sender, receiver, demandJson);
-
-            Log.e(TAG, "demand:" + demand.toString()
-                    + " sender:" + sender.toString()
-                    + " receiver:" + receiver.toString()
-            );
-
-            switch (data.get("type")) {
-                case Constants.INSERT_DEMAND_RECEIVED:
-                    Log.d(TAG, "Create method to store user type demands.");
-                    break;
-                case Constants.INSERT_DEMAND_ADMIN:
-                    CommonUtils.storeDemandDB(demand, type, this);
-                    break;
-                case Constants.UPDATE_DEMAND:
-                    CommonUtils.updateDemandDB(demand, type, this);
-                    break;
-                case Constants.UPDATE_STATUS:
-                    CommonUtils.updateColumnDB(
-                            FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
-                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS),
-                            demand,
-                            type,
-                            this
-                            );
-                    break;
-                case Constants.UPDATE_IMPORTANCE:
-                    CommonUtils.updateColumnDB(
-                            FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE,
-                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE),
-                            demand,
-                            type,
-                            this
-                    );
-                    break;
-                case Constants.UPDATE_READ:
-                    CommonUtils.updateColumnDB(
-                            FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
-                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN),
-                            demand,
-                            type,
-                            this
-                    );
-                    break;
+        if( type.equals(Constants.UNLOCK_USER)){
+            try {
+                JSONObject userJson = new JSONObject(bundle.get("user").toString());
+                User user = User.build(userJson);
+                // Try to add user, but if it already exists, then it'll update it.
+                CommonUtils.storeUserDB(user,type,this);
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
+        } else {
 
-        } catch (JSONException e){
-            e.printStackTrace();
+            JSONObject reasonJson;
+            Reason reason;
+
+            try {
+                // Check if there is a reason attached to this demand.
+                // If yes, create a reason object.
+                if(bundle.get("reason") != null) {
+                    reasonJson = new JSONObject(bundle.get("reason").toString());
+                    reason = Reason.build(reasonJson);
+                    Log.e(TAG, " reason:" + reason.toString());
+                } else {
+                    reason = null;
+                }
+
+                JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
+                JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
+                JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
+
+                User sender = User.build(senderJson);
+                User receiver = User.build(receiverJson);
+                Demand demand = Demand.build(sender, receiver, reason, demandJson);
+
+                Log.e(TAG, "demand:" + demand.toString()
+                        + " sender:" + sender.toString()
+                        + " receiver:" + receiver.toString()
+                );
+
+                switch (type) {
+                    case Constants.INSERT_DEMAND_SENT:
+                    case Constants.INSERT_DEMAND_RECEIVED:
+                    case Constants.INSERT_DEMAND_ADMIN:
+                        CommonUtils.storeDemandDB(demand, type, this);
+                        break;
+                    case Constants.UPDATE_DEMAND:
+                        CommonUtils.updateDemandDB(demand, type, this);
+                        break;
+                    case Constants.UPDATE_STATUS:
+                        CommonUtils.updateColumnDB(
+                                FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
+                                demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS),
+                                demand,
+                                type,
+                                this
+                        );
+                        break;
+                    case Constants.UPDATE_PRIOR:
+                        CommonUtils.updateColumnDB(
+                                FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR,
+                                demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR),
+                                demand,
+                                type,
+                                this
+                        );
+                        break;
+                    case Constants.UPDATE_READ:
+                        CommonUtils.updateColumnDB(
+                                FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
+                                demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN),
+                                demand,
+                                type,
+                                this
+                        );
+                        break;
+                }
+
+            } catch (JSONException e){
+                e.printStackTrace();
+            }
         }
 
         Log.d(TAG, "Short lived task is done.");
@@ -179,40 +204,89 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
      * @param notification FCM notification received.
      * @param data
      */
-    @RequiresApi(api = Build.VERSION_CODES.N)
     private void sendNotification(RemoteMessage.Notification notification, Map<String, String> data) {
-        Intent intent = new Intent(this, ViewDemandActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        // TODO: set notifications' tag field on server and handle it here (TAG: demand or user?).
 
-        JSONObject senderJson;
-        JSONObject receiverJson;
-        JSONObject demandJson;
-        User sender;
-        User receiver;
-        Demand demand = null;
-                
-        try {
-            senderJson = new JSONObject(data.get("sender"));
-            receiverJson = new JSONObject(data.get("receiver"));
-            demandJson = new JSONObject(data.get("demand"));
-            sender = User.build(senderJson);
-            receiver = User.build(receiverJson);
-            demand = Demand.build(sender,receiver,demandJson);
-            Log.e(TAG, "Json (Notification):"
-                    + demand.toString()
-                    + " sender:" + sender.toString()
-                    + " receiver:" + receiver.toString()
-            );
-        } catch (JSONException e) {
-            e.printStackTrace();
+        Intent intent;
+        int notificationId;
+        String title;
+        int icon;
+        NotificationCompat.BigTextStyle bigTextStyle = null;
+
+        String dataType = data.get("type");
+        if (dataType.equals(Constants.UNLOCK_USER)){
+            intent = new Intent(this, RequestActivity.class);
+            JSONObject userJson;
+            User user = null;
+
+            try {
+                userJson = new JSONObject(data.get("user"));
+                user = User.build(userJson);
+                Log.e(TAG, "Json (Notification):" + user.toString());
+                notificationId = user.getId();
+            } catch (JSONException e) {
+                notificationId = -1;
+                e.printStackTrace();
+            }
+            title = notification.getTitle();
+            icon = R.drawable.ic_account_box_white_24dp;
+
+            intent.putExtra(Constants.INTENT_USER, user);
+        } else {
+            intent = new Intent(this, ViewDemandActivity.class);
+            JSONObject senderJson;
+            JSONObject receiverJson;
+            JSONObject reasonJson;
+            JSONObject demandJson;
+            User sender;
+            User receiver;
+            Reason reason;
+            Demand demand = null;
+
+            try {
+
+                // Check if there is a reason attached to this demand.
+                if(data.get("reason") != null) {
+                    reasonJson = new JSONObject(data.get("reason"));
+                    reason = Reason.build(reasonJson);
+                } else {
+                    reason = null;
+                }
+
+                senderJson = new JSONObject(data.get("sender"));
+                receiverJson = new JSONObject(data.get("receiver"));
+                demandJson = new JSONObject(data.get("demand"));
+                sender = User.build(senderJson);
+                receiver = User.build(receiverJson);
+                demand = Demand.build(sender,receiver,reason,demandJson);
+                Log.e(TAG, "Json (Notification):"
+                        + demand.toString()
+                        + " sender:" + sender.toString()
+                        + " receiver:" + receiver.toString()
+                );
+
+                notificationId = demand.getId();
+
+            } catch (JSONException e) {
+                notificationId = -1;
+                e.printStackTrace();
+            }
+
+            intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
+            intent.putExtra(Constants.INTENT_PAGE, Integer.parseInt(data.get("page")));
+            intent.putExtra(Constants.INTENT_MENU, Integer.parseInt(data.get("menu")));
+            intent.putExtra(Constants.INTENT_DEMAND, demand);
+
+            title = "Demanda " + notification.getTitle();
+            icon = R.drawable.ic_business_center_black_24dp;
+
+            bigTextStyle = new NotificationCompat.BigTextStyle();
+            bigTextStyle.setBigContentTitle(demand.getSubject() + " " + notification.getTitle());
+            bigTextStyle.bigText(notification.getBody() + "\n\n" + demand.getDescription());
+            bigTextStyle.setSummaryText(CommonUtils.formatDate(demand.getCreatedAt()));
         }
 
-        int notificationId = demand.getId();
-
-        intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
-        intent.putExtra(Constants.INTENT_PAGE, Integer.parseInt(data.get("page")));
-        intent.putExtra(Constants.INTENT_MENU, Integer.parseInt(data.get("menu")));
-        intent.putExtra(Constants.INTENT_DEMAND, demand);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addNextIntentWithParentStack((new Intent(this, MainActivity.class)));
@@ -225,19 +299,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.drawable.ic_business_center_black_24dp)
-                .setContentTitle("Demanda " + notification.getTitle())
+                .setSmallIcon(icon)
+                .setContentTitle(title)
                 .setContentText(notification.getBody())
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(resultPendingIntent);
 
-        NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
-        bigTextStyle.setBigContentTitle(demand.getSubject() + " " + notification.getTitle());
-        bigTextStyle.bigText(notification.getBody() + "\n\n" + demand.getDescription());
-        bigTextStyle.setSummaryText(CommonUtils.formatDate(demand.getCreatedAt()));
-
-        notificationBuilder.setStyle(bigTextStyle);
+        if (bigTextStyle != null) notificationBuilder.setStyle(bigTextStyle);
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:backgroundTint="@color/white"
+    tools:context="com.example.caiqu.demand.Activities.RejectDialogActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/dialog_margin">
+
+            <TextView
+                android:id="@+id/reject_dialog_reason_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="start"
+                android:layout_marginBottom="@dimen/text_margin"
+                android:textColor="@color/black"
+                android:textSize="16dp"
+                android:text="Escolha um motivo pra o indeferimento"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <Spinner
+                    android:id="@+id/reject_dialog_reason_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/text_margin"
+                    android:entries="@array/array_reject_dialog_reasons"></Spinner>
+
+                <EditText
+                    android:id="@+id/reject_dialog_reason_edit"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:layout_marginBottom="@dimen/text_margin"
+                    android:gravity="start"
+                    android:hint="@string/reject_dialog_reason_edit_hint"
+                    android:maxLength="512"
+                    android:scrollbars="vertical"
+                    android:textColorHighlight="@color/accent"
+                    android:shadowColor="@color/accent"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/reject_dialog_reason_cancel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CANCELAR"
+                        android:textStyle="bold"
+                        android:clickable="true"
+                        android:textColor="@color/accent" />
+
+                    <TextView
+                        android:id="@+id/reject_dialog_reason_ok"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="@dimen/dialog_margin"
+                        android:text="OK"
+                        android:clickable="true"
+                        android:textStyle="bold"
+                        android:textColor="@color/accent" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</android.support.design.widget.CoordinatorLayout>

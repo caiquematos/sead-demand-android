@@ -1,5 +1,7 @@
 package com.example.caiqu.demand.Entities;
 
+import android.util.Log;
+
 import com.example.caiqu.demand.Tools.CommonUtils;
 
 import org.json.JSONException;
@@ -9,6 +11,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 public class User implements Serializable{
+    private String TAG = getClass().getSimpleName();
     private int id;
     private long localId;
     private String email;
@@ -33,6 +36,7 @@ public class User implements Serializable{
         setGcm(gcm);
         setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updatedAt));
+        Log.e(TAG, "job position:" + position);
     }
 
     public User(String email, String password, String name, String superior, String position, String gcm) {
@@ -160,6 +164,7 @@ public class User implements Serializable{
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
                 ", name='" + name + '\'' +
+                ", status='" + status + '\'' +
                 ", position='" + position + '\'' +
                 ", superiorEmail='" + superiorEmail + '\'' +
                 ", gcm='" + gcm + '\'' +

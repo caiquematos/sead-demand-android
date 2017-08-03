@@ -1,32 +1,27 @@
 package com.example.caiqu.demand.Activities;
 
 import android.content.BroadcastReceiver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
 
 import com.example.caiqu.demand.Adapters.DemandAdapter;
 import com.example.caiqu.demand.Databases.FeedReaderContract;
 import com.example.caiqu.demand.Databases.MyDBManager;
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.User;
+import com.example.caiqu.demand.Interfaces.RecyclerClickListener;
 import com.example.caiqu.demand.R;
+import com.example.caiqu.demand.RecycerSuport.RecyclerTouchListener;
 import com.example.caiqu.demand.Tools.CommonUtils;
 import com.example.caiqu.demand.Tools.Constants;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,17 +31,13 @@ public class StatusActivity extends AppCompatActivity {
 
     private RecyclerView mRecyclerView;
     private RecyclerView.LayoutManager mLayoutManager;
-    private RecyclerView.Adapter mAdapter;
-    private SwipeRefreshLayout mSwipeRefresh;
-    private GetAcceptedTask mGetAcceptedTask;
-    private String mUserEmail;
-    private SharedPreferences mPrefs;
+    private DemandAdapter mAdapter;
     private List<Demand> mDemandSet;
     private StatusActivity mActivity;
     private String mStatus;
     private String mType;
     private int mPage;
-    private int mUserId;
+    private User mCurrentUser;
 
     public StatusActivity() {
         this.mActivity = this;
@@ -57,8 +48,12 @@ public class StatusActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.BROADCAST_STATUS_ACT));
-        if (mUserId != -1 && !mStatus.isEmpty()) loadStatusList(mUserId, mStatus);
-        else Log.e(TAG, "Logged User id  or status not found!");
+        if (mCurrentUser.getId() != -1){
+            List<User> usersUnderMySupervision = fetchUsersUnderMySupervision(mCurrentUser.getId());
+            if (usersUnderMySupervision != null)
+                if (usersUnderMySupervision.size() > 0)
+                    loadAdminListByStatus(usersUnderMySupervision, mStatus);
+        } else Log.e(TAG, "Logged User id not found!");
     }
 
     @Override
@@ -70,175 +65,132 @@ public class StatusActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_accepted);
+        setContentView(R.layout.activity_status);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         Intent intent = getIntent();
         mType = intent.getStringExtra("TYPE"); // U - user, A - Admin
         mStatus = intent.getStringExtra("STATUS"); // A - Accepted, C - Cancelled, X - Rejected, P - Postponed, D - Done.
         Log.d(TAG, "Status: " + mStatus + " Type: " + mType);
 
-        // Handle Screen Title.
-        String title = "Demandas";
+        // Setting activity title.
+        String activityTitle;
         switch (mType) {
             case Constants.INTENT_USER_TYPE:
                 switch (mStatus) {
                     case Constants.DONE_STATUS:
-                        title = "Demandas Cocluídas";
+                        activityTitle = "Demandas Concluídas";
                         break;
+                    default:
+                        activityTitle = "Demandas";
                 }
                 break;
             case Constants.INTENT_ADMIN_TYPE:
                 switch (mStatus) {
                     case Constants.ACCEPT_STATUS:
-                        title = "Demandas Aceitas";
+                        activityTitle = "Demandas Deferidas";
                         break;
                     case Constants.REJECT_STATUS:
-                        title = "Demandas Rejeitadas";
+                        activityTitle = "Demandas Indeferidas";
                         break;
                     case Constants.CANCEL_STATUS:
-                        title = "Demandas Canceladas";
+                        activityTitle = "Demandas Canceladas";
                         break;
                     case Constants.POSTPONE_STATUS:
-                        title = "Demandas Adiadas";
+                        activityTitle = "Demandas Adiadas";
                         break;
                     case Constants.DONE_STATUS:
-                        title = "Demandas Cocluídas";
+                        activityTitle = "Demandas Concluídas";
                         break;
+                    default:
+                        activityTitle = "Demandas";
                 }
+                break;
+            default:
+                activityTitle = "Demandas";
         }
-        setTitle(title);
+        setTitle(activityTitle);
 
-        mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
-        mUserEmail = mPrefs.getString(Constants.LOGGED_USER_EMAIL,"");
-        mUserId = mPrefs.getInt(Constants.LOGGED_USER_ID,-1);
+        mCurrentUser = CommonUtils.getCurrentUserPreference(this);
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.accepted_recycler);
+        mRecyclerView = (RecyclerView) findViewById(R.id.demand_recycler);
         mLayoutManager = new LinearLayoutManager(getApplicationContext());
 
-        if (mUserId != -1 && !mStatus.isEmpty()) loadStatusList(mUserId, mStatus);
-        else Log.e(TAG, "Logged User id or status not found!");
+        if (mCurrentUser.getId() != -1){
+            List<User> usersUnderMySupervision = fetchUsersUnderMySupervision(mCurrentUser.getId());
+            if (usersUnderMySupervision != null)
+                if (usersUnderMySupervision.size() > 0)
+                    loadAdminListByStatus(usersUnderMySupervision, mStatus);
+        } else Log.e(TAG, "Logged User id not found!");
 
-        mSwipeRefresh = (SwipeRefreshLayout) findViewById(R.id.accepted_swipe);
-        mSwipeRefresh.setEnabled(false);
+        mRecyclerView.addOnItemTouchListener(new RecyclerTouchListener(mActivity, mRecyclerView,
+                new RecyclerClickListener() {
+                    @Override
+                    public void onClick(View view, int position) {
+                       mAdapter.showDemand(view,position);
+                    }
 
-        /*
-        mSwipeRefresh = (SwipeRefreshLayout) findViewById(R.id.accepted_swipe);
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                if(mGetAcceptedTask == null && CommonUtils.isOnline(mActivity)){
-                    mGetAcceptedTask = new GetAcceptedTask(mUserEmail, mStatus);
-                    mGetAcceptedTask.execute();
-                } else {
-                    mSwipeRefresh.setRefreshing(false);
-                    Snackbar.make(mSwipeRefresh, R.string.internet_error, Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-            }
-        });
+                    @Override
+                    public void onLongClick(View view, int position) {}
+                }));
 
-        if(mGetAcceptedTask == null && CommonUtils.isOnline(mActivity)){
-            mGetAcceptedTask = new GetAcceptedTask(mUserEmail, mStatus);
-            mGetAcceptedTask.execute();
-        } else {
-            Snackbar.make(mSwipeRefresh, R.string.internet_error, Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-        }
-
-        */
     }
 
-    private void loadStatusList(int adminId, String status){
-        String selection = "(( " + FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " = ? AND "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " = ? ) OR ( "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " != ? AND "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " != ?)) AND ( "
-                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? )";
+    @Override
+    public boolean onSupportNavigateUp(){
+        finish();
+        return true;
+    }
+
+    private List<User> fetchUsersUnderMySupervision(int superiorId) {
+        List<User> users;
+
+        String selection = FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR + " = ?";
 
         String[] args = {
-                "" + adminId,
-                "" + adminId,
-                "" + adminId,
-                "" + adminId,
-                status
+                "" + superiorId,
         };
 
-        MyDBManager myDBManager = new MyDBManager(mActivity);
+        MyDBManager myDBManager = new MyDBManager(this);
+        users = myDBManager.searchUsers(selection,args);
+
+        return users;
+    }
+
+    private void loadAdminListByStatus(List<User> usersUnderMySupervision, String status){
+
+        String selection = "";
+        ArrayList<String> argsArray = new ArrayList<>();
+
+        selection = selection.concat("(");
+        for(int i = 0; i < usersUnderMySupervision.size(); i++){
+            if(i > 0)  selection = selection.concat(" OR ");
+            selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " = ?");
+            argsArray.add("" + usersUnderMySupervision.get(i).getId());
+        }
+        selection = selection.concat(")");
+        selection = selection.concat( " AND ");
+        selection = selection.concat("(");
+        selection = selection.concat( FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ?");
+        selection = selection.concat(")");
+
+        Log.e(TAG, "selection:" + selection.toString());
+
+        argsArray.add(status);
+
+        String[] args = new String[argsArray.size()];
+        for (int j = 0; j < args.length; j++) args[j] = argsArray.get(j);
+        Log.e(TAG, "args:" + argsArray.toString());
+
+        MyDBManager myDBManager = new MyDBManager(this);
         mDemandSet = myDBManager.searchDemands(selection,args);
 
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        mAdapter = new DemandAdapter(mDemandSet,mActivity, mPage);
+        mAdapter = new DemandAdapter(mDemandSet,this, mPage);
         mRecyclerView.setAdapter(mAdapter);
-    }
-
-    private class GetAcceptedTask extends AsyncTask<Void, Void, String>{
-        private String userEmail;
-        private String status;
-
-        public GetAcceptedTask(String userEmail, String status) {
-            this.userEmail = userEmail;
-            this.status = status;
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-            ContentValues values = new ContentValues();
-            values.put("email", userEmail);
-            values.put("status", status);
-            switch (mType) {
-                case Constants.INTENT_USER_TYPE:
-                    return CommonUtils.POST("/demand/list-demand-by-status/", values);
-                case Constants.INTENT_ADMIN_TYPE:
-                    return CommonUtils.POST("/demand/list-admin-demand-by-status/", values);
-                default:
-                    return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String jsonResponse) {
-            super.onPostExecute(jsonResponse);
-            mGetAcceptedTask = null;
-
-            JSONObject jsonObject;
-            JSONArray jsonArray = null;
-            boolean success = false;
-
-            Log.d(TAG, "string json: " + jsonResponse);
-
-            try {
-                jsonObject = new JSONObject(jsonResponse);
-                success = jsonObject.getBoolean("success");
-                jsonArray = jsonObject.getJSONArray("list");
-            } catch (JSONException e) {
-                Snackbar.make(mSwipeRefresh, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                e.printStackTrace();
-            }
-
-            if (success) {
-                mDemandSet =  new ArrayList<>();
-                for(int i=0; i < jsonArray.length(); i++){
-                    try {
-                        JSONObject json = jsonArray.getJSONObject(i);
-                        mDemandSet.add(Demand.build(json));
-                        Log.d(TAG, json.toString());
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                mRecyclerView.setLayoutManager(mLayoutManager);
-                mAdapter = new DemandAdapter(mDemandSet,mActivity,mPage);
-                mRecyclerView.setAdapter(mAdapter);
-                mSwipeRefresh.setRefreshing(false);
-
-            } else {
-                Snackbar.make(mSwipeRefresh, R.string.server_error, Snackbar.LENGTH_LONG).setAction("Action", null).show();
-            }
-        }
     }
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -258,11 +210,11 @@ public class StatusActivity extends AppCompatActivity {
                     if(position >= 0) mDemandSet.remove(position);
                     mDemandSet.add(0,demand);
                     break;
-                case Constants.UPDATE_IMPORTANCE:
+                case Constants.UPDATE_PRIOR:
                     if (position >= 0) {
                         mDemandSet.remove(position);
                         mDemandSet.add(0,demand);
-                        //mDemandSet.get(position).setImportance(demand.getImportance());
+                        //mDemandSet.get(position).setPrior(demand.getPrior());
                     }
                     break;
                 case Constants.UPDATE_READ:

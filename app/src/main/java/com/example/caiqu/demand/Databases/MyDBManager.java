@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.example.caiqu.demand.Entities.Demand;
+import com.example.caiqu.demand.Entities.Reason;
 import com.example.caiqu.demand.Entities.User;
 
 import java.sql.Timestamp;
@@ -30,29 +31,37 @@ public class MyDBManager {
         mMyDbHelper = new FeedReaderDBHelper(context);
     }
 
+    // If demand already exists, update it.
     public long addDemand(Demand demand){
         // Fist: Add sender and receiver if they don't exist.
         if(addUser(demand.getSender()) < 0) Log.e(TAG, "Sender not added! Prob it exists already.");
         if(addUser(demand.getReceiver()) < 0) Log.e(TAG, "Receiver not added! Prob it exists already.");
 
+        ContentValues values = new ContentValues();
+
+        // If there is a reason, add it.
+        Reason reason = demand.getReason();
+        if(reason != null){
+            if(addReason(reason) < 0) Log.e(TAG, "Reason not added! Prob it exists already.");
+            else Log.e(TAG, "Reason added successfully!");
+            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID, demand.getReason().getId());
+        }
+
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID, demand.getId());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID, demand.getSender().getId());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID, demand.getReceiver().getId());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT, demand.getSubject());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION, demand.getDescription());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS, demand.getStatus());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR, demand.getPrior());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN, demand.getSeen());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
+                new Timestamp(demand.getCreatedAt().getTime()).toString());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT,
+                new Timestamp(demand.getUpdatedAt().getTime()).toString());
+
         if(findDemandByServerId(demand.getId()) == null) {
-            ContentValues values = new ContentValues();
-
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID, demand.getId());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID, demand.getSender().getId());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID, demand.getReceiver().getId());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT, demand.getSubject());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION, demand.getDescription());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS, demand.getStatus());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE, demand.getImportance());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN, demand.getSeen());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
-                    new Timestamp(demand.getCreatedAt().getTime()).toString());
-            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT,
-                    new Timestamp(demand.getUpdatedAt().getTime()).toString());
-
             mDB = mMyDbHelper.getWritableDatabase();
-
             long newRowId = mDB.insert(FeedReaderContract.DemandEntry.TABLE_NAME, null, values);
 
             mDB.close();
@@ -60,28 +69,30 @@ public class MyDBManager {
             return newRowId;
         } else {
             mDB.close();
-            return -1;
+            return updateDemand(demand.getId(),values);
         }
     }
 
+    // If user already exists, then update it.
     public long addUser(User user){
 
+        ContentValues values = new ContentValues();
+
+        Log.e(TAG, "job position:" + user.getPosition());
+
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID, user.getId());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_NAME, user.getName());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_EMAIL, user.getEmail());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION, user.getPosition());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperior());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS, user.getStatus());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM, user.getGcm());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT,
+                new Timestamp(user.getCreatedAt().getTime()).toString());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT,
+                new Timestamp(user.getUpdatedAt().getTime()).toString());
+
         if(findUserByServerId(user.getId()) == null) {
-
-            ContentValues values = new ContentValues();
-
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID, user.getId());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_NAME, user.getName());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_EMAIL, user.getEmail());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION, user.getPosition());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperior());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS, user.getStatus());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM, user.getGcm());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT,
-                    new Timestamp(user.getCreatedAt().getTime()).toString());
-            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT,
-                    new Timestamp(user.getUpdatedAt().getTime()).toString());
-
             mDB = mMyDbHelper.getWritableDatabase();
             long newRowId = mDB.insert(FeedReaderContract.UserEntry.TABLE_NAME, null, values);
 
@@ -90,31 +101,64 @@ public class MyDBManager {
             return newRowId;
         }else{
             mDB.close();
-            return -1;
+            return updateUser(user.getId(),values);
+        }
+    }
+
+    // If reason already exists, then update it.
+    public long addReason(Reason reason){
+
+        ContentValues values = new ContentValues();
+
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID, reason.getId());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID, reason.getDemandId());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS, reason.getStatus());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON, reason.getReasonIndex());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT, reason.getComment());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT,
+                new Timestamp(reason.getCreated_at().getTime()).toString());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT,
+                new Timestamp(reason.getUpdated_at().getTime()).toString());
+
+        if(findReasonByServerId(reason.getId()) == null) {
+            mDB = mMyDbHelper.getWritableDatabase();
+            long newRowId = mDB.insert(FeedReaderContract.ReasonEntry.TABLE_NAME, null, values);
+
+            mDB.close();
+
+            return newRowId;
+        }else{
+            mDB.close();
+            return updateReason(reason.getId(),values);
         }
     }
 
     // TODO: include parameter updated_at, since every time a column changes this one does too.
-    public int updateDemandColumn(int demandId, String column, String value){
+    public int updateDemandColumn(Demand demand, String column, String value){
 
-        ContentValues values = new ContentValues();
-        values.put(column,value);
+        if ( findDemandByServerId(demand.getId()) == null){
+            if(addDemand(demand) >= 0) return 1;
+            else return 0;
+        }else {
+            ContentValues values = new ContentValues();
+            values.put(column, value);
 
-        String selection = FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID + " = ?";
-        String[] selectionArgs = {"" + demandId};
+            String selection = FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID + " = ?";
+            String[] selectionArgs = {"" + demand.getId()};
 
-        mDB = mMyDbHelper.getReadableDatabase();
+            mDB = mMyDbHelper.getReadableDatabase();
 
-        int count = mDB.update(
-                FeedReaderContract.DemandEntry.TABLE_NAME,
-                values,
-                selection,
-                selectionArgs
-        );
+            int count = mDB.update(
+                    FeedReaderContract.DemandEntry.TABLE_NAME,
+                    values,
+                    selection,
+                    selectionArgs
+            );
 
-        mDB.close();
+            mDB.close();
 
-        return count;
+            return count;
+        }
     }
 
     public int updateUserColumn(int userId, String column, String value) {
@@ -177,6 +221,25 @@ public class MyDBManager {
         return count;
     }
 
+    public int updateReason(int reasonId, ContentValues values) {
+
+        String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ?";
+        String[] selectionArgs = {"" + reasonId};
+
+        mDB = mMyDbHelper.getReadableDatabase();
+
+        int count = mDB.update(
+                FeedReaderContract.ReasonEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+
+        mDB.close();
+
+        return count;
+    }
+
     public Demand findDemandByServerId(int id){
         List<Demand> demands;
         String selection = FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID + " = ? ";
@@ -205,6 +268,20 @@ public class MyDBManager {
             return null;
         }
 
+    public Reason findReasonByServerId(int id){
+            List<Reason> reasons;
+            String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ? ";
+            String [] args = {"" + id};
+
+            reasons = searchReasons(selection,args);
+
+            if(!reasons.isEmpty())
+                for (int i = 0; i <= reasons.size(); i ++)
+                    return reasons.get(i);
+
+            return null;
+        }
+
     public List<Demand> searchDemands(String selection, String[] selectionArgs){
 
         String[] projection = {
@@ -212,10 +289,11 @@ public class MyDBManager {
                 FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID,
+                FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE,
+                FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT
@@ -243,10 +321,11 @@ public class MyDBManager {
             int demandId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID));
             int senderId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID));
             int receiverId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID));
+            int reasonId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID));
             String subject = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT));
             String description = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION));
             String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS));
-            String importance = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_IMPORTANCE));
+            String prior = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR));
             String seen = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN));
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT));
@@ -254,6 +333,7 @@ public class MyDBManager {
             // Search for local instances of users
             User sender = findUserByServerId(senderId);
             User receiver = findUserByServerId(receiverId);
+            Reason reason = findReasonByServerId(reasonId);
 
             if(sender != null && receiver != null){
                 Demand demand = new Demand(
@@ -261,7 +341,8 @@ public class MyDBManager {
                         demandId,
                         sender,
                         receiver,
-                        importance,
+                        reason,
+                        prior,
                         subject,
                         description,
                         status,
@@ -331,8 +412,8 @@ public class MyDBManager {
                     userId,
                     email,
                     name,
-                    position,
                     status,
+                    position,
                     superior,
                     fcm,
                     created_at,
@@ -347,6 +428,67 @@ public class MyDBManager {
         mDB.close();
 
         return users;
+    }
+
+    public List<Reason> searchReasons(String selection, String[] selectionArgs){
+
+        String[] projection = {
+                FeedReaderContract.ReasonEntry._ID,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT,
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT
+        };
+
+        String sortOrder =
+                FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT + " DESC";
+
+        mDB = mMyDbHelper.getReadableDatabase();
+
+        Cursor cursor = mDB.query(
+                FeedReaderContract.ReasonEntry.TABLE_NAME,
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                sortOrder
+        );
+
+        List<Reason> reasons = new ArrayList<>();
+
+        while(cursor.moveToNext()) {
+            long itemId = cursor.getLong(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry._ID));
+            int reasonId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID));
+            int demand = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_DEMAND_ID));
+            String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_STATUS));
+            int reasonIndex = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON));
+            String comment = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_COMMENT));
+            String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT));
+            String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT));
+
+            Reason reason = new Reason(
+                    itemId,
+                    reasonId,
+                    demand,
+                    status,
+                    reasonIndex,
+                    comment,
+                    created_at,
+                    updated_at
+            );
+
+            reasons.add(reason);
+        }
+
+        cursor.close();
+
+        mDB.close();
+
+        return reasons;
     }
 
     public void deleteDemandById(Demand id){

@@ -7,62 +7,67 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:padding="6dp">
-
-        <View
-            android:id="@+id/demand_prior_tag"
-            android:layout_width="4dp"
-            android:layout_height="match_parent"
-            android:layout_centerVertical="true"
-            android:background="@color/accent"
-            android:layout_marginRight="6dp" />
+        android:gravity="center_vertical"
+        android:padding="6dp"
+        android:weightSum="100">
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="top|start"
-            android:layout_weight="80">
+            android:layout_weight="15"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/request_user_photo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/ic_account_box_white_24dp"
+                android:backgroundTint="@color/accent"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="67"
+            android:gravity="center"
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/demand_title"
+                android:id="@+id/request_user_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textStyle="bold"
                 android:textColor="@color/primary_text"
                 android:lines="1"
                 android:ellipsize="end"
-                android:text="Assunto"/>
+                android:text="User Name"/>
 
             <TextView
-                android:id="@+id/demand_user"
+                android:id="@+id/request_user_job_position"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:lines="1"
                 android:textStyle="bold"
                 android:ellipsize="end"
-                android:text="Mário Andrade"/>
+                android:text="Ponta"/>
 
             <TextView
-                android:id="@+id/demand_content"
+                android:id="@+id/request_user_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/secondary_text"
-                android:layout_marginTop="2dp"
-                android:ellipsize="end"
-                android:text="Aqui você pode ler o conteudo da demanda. como o motivo para que foi criada, e algumas observações a respeito. final da demanda."
-                android:lines="1"
-                />
+                android:text="Aguardando liberação..."/>
 
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="15dp"
+            android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_weight="18"
             android:orientation="vertical"
-            android:layout_weight="15"
+            android:weightSum="100"
             android:gravity="center">
 
             <LinearLayout
@@ -73,17 +78,17 @@
                 android:layout_weight="50">
 
                 <TextView
-                    android:id="@+id/demand_date"
+                    android:id="@+id/request_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorPrimary"
                     android:textSize="10dp"
                     android:maxLines="1"
-                    android:text="12/05/17"
+                    android:text="12/05/2017"
                     />
 
                 <TextView
-                    android:id="@+id/demand_time"
+                    android:id="@+id/request_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorPrimary"
@@ -100,11 +105,11 @@
                 android:layout_weight="50">
 
                 <ImageView
-                    android:id="@+id/demand_status_icon"
+                    android:id="@+id/request_icon_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:tint="@color/accent"
-                    android:src="@drawable/ic_fiber_manual_record_black_24dp" />
+                    android:tint="@color/secondary_text"
+                    android:src="@drawable/ic_lock_outline_black_24dp" />
 
             </LinearLayout>
 
