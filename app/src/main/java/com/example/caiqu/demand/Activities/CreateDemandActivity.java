@@ -350,7 +350,7 @@ public class CreateDemandActivity extends AppCompatActivity{
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mPDDemand.setMessage("Buscando colaboradores...");
+            mPDDemand.setMessage(getString(R.string.create_receiver_dialog));
             mPDDemand.setCancelable(false);
             mPDDemand.show();
         }
@@ -413,5 +413,4 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         }
     }
-
 }

@@ -46,16 +46,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
-        // [START_EXCLUDE]
-        // There are two types of messages data messages and notification messages. Data messages are handled
-        // here in onMessageReceived whether the app is in the foreground or background. Data messages are the type
-        // traditionally used with GCM. Notification messages are only received here in onMessageReceived when the app
-        // is in the foreground. When the app is in the background an automatically generated notification is displayed.
-        // When the user taps on the notification they are returned to the app. Messages containing both notification
-        // and data payloads are treated as notification messages. The Firebase console always sends notification
-        // messages. For more see: https://firebase.google.com/docs/cloud-messaging/concept-options
-        // [END_EXCLUDE]
-
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
         Log.d(TAG, "From: " + remoteMessage.getFrom());
 
@@ -66,16 +56,51 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (false) {
                 scheduleJob(remoteMessage.getData(),Constants.INSERT_JOB_TAG);
             } else {
-                handleNow(remoteMessage.getData());
+                if (dataBelongToCurrentUser(remoteMessage.getData()))
+                    handleNow(remoteMessage.getData());
             }
         }
 
         // Check if message contains a notification payload.
-        if (remoteMessage.getNotification() != null) {
+        if (remoteMessage.getNotification() != null && dataBelongToCurrentUser(remoteMessage.getData())) {
             Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
             sendNotification(remoteMessage.getNotification(), remoteMessage.getData());
         }
+    }
 
+    // Check if the data received from server was really sent to current user.
+    private boolean dataBelongToCurrentUser(Map<String, String> data) {
+        Bundle bundle = doMapToBundle(data);
+        String type = bundle.getString("type");
+
+        Log.d(TAG, "Data Type: " + type);
+
+        try {
+            JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
+            User receiver = User.build(receiverJson);
+
+            if (amITheReceiver(receiver)) return true;
+            if (amIThisReceiversSuperior(receiver)) return true;
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // Check if current user is this user's superior.
+    private boolean amIThisReceiversSuperior(User receiver) {
+        User currentUser = CommonUtils.getCurrentUserPreference(this);
+        Log.e(TAG, "Current user:" + currentUser.getId() + " User receiver:" + receiver.getId());
+        return currentUser.getId() == receiver.getSuperior();
+    }
+
+    // Check if current user is the receiver.
+    private boolean amITheReceiver(User receiver) {
+        User currentUser = CommonUtils.getCurrentUserPreference(this);
+        Log.e(TAG, "Current user:" + currentUser.getId() + " User receiver:" + receiver.getId());
+        return currentUser.getId() == receiver.getId();
     }
 
     /**

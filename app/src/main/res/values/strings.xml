@@ -104,5 +104,10 @@
     <string name="archive_menu">Arquivar</string>
     <string name="title_activity_archive_acitivity">Demandas Arquivadas</string>
     <string name="archived_demands_item">Arquivadas</string>
+    <string name="logoff_warning">Ao sair da aplicação todos os seus dados serão apagados desse dispositivo: demandas e usuários sob sua supervisão</string>
+    <string name="logoff_alert_title">Sair?</string>
+    <string name="logoff_alert_positive_button">Sim</string>
+    <string name="logoff_alert_negative_button">Não</string>
+    <string name="create_receiver_dialog">Buscando colaboradores...</string>
 
 </resources>

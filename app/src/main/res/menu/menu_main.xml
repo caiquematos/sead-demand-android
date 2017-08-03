@@ -48,7 +48,7 @@
     </group>
 
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/action_logoff"
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />
