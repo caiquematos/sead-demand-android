@@ -7,7 +7,7 @@
     <item
         android:id="@+id/item_unarchive"
         android:orderInCategory="100"
-        android:title="@string/archive_menu"
+        android:title="@string/unarchive"
         android:icon="@drawable/ic_unarchive_white_24dp"
         android:visible="false"
         app:showAsAction="always" />

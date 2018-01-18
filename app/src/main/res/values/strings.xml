@@ -15,7 +15,7 @@
 
     <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
-    <string name="prompt_password">Password</string>
+    <string name="prompt_password">Senha</string>
 
     <!-- Field feedback messages -->
     <string name="error_invalid_email">Endereço de e-mail inválido</string>
@@ -29,20 +29,22 @@
     <string name="fist_title">SEAD\nDEMANDA</string>
     <string name="title_activity_home">SEAD</string>
     <string name="title_activity_login">Entrar</string>
-    <string name="title_activity_register">Registrar</string>
+    <string name="title_activity_register">Cadastro Interno</string>
     <string name="title_activity_view_demand"></string>
     <string name="title_activity_status">Demandas</string>
+    <string name="title_activity_external_register">Cadastro Externo</string>
+    <string name="title_activity_univasf_register">Cadastro Univasf</string>
 
     <!-- Strings relates toName Home Activity -->
     <string name="dummy_button">Dummy Button</string>
     <string name="prompt_name">Nome</string>
-    <string name="prompt_confirm">Senha (confirmar)</string>
+    <string name="prompt_confirm">Reptir Senha</string>
     <string name="register_category">Posição</string>
     <string name="register_superior">Superior</string>
 
     <!-- Action Buttons -->
     <string name="action_sign_in">Entrar</string>
-    <string name="action_sign_up">Regitrar</string>
+    <string name="action_sign_up">Cadastrar</string>
     <string name="action_sign_in_short">Entrar</string>
     <string name="login_register_button">cadastre-se aqui</string>
     <string name="cancel_button">Cancelar</string>
@@ -118,5 +120,47 @@
     <string name="fetch_predefined_reasons_worning">Lista de motivos vazia!</string>
     <string name="predefined_reason_empty">Ainda não há motivos predefinidos! Crie o primeiro.</string>
     <string name="reason_default_item">Outro</string>
+    <string name="create_reasons">Criar motivos</string>
+
+    <!-- Manage Users -->
+    <string name="manage_users">Gerenciar usuários</string>
+
+    <!-- Search Environment -->
+    <string name="title_activity_search_results_activity">Busca</string>
+    <string name="search_hint">Ex.: \'maria\' ou \'logotipo\'</string>
+    <string name="search_subject_topic">Assunto</string>
+    <string name="search_description_topic">Descrição</string>
+    <string name="search_user_topic">Remetentes e Destinatários</string>
+    <string name="receiver">Destinatário</string>
+    <string name="sender">Remetente</string>
+    <string name="delete">Deletar</string>
+    <string name="unarchive">Desarquivar</string>
+    <string name="title_activity_drawer">DrawerActivity</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="admin_drawer_menu">Administrador</string>
+    <string name="nav_system_section">Sistema</string>
+    <string name="settings">Configurações</string>
+    <string name="logout">Sair</string>
+
+    <string-array name="array_pic_selection">
+        <item>Galeria</item>
+        <item>Câmera</item>
+    </string-array>
+
+    <string name="register_univasf_sector">Setor</string>
+    <string name="register_job_title">Cargo</string>
+    <string name="intern_register_text">Ambiente destinado aos/às colaboradore(a)s interno(a)s da SEAD. Depois de concluído, seu cadastro estará pendente, aguardando aprovação pelo(a) seu/sua superior(a).</string>
+    <string name="external_register_text">Ambiente destinado a todo(a)s solicitantes externo(a)s à SEAD e à UNIVASF.</string>
+    <string name="univasf_register_text">Ambiente destinado aos/às colaboradore(a)s interno(a)s à UNIVASF e externo(a)s à SEAD.</string>
+    <string name="login_internal_text" translatable="false">Colaborador interno da <b>SEAD</b> e ainda não tem registro?</string>
+    <string name="login_univasf_text">Colaborador da <b>UNIVASF</b> e ainda não tem registro?</string>
+    <string name="login_external_text">Não é colaborador da SEAD nem da UNIVASF?</string>
+    <string name="send_demand_department_title">Setor</string>
+    <string name="demand_demand_title">Demanda</string>
+    <string name="profile_add_activity_content">Adicionar atividade</string>
+    <string name="profile_unblock_content">Bloquear</string>
+    <string name="demand_type_text">Escolha o setor para abrir sua lista de atividades. Em seguida, selecione as atividades que deseja atribuir ao/à colaborador(a).</string>
 
 </resources>

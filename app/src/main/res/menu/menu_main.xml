@@ -1,63 +1,33 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.example.caiqu.demand.Activities.MainActivity">
+    tools:context="com.sead.demand.Activities.MainActivity">
 
     <item
-        android:id="@+id/main_archived_demands"
-        android:orderInCategory="93"
-        android:title="@string/archived_demands_item"/>
+        android:id="@+id/search"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        android:icon="@drawable/ic_search_white_24dp"
+        android:orderInCategory="91"
+        android:title="Search"
+        app:showAsAction="collapseActionView|always" />
 
     <group android:id="@+id/main_admin_group">
 
         <item
             android:id="@+id/main_admin_requests"
-            android:orderInCategory="95"
-            android:title="@string/permission_requests"
+            android:orderInCategory="93"
+            android:title="@string/manage_users"
             android:icon="@drawable/ic_account_box_white_24dp"
-            app:showAsAction="always" />
+            app:showAsAction="ifRoom" />
 
         <item
             android:id="@+id/main_admin_reasons"
             android:orderInCategory="94"
-            android:title="@string/permission_requests"
+            android:title="@string/create_reasons"
             android:icon="@drawable/ic_playlist_add_white_24dp"
-            app:showAsAction="always"/>
+            app:showAsAction="ifRoom"/>
 
-        <item
-            android:id="@+id/main_admin_done"
-            android:orderInCategory="95"
-            android:title="@string/done_demands"
-            app:showAsAction="never" />
 
-        <item
-            android:id="@+id/main_admin_accepted"
-            android:orderInCategory="96"
-            android:title="@string/accepted_demands"
-            app:showAsAction="never" />
-
-        <item
-            android:id="@+id/main_admin_postponed"
-            android:orderInCategory="97"
-            android:title="@string/postponed_demands"
-            app:showAsAction="never" />
-
-        <item
-            android:id="@+id/main_admin_cancelled"
-            android:orderInCategory="98"
-            android:title="@string/canceled_demands"
-            app:showAsAction="never" />
-
-        <item
-            android:id="@+id/main_admin_rejected"
-            android:orderInCategory="99"
-            android:title="@string/rejected_demands"
-            app:showAsAction="never" />
     </group>
 
-    <item
-        android:id="@+id/action_logoff"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never" />
 </menu>

@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.example.caiqu.demand.Activities.CreateDemandActivity"
+    tools:context="com.sead.demand.Activities.CreateDemandActivity"
     tools:showIn="@layout/send_demand">
 
     <LinearLayout
@@ -19,82 +19,63 @@
             android:layout_margin="@dimen/text_margin"
             android:text="@string/large_text" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/text_margin"
+            android:layout_marginRight="@dimen/text_margin"
+            android:text="@string/send_demand_department_title"
+            android:textSize="18dp"/>
+
+        <Spinner
+            android:id="@+id/demand_department_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="@dimen/text_margin"
+            android:layout_marginRight="@dimen/text_margin">
+        </Spinner>
+
         <LinearLayout
+            android:id="@+id/send_demand_group"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/text_margin"
+            android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:layout_weight="1">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/text_margin"
-                    android:layout_marginRight="@dimen/text_margin"
-                    android:text="@string/position_field_title"
-                    android:textSize="18dp"/>
-
-                <Spinner
-                    android:id="@+id/demand_position_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginLeft="@dimen/text_margin"
-                    android:layout_marginRight="@dimen/text_margin">
-
-                </Spinner>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_weight="1">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="@dimen/text_margin"
-                    android:layout_marginRight="@dimen/text_margin"
-                    android:text="@string/prior_title_field"
-                    android:textSize="18dp"/>
-
-                <Spinner
-                    android:id="@+id/demand_prior_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginLeft="@dimen/text_margin"
-                    android:layout_marginRight="@dimen/text_margin"
-                    android:entries="@array/array_status">
-
-                </Spinner>
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-
-
-        <android.support.design.widget.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/text_margin">
-
-            <AutoCompleteTextView
-                android:id="@+id/demand_receiver_act"
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/text_margin"
                 android:layout_marginRight="@dimen/text_margin"
-                android:hint="Para"
-                android:inputType="textEmailAddress"
-                android:maxLines="1"/>
+                android:text="@string/demand_demand_title"
+                android:textSize="18dp"/>
 
-        </android.support.design.widget.TextInputLayout>
+            <Spinner
+                android:id="@+id/demand_demand_spinner"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/text_margin"
+                android:layout_marginRight="@dimen/text_margin">
+            </Spinner>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/text_margin">
+
+                <AutoCompleteTextView
+                    android:id="@+id/demand_receiver_act"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/text_margin"
+                    android:layout_marginRight="@dimen/text_margin"
+                    android:hint="Para"
+                    android:inputType="textEmailAddress"
+                    android:maxLines="1"/>
+
+            </android.support.design.widget.TextInputLayout>
+
+        </LinearLayout>
 
         <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"

@@ -1,120 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:clickable="true">
+    android:orientation="vertical"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="6dp">
+        android:padding="12dp">
 
-        <View
-            android:id="@+id/demand_prior_tag"
-            android:layout_width="4dp"
-            android:layout_height="match_parent"
-            android:layout_centerVertical="true"
-            android:background="@color/accent"
-            android:layout_marginRight="6dp" />
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center">
+            <ImageView
+                android:id="@+id/demand_profile_image"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:layout_marginRight="12dp"
+                android:layout_marginStart="5dp"
+                android:background="@drawable/img"
+                android:clickable="true"
+                android:layout_marginLeft="5dp" />
+
+            <ImageView
+                android:id="@+id/demand_mark"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/mark"
+                android:contentDescription="status"
+                android:visibility="invisible"
+                android:tint="@color/accent" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
+            android:layout_height="wrap_content"
+            android:layout_weight="71"
             android:gravity="top|start"
-            android:layout_weight="80">
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/demand_user_sender"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:lines="1"
+                    android:textSize="@dimen/cast_libraries_material_featurehighlight_text_body_size"
+                    android:text="Mário Andrade"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/demand_arrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_keyboard_arrow_right_black_24dp"
+                    android:contentDescription="status"
+                    android:tint="@color/accent" />
+
+                <TextView
+                    android:id="@+id/demand_user_receiver"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:lines="1"
+                    android:textSize="@dimen/cast_libraries_material_featurehighlight_text_body_size"
+                    android:text="Maria Andrade"
+                    android:textStyle="bold" />
+
+
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/demand_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textStyle="bold"
+                android:ellipsize="end"
+                android:lines="1"
+                android:text="Assunto"
                 android:textColor="@color/primary_text"
-                android:lines="1"
-                android:ellipsize="end"
-                android:text="Assunto"/>
-
-            <TextView
-                android:id="@+id/demand_user"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:lines="1"
-                android:textStyle="bold"
-                android:ellipsize="end"
-                android:text="Mário Andrade"/>
-
-            <TextView
-                android:id="@+id/demand_user_receiver"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:lines="1"
-                android:textStyle="bold"
-                android:ellipsize="end"
-                android:visibility="gone"
-                android:text="Mário Andrade"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/demand_content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/secondary_text"
                 android:layout_marginTop="2dp"
                 android:ellipsize="end"
-                android:text="Aqui você pode ler o conteudo da demanda. como o motivo para que foi criada, e algumas observações a respeito. final da demanda."
                 android:lines="1"
-                />
+                android:text="Aqui você pode ler o conteudo da demanda"
+                android:textColor="@color/secondary_text" />
 
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="15dp"
+            android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:layout_weight="15"
-            android:gravity="center">
+            android:layout_weight="24"
+            android:gravity="end"
+            android:orientation="vertical">
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="50"
                 android:gravity="top|end"
                 android:orientation="vertical"
-                android:layout_weight="50">
+                tools:ignore="NestedWeights">
 
                 <TextView
                     android:id="@+id/demand_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/colorPrimary"
-                    android:textSize="10dp"
                     android:maxLines="1"
-                    android:text="12/05/17"
-                    />
+                    android:text="12/05/2017"
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/demand_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/colorPrimary"
-                    android:textSize="10dp"
                     android:text="12:00"
-                    />
+                    android:textSize="12sp" />
 
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:gravity="end|bottom"
-                android:layout_weight="50">
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="50"
+                android:gravity="end|bottom">
+
+                <ImageView
+                    android:id="@+id/demand_seen_icon"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="6dp"
+                    android:src="@drawable/ic_visibility_off_black_24dp"
+                    android:contentDescription="not seen"
+                    android:tint="@color/gray"
+                    android:layout_marginRight="6dp" />
 
                 <ImageView
                     android:id="@+id/demand_status_icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:tint="@color/accent"
-                    android:src="@drawable/ic_fiber_manual_record_black_24dp" />
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_adjust_black_24dp"
+                    android:contentDescription="status"
+                    android:tint="@color/gray" />
 
             </LinearLayout>
 
@@ -125,7 +169,6 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_centerVertical="true"
         android:background="@color/divider" />
 
 </LinearLayout>

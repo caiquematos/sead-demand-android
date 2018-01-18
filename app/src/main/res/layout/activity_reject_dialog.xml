@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:backgroundTint="@color/white"
-    tools:context="com.example.caiqu.demand.Activities.RejectDialogActivity">
+    tools:context="com.sead.demand.Activities.RejectDialogActivity">
 
     <ScrollView
         android:layout_width="match_parent"

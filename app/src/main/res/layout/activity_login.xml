@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/activity_vertical_margin"
-    tools:context="com.example.caiqu.demand.Activities.LoginActivity">
+    tools:context="com.sead.demand.Activities.LoginActivity">
 
         <ScrollView
             android:id="@+id/login_form"
@@ -32,20 +32,16 @@
 
                 <android.support.design.widget.TextInputLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/text_margin">
                     <EditText
                         android:id="@+id/password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/prompt_password"
-                        android:imeActionId="@+id/login"
-                        android:imeActionLabel="@string/action_sign_in_short"
-                        android:imeOptions="actionUnspecified"
                         android:inputType="textPassword"
-                        android:maxLines="1"
-                        android:lines="1"/>
-
+                        android:lines="1"
+                        android:maxLines="1" />
                 </android.support.design.widget.TextInputLayout>
 
                 <Button
@@ -58,15 +54,54 @@
                     android:text="@string/action_sign_in"
                     android:textStyle="bold" />
 
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_marginTop="@dimen/text_margin"
+                    android:text="@string/login_internal_text" />
+
                 <TextView
                     android:id="@+id/login_register_btn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
                     android:gravity="center"
                     android:clickable="true"
                     android:textColor="@color/primary"
-                    android:text="@string/login_register_button"/>
+                    android:text="@string/login_register_button" android:focusable="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_marginTop="@dimen/text_margin"
+                    android:text="@string/login_univasf_text" />
+
+                <TextView
+                    android:id="@+id/login_univasf_register_btn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:textColor="@color/primary"
+                    android:text="@string/login_register_button" android:focusable="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_marginTop="@dimen/text_margin"
+                    android:text="@string/login_external_text" />
+
+                <TextView
+                    android:id="@+id/login_external_register_btn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:textColor="@color/primary"
+                    android:text="@string/login_register_button" android:focusable="true" />
 
             </LinearLayout>
         </ScrollView>
