@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.os.AsyncTask;
 import android.support.design.widget.Snackbar;
@@ -17,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.sead.demand.Activities.ProfileActivity;
 import com.sead.demand.Databases.FeedReaderContract;
 import com.sead.demand.Entities.User;
 import com.sead.demand.R;
@@ -27,6 +29,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+
+import static android.content.Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP;
 
 /**
  * Created by caiqu on 30/06/2017.
@@ -129,9 +133,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder>{
     }
 
     @Override
-    public void onBindViewHolder(final UserAdapter.ViewHolder holder, int position) {
+    public void onBindViewHolder(final UserAdapter.ViewHolder holder, final int position) {
         final User user = mUserList.get(position);
-        final int holderPosition = position;
 
         Log.e(TAG, "Job position:" + user.getPosition());
         Log.e(TAG, "Date:" + CommonUtils.formatDate(user.getCreatedAt()));
@@ -141,39 +144,53 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder>{
         holder.setRequestTime(CommonUtils.formatTime(user.getCreatedAt()));
         showUserStatus(holder, user.getStatus());
 
+        holder.getUserIconStatus().setClickable(true);
+        holder.getUserIconStatus().setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                changeStatus(user, holder, position);
+            }
+
+        });
+
         holder.itemView.setClickable(true);
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                String buttonName;
-                String message;
-                final String status;
-                if(user.getStatus().equals(Constants.YES)) {
-                    buttonName = "Bloquear";
-                    message = "Bloqueando esse usuário, ele perderá o acesso ao aplicativo";
-                    status = Constants.NO;
-                } else{
-                    buttonName = "Desbloquear";
-                    message = "Desbloqueando esse usuário, ele terá acesso ao aplicativo";
-                    status = Constants.YES;
-                }
-
-                AlertDialog.Builder alert = new AlertDialog.Builder(mContext);
-                alert.setPositiveButton(buttonName, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                       attemptToSetUserStatus(user.getId(), status, holder, holderPosition);
-                    }
-                });
-
-                alert.setTitle(holder.getUserName());
-                alert.setMessage(message);
-                alert.show();
-
+                Intent intent = new Intent(mContext,ProfileActivity.class);
+                intent.addFlags(FLAG_ACTIVITY_PREVIOUS_IS_TOP);
+                intent.putExtra("mode", "ADMIN");
+                intent.putExtra("user", user);
+                mContext.startActivity(intent);
             }
-
         });
+    }
+
+    private void changeStatus(final User user, final UserAdapter.ViewHolder holder, final int holderPosition) {
+        String buttonName;
+        String message;
+        final String status;
+        if(user.getStatus().equals(Constants.YES)) {
+            buttonName = "Bloquear";
+            message = "Bloqueando esse usuário, ele perderá o acesso ao aplicativo";
+            status = Constants.NO;
+        } else{
+            buttonName = "Desbloquear";
+            message = "Desbloqueando esse usuário, ele terá acesso ao aplicativo";
+            status = Constants.YES;
+        }
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(mContext);
+        alert.setPositiveButton(buttonName, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                attemptToSetUserStatus(user.getId(), status, holder, holderPosition);
+            }
+        });
+
+        alert.setTitle(holder.getUserName());
+        alert.setMessage(message);
+        alert.show();
     }
 
     private void showUserStatus(ViewHolder holder, String status) {

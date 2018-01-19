@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.sead.demand.Entities.Authority;
 import com.sead.demand.Entities.Demand;
+import com.sead.demand.Entities.Job;
 import com.sead.demand.Entities.PredefinedReason;
 import com.sead.demand.Entities.User;
 
@@ -76,13 +77,30 @@ public class MyDBManager {
 
         ContentValues values = new ContentValues();
 
-        Log.e(TAG, "job position:" + user.getPosition());
+        // Fist: Add Job and Superior if they're not null and don't exist in db.
+        Log.d(TAG, "job:" + user.getJob().toString());
+        if (user.getJob() != null) {
+            if (addJob(user.getJob()) < 0)
+                Log.e(TAG, "Job not added! Prob it exists already.");
+            else Log.e(TAG, "Job added successfully:" + user.getJob().getId());
+            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJob().getId());
+        }
+        Log.d(TAG, "superior:" + user.getSuperior().toString());
+        if (user.getSuperior() != null) {
+            if (addUser(user.getSuperior()) < 0)
+                Log.e(TAG, "Superior not added! Prob it exists already.");
+            else Log.e(TAG, "Superior added successfully:" + user.getSuperior().getId());
+            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperior().getId());
+        }
+
+        Log.e(TAG, "User position:" + user.getPosition());
 
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID, user.getId());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_NAME, user.getName());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_EMAIL, user.getEmail());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION, user.getPosition());
-        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperior());
+        //values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJobId());
+        //values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperiorId());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS, user.getStatus());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM, user.getGcm());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT,
@@ -131,6 +149,35 @@ public class MyDBManager {
             return updateAuthority(auth.getId(),values);
         }
     }
+
+    // If job already exists, then update it.
+    public long addJob(Job job){
+
+        ContentValues values = new ContentValues();
+
+        Log.e(TAG, "Job :" + job.getTitle());
+
+        values.put(FeedReaderContract.JobEntry.COLUMN_NAME_JOB_ID, job.getId());
+        values.put(FeedReaderContract.JobEntry.COLUMN_NAME_TITLE, job.getTitle());
+        values.put(FeedReaderContract.JobEntry.COLUMN_NAME_POSITION, job.getPosition());
+        values.put(FeedReaderContract.JobEntry.COLUMN_NAME_JOB_CREATED_AT,
+                new Timestamp(job.getCreatedAt().getTime()).toString());
+        values.put(FeedReaderContract.JobEntry.COLUMN_NAME_JOB_UPDATED_AT,
+                new Timestamp(job.getUpdatedAt().getTime()).toString());
+
+        if(findJobByServerId((int) job.getId()) == null) {
+            mDB = mMyDbHelper.getWritableDatabase();
+            long newRowId = mDB.insert(FeedReaderContract.JobEntry.TABLE_NAME, null, values);
+
+            mDB.close();
+
+            return newRowId;
+        }else{
+            mDB.close();
+            return updateJob((int) job.getId(),values);
+        }
+    }
+
 
     // If reason already exists, then update it.
     public long addReason(PredefinedReason reason){
@@ -288,6 +335,25 @@ public class MyDBManager {
         return count;
     }
 
+    public int updateJob(int jobId, ContentValues values) {
+
+        String selection = FeedReaderContract.JobEntry.COLUMN_NAME_JOB_ID + " = ?";
+        String[] selectionArgs = {"" + jobId};
+
+        mDB = mMyDbHelper.getReadableDatabase();
+
+        int count = mDB.update(
+                FeedReaderContract.JobEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+
+        mDB.close();
+
+        return count;
+    }
+
     public int updateReason(int reasonId, ContentValues values) {
 
         String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ?";
@@ -345,6 +411,20 @@ public class MyDBManager {
         if(!auths.isEmpty())
             for (int i = 0; i <= auths.size(); i ++)
                 return auths.get(i);
+
+        return null;
+    }
+
+    public Job findJobByServerId(int id){
+        List<Job> jobs;
+        String selection = FeedReaderContract.JobEntry.COLUMN_NAME_JOB_ID + " = ? ";
+        String [] args = {"" + id};
+
+        jobs = searchJobs(selection,args);
+
+        if(!jobs.isEmpty())
+            for (int i = 0; i <= jobs.size(); i ++)
+                return jobs.get(i);
 
         return null;
     }
@@ -453,6 +533,7 @@ public class MyDBManager {
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_EMAIL,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS,
+                FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT,
@@ -481,12 +562,33 @@ public class MyDBManager {
             int userId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID));
             String name = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_NAME));
             String email = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_EMAIL));
-            int superior = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR));
+            int jobId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB));
+            int superiorId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR));
             String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS));
             String position = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION));
             String fcm = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM));
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT));
+
+            // Search for local instances of job and superior
+            Job job = findJobByServerId(jobId);
+            User superior;
+
+            // This prevents infinite loop.
+            if (userId == superiorId) superior = new User(
+                    itemId,
+                    userId,
+                    email,
+                    name,
+                    status,
+                    position,
+                    fcm,
+                    null,
+                    null,
+                    created_at,
+                    updated_at
+            );
+            else superior = findUserByServerId(superiorId);
 
             User user = new User(
                     itemId,
@@ -495,8 +597,9 @@ public class MyDBManager {
                     name,
                     status,
                     position,
-                    superior,
                     fcm,
+                    job,
+                    superior,
                     created_at,
                     updated_at
             );
@@ -567,6 +670,61 @@ public class MyDBManager {
         mDB.close();
 
         return authorities;
+    }
+
+    public List<Job> searchJobs(String selection, String[] selectionArgs){
+
+        String[] projection = {
+                FeedReaderContract.JobEntry._ID,
+                FeedReaderContract.JobEntry.COLUMN_NAME_JOB_ID,
+                FeedReaderContract.JobEntry.COLUMN_NAME_TITLE,
+                FeedReaderContract.JobEntry.COLUMN_NAME_POSITION,
+                FeedReaderContract.JobEntry.COLUMN_NAME_JOB_CREATED_AT,
+                FeedReaderContract.JobEntry.COLUMN_NAME_JOB_UPDATED_AT
+        };
+
+        String sortOrder =
+                FeedReaderContract.JobEntry.COLUMN_NAME_JOB_UPDATED_AT + " DESC";
+
+        mDB = mMyDbHelper.getReadableDatabase();
+
+        Cursor cursor = mDB.query(
+                FeedReaderContract.JobEntry.TABLE_NAME,
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                sortOrder
+        );
+
+        List<Job> jobs = new ArrayList<>();
+
+        while(cursor.moveToNext()) {
+            long itemId = cursor.getLong(cursor.getColumnIndexOrThrow(FeedReaderContract.JobEntry._ID));
+            int jobId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.JobEntry.COLUMN_NAME_JOB_ID));
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.JobEntry.COLUMN_NAME_TITLE));
+            String position = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.JobEntry.COLUMN_NAME_POSITION));
+            String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.JobEntry.COLUMN_NAME_JOB_CREATED_AT));
+            String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.JobEntry.COLUMN_NAME_JOB_UPDATED_AT));
+
+            Job job = new Job(
+                    itemId,
+                    jobId,
+                    title,
+                    position,
+                    created_at,
+                    updated_at
+            );
+
+            jobs.add(job);
+        }
+
+        cursor.close();
+
+        mDB.close();
+
+        return jobs;
     }
 
     public List<PredefinedReason> searchReasons(String selection, String[] selectionArgs){

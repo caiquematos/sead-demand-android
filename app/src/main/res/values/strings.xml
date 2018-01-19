@@ -60,7 +60,7 @@
     <!-- Feedback messages -->
     <string name="error_send_demand_receiver">Selecione uma das opções sugeridas</string>
     <string name="internet_error">Por favor conecte-se à internet!</string>
-    <string name="position_error">Esta posição ainda não possui superior</string>
+    <string name="position_error">Esta posição ainda não possui superiorId</string>
     <string name="server_error">Erro no servidor. Por favor tente mais tarde.</string>
     <string name="send_demand_error">Erro ao enviar demanda. Por favor tente mais tarde.</string>
     <string name="send_demand_success">Demanda enviada com sucesso.</string>
@@ -151,12 +151,12 @@
 
     <string name="register_univasf_sector">Setor</string>
     <string name="register_job_title">Cargo</string>
-    <string name="intern_register_text">Ambiente destinado aos/às colaboradore(a)s interno(a)s da SEAD. Depois de concluído, seu cadastro estará pendente, aguardando aprovação pelo(a) seu/sua superior(a).</string>
+    <string name="intern_register_text">Ambiente destinado aos/às colaboradore(a)s interno(a)s da SEAD. Depois de concluído, seu cadastro estará pendente, aguardando aprovação pelo(a) seu/sua superiorId(a).</string>
     <string name="external_register_text">Ambiente destinado a todo(a)s solicitantes externo(a)s à SEAD e à UNIVASF.</string>
     <string name="univasf_register_text">Ambiente destinado aos/às colaboradore(a)s interno(a)s à UNIVASF e externo(a)s à SEAD.</string>
-    <string name="login_internal_text" translatable="false">Colaborador interno da <b>SEAD</b> e ainda não tem registro?</string>
-    <string name="login_univasf_text">Colaborador da <b>UNIVASF</b> e ainda não tem registro?</string>
-    <string name="login_external_text">Não é colaborador da SEAD nem da UNIVASF?</string>
+    <string name="login_internal_text" translatable="false">Colaborador(a) interno(a) da <b>SEAD</b> e ainda não tem registro?</string>
+    <string name="login_univasf_text">Colaborador(a) da <b>UNIVASF</b> e ainda não tem registro?</string>
+    <string name="login_external_text">Não é colaborador(a) da SEAD nem da UNIVASF?</string>
     <string name="send_demand_department_title">Setor</string>
     <string name="demand_demand_title">Demanda</string>
     <string name="profile_add_activity_content">Adicionar atividade</string>

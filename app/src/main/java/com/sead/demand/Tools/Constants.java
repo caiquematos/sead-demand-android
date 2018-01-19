@@ -40,6 +40,8 @@ public class Constants {
 
     // Shared Preferences.
     public static final String USER_PREFERENCES = "user_preferences";
+    public static final String JOB_PREFERENCES = "job_preferences";
+    public static final String SUPERIOR_PREFERENCES = "superior_preferences";
     public static final String IS_LOGGED = "is_logged";
     public static final String LOGGED_USER_EMAIL = "user_email";
     public static final String LOGGED_USER_ID = "user_id";

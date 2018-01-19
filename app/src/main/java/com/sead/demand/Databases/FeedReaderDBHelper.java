@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 
 public class FeedReaderDBHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
     public static final String DATABASE_NAME = "sead.db";
 
     // Table demands queries.
@@ -42,6 +42,7 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION + " VARCHAR(60)," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS + " CHAR(2)," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR + " INTEGER," +
+                    FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB + " INTEGER," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM + " TEXT," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT + " TIMESTAMP," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT + " TIMESTAMP)";
@@ -77,6 +78,19 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
     private static final String SQL_DELETE_AUTH_TABLE =
             "DROP TABLE IF EXISTS " + FeedReaderContract.AuthorityEntry.TABLE_NAME;
 
+    // Table jobs queries.
+    private static final String SQL_CREATE_JOB_TABLE =
+            "CREATE TABLE " + FeedReaderContract.JobEntry.TABLE_NAME + " (" +
+                    FeedReaderContract.JobEntry._ID + " INTEGER PRIMARY KEY," +
+                    FeedReaderContract.JobEntry.COLUMN_NAME_JOB_ID + " INTEGER UNIQUE," +
+                    FeedReaderContract.JobEntry.COLUMN_NAME_TITLE + " VARCHAR(250)," +
+                    FeedReaderContract.JobEntry.COLUMN_NAME_POSITION + " VARCHAR(60)," +
+                    FeedReaderContract.JobEntry.COLUMN_NAME_JOB_CREATED_AT + " TIMESTAMP," +
+                    FeedReaderContract.JobEntry.COLUMN_NAME_JOB_UPDATED_AT + " TIMESTAMP)";
+
+    private static final String SQL_DELETE_JOB_TABLE =
+            "DROP TABLE IF EXISTS " + FeedReaderContract.JobEntry.TABLE_NAME;
+
     public FeedReaderDBHelper(Context context){
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -87,6 +101,7 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_REASONS_TABLE);
         db.execSQL(SQL_CREATE_DEMANDS_TABLE);
         db.execSQL(SQL_CREATE_AUTH_TABLE);
+        db.execSQL(SQL_CREATE_JOB_TABLE);
     }
 
     @Override
@@ -105,5 +120,6 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_USERS_TABLE);
         db.execSQL(SQL_DELETE_DEMANDS_TABLE);
         db.execSQL(SQL_DELETE_AUTH_TABLE);
+        db.execSQL(SQL_DELETE_JOB_TABLE);
     }
 }

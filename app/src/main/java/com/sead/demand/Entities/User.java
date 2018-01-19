@@ -17,10 +17,13 @@ public class User implements Serializable{
     private String email;
     private String password;
     private String name;
+    private Job job;
+    private User superior;
+    private Department department;
     private long jobId;
     private String status; // Unlock to access the app.
     private String position; // Job Position {SECRETARIO, COORDENADOR...}.
-    private int superior;
+    private int superiorId;
     private String gcm;
     private String localImagePath;
     private String serverImagePath;
@@ -31,14 +34,14 @@ public class User implements Serializable{
     private String type;
 
     public User(long localId, int id, String email, String name, String status, String position,
-                int superior, String gcm, String createdAt,
+                int superiorId, String gcm, String createdAt,
                 String updatedAt) {
         setLocalId(localId);
         setId(id);
         setName(name);
         setEmail(email);
         setPosition(position);
-        setSuperior(superior);
+        setSuperiorId(superiorId);
         setStatus(status);
         setGcm(gcm);
         setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
@@ -46,12 +49,29 @@ public class User implements Serializable{
         Log.e(TAG, "job position:" + position);
     }
 
+    public User(long localId, int id, String email, String name, String status, String position,
+                String gcm, Job job, User superior, String createdAt,
+                String updatedAt) {
+        setLocalId(localId);
+        setId(id);
+        setName(name);
+        setEmail(email);
+        setPosition(position);
+        setStatus(status);
+        setGcm(gcm);
+        setJob(job);
+        setSuperior(superior);
+        setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
+        setUpdatedAt(CommonUtils.convertTimestampToDate(updatedAt));
+        Log.e(TAG, "job position:" + position);
+    }
+
     // Internal User
-    public User(String email, String password, String name, String superior, String position, String gcm, long jobId, String type) {
+    public User(String email, String password, String name, String superiorId, String position, String gcm, long jobId, String type) {
         this.email = email;
         this.password = password;
         this.name = name;
-        this.superiorEmail = superior;
+        this.superiorEmail = superiorId;
         this.position = position;
         this.gcm = gcm;
         this.jobId = jobId;
@@ -98,6 +118,39 @@ public class User implements Serializable{
         );
     }
 
+    // Complete Build with Job and Superior objects.
+    public static User build(Job job, User superior, JSONObject userJson) throws JSONException {
+        return new User(
+                -1,
+                userJson.getInt("id"),
+                userJson.getString("email"),
+                userJson.getString("name"),
+                userJson.getString("status"),
+                userJson.getString("position"),
+                userJson.getString("gcm"),
+                job,
+                superior,
+                userJson.getString("created_at"),
+                userJson.getString("updated_at")
+        );
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public void setJob(Job job) {
+        this.job = job;
+    }
+
+    public User getSuperior() {
+        return superior;
+    }
+
+    public void setSuperior(User superior) {
+        this.superior = superior;
+    }
+
     public long getLocalId() {
         return localId;
     }
@@ -114,8 +167,8 @@ public class User implements Serializable{
         return status;
     }
 
-    public int getSuperior() {
-        return superior;
+    public int getSuperiorId() {
+        return superiorId;
     }
 
     public Date getCreatedAt() {
@@ -186,22 +239,8 @@ public class User implements Serializable{
         this.createdAt = createdAt;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", name='" + name + '\'' +
-                ", status='" + status + '\'' +
-                ", position='" + position + '\'' +
-                ", gcm='" + gcm + '\'' +
-                ", createdAt=" + createdAt +
-                '}';
-    }
-
-    public void setSuperior(int superior) {
-        this.superior = superior;
+    public void setSuperiorId(int superiorId) {
+        this.superiorId = superiorId;
     }
 
     public void setUpdatedAt(Date updatedAt) {
@@ -238,5 +277,10 @@ public class User implements Serializable{
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

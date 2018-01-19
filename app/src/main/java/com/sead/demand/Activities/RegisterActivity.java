@@ -629,28 +629,29 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
+                if (success) {
+                    if (mPDRegister.isShowing()){
+                        mPDRegister.dismiss();
+                    }
+                    Snackbar.make(mEmailSignInButton, "Registro realizado com sucesso", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                    Intent intent = new Intent(getApplication(), LoginActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    mPasswordView.setError(getString(R.string.error_incorrect_password));
+                    mPasswordView.requestFocus();
+                }
             } catch (JSONException e) {
                 Snackbar.make(mPositionView, "Server Problem", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
 
-            if (success) {
-                if (mPDRegister.isShowing()){
-                    mPDRegister.dismiss();
-                }
-                Snackbar.make(mEmailSignInButton, "Registro realizado com sucesso", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                Intent intent = new Intent(getApplication(), LoginActivity.class);
-                startActivity(intent);
-                finish();
-            } else {
-                if (mPDRegister.isShowing()){
-                    mPDRegister.dismiss();
-                }
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                mPasswordView.requestFocus();
+            if (mPDRegister.isShowing()){
+                mPDRegister.dismiss();
             }
+
         }
 
         @Override

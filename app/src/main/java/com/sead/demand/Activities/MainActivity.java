@@ -69,13 +69,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         User user = CommonUtils.getCurrentUserPreference(this);
 
         /** Set navigation drawer **/
-        /*
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
-        */
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -89,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this,ProfileActivity.class);
+                intent.putExtra("mode", "me");
                 startActivity(intent);
             }
         });

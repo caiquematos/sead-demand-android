@@ -20,6 +20,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -62,6 +63,8 @@ public class ProfileActivity extends AppCompatActivity {
         this.mActivity = this;
     }
 
+    // TODO: load photo profile (offline), job (online), and superior (online).
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,31 +77,51 @@ public class ProfileActivity extends AppCompatActivity {
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         me = CommonUtils.getCurrentUserPreference(this);
-        if (me == null) finish();
-        // TODO: Make this user above be the one who was selected.
+
+        mLockIV = (ImageView) findViewById(R.id.profile_lock);
+        mAddActivityIV = (ImageView) findViewById(R.id.profile_add_demand_types);
+
+        final User referenceUser;
+
+        String mode = getIntent().getExtras().getString("mode");
+        if (mode == null) finish();
+
+        if (mode.equals("ADMIN")) {
+            // show this user's profile and enable admin edition.
+            Log.d(TAG, "Profile ADMIN MODE!");
+            mUser = (User) getIntent().getExtras().get("user");
+            if (mUser == null) finish();
+            Log.d(TAG, "User transferred:" + mUser.getEmail());
+            referenceUser = mUser;
+            mLockIV.setVisibility(View.VISIBLE);
+            mAddActivityIV.setVisibility(View.VISIBLE);
+        } else {
+            // show logged user's profile (me).
+            Log.d(TAG, "Profile ME MODE!");
+            referenceUser = me;
+            mLockIV.setVisibility(View.INVISIBLE);
+            mAddActivityIV.setVisibility(View.INVISIBLE);
+        }
 
         this.mProgressDialogUser = new ProgressDialog(this);
 
-        this.setTitle(me.getName());
+        this.setTitle(referenceUser.getName());
 
         TextView email = (TextView) findViewById(R.id.profile_email);
-        email.setText(me.getEmail());
+        email.setText(referenceUser.getEmail());
 
         TextView position = (TextView) findViewById(R.id.profile_position);
-        position.setText(me.getPosition());
+        position.setText(referenceUser.getJob().getPosition());
+
+        TextView superior = (TextView) findViewById(R.id.profile_superior);
+        superior.setText(referenceUser.getSuperior().getName());
 
         mProfileIV = (ImageView) findViewById(R.id.profile_image);
-        loadImage(me.getId());
-
-        loadSuperior(me.getSuperior());
 
         mJobTV = (TextView) findViewById(R.id.profile_job);
+        mJobTV.setText(referenceUser.getJob().getTitle());
 
         mActivitiesTV = (TextView) findViewById(R.id.profile_demand_type);
-
-        mLockIV = (ImageView) findViewById(R.id.profile_lock);
-
-        mAddActivityIV = (ImageView) findViewById(R.id.profile_add_demand_types);
 
         mProfileIV.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -118,12 +141,27 @@ public class ProfileActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(getApplicationContext(), DemandTypeActivity.class);
-                intent.putExtra("user", me);
+                intent.putExtra("user", referenceUser);
                 startActivity(intent);
             }
         });
 
-        showUserStatus(me.getStatus());
+        showUserStatus(referenceUser.getStatus());
+        loadImage(referenceUser.getId());
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+                finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void loadImage(int id) {
     }
 
     private void changeStatus() {
@@ -175,12 +213,6 @@ public class ProfileActivity extends AppCompatActivity {
         });
         mPriorDialog.create();
         mPriorDialog.show();
-    }
-
-    private void loadImage(int id) {
-    }
-
-    private void loadSuperior(int id) {
     }
 
     private void takePicture() {
@@ -271,6 +303,23 @@ public class ProfileActivity extends AppCompatActivity {
         // TODO: Save path in preferences.
     }
 
+    private void showUserStatus(String status) {
+        int drawable = -1;
+        int color = -1;
+        switch (status) {
+            case Constants.YES:
+                drawable = R.drawable.ic_lock_open_black_24dp;
+                color = ContextCompat.getColor(mActivity,R.color.secondary_text);
+                break;
+            case Constants.NO:
+                drawable = R.drawable.ic_lock_outline_black_24dp;
+                color = ContextCompat.getColor(mActivity,R.color.transred);
+                break;
+        }
+        mLockIV.setImageResource(drawable);
+        mLockIV.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }
+
     private void attemptToSetUserStatus(User me, User user, String status) {
         if(mStatusTask == null && CommonUtils.isOnline(this)){
             mStatusTask = new StatusTask(me, user, status);
@@ -280,7 +329,6 @@ public class ProfileActivity extends AppCompatActivity {
                     .setAction("Action", null).show();
         }
     }
-
 
     public class StatusTask extends AsyncTask<Void, Void, String> {
         private User user;
@@ -376,20 +424,4 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void showUserStatus(String status) {
-        int drawable = -1;
-        int color = -1;
-        switch (status) {
-            case Constants.YES:
-                drawable = R.drawable.ic_lock_open_black_24dp;
-                color = ContextCompat.getColor(mActivity,R.color.secondary_text);
-                break;
-            case Constants.NO:
-                drawable = R.drawable.ic_lock_outline_black_24dp;
-                color = ContextCompat.getColor(mActivity,R.color.transred);
-                break;
-        }
-        mLockIV.setImageResource(drawable);
-        mLockIV.setColorFilter(color, PorterDuff.Mode.SRC_IN);
-    }
 }

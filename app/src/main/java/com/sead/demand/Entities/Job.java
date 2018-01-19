@@ -14,12 +14,14 @@ import java.util.Date;
 
 public class Job implements Serializable{
     private long id;
+    private long localId;
     private String title;
     private String position;
     private Date createdAt;
     private Date updatedAt;
 
-    public Job(long id, String title, String position, String createdAt, String updatedAt) {
+    public Job(long localId, long id, String title, String position, String createdAt, String updatedAt) {
+        this.localId = localId;
         this.id = id;
         this.title = title;
         this.position = position;
@@ -29,12 +31,21 @@ public class Job implements Serializable{
 
     public static Job build (JSONObject jobJson) throws JSONException {
         return new Job(
+                -1,
                 jobJson.getInt("id"),
                 jobJson.getString("title"),
                 jobJson.getString("position"),
                 jobJson.getString("created_at"),
                 jobJson.getString("updated_at")
         );
+    }
+
+    public long getLocalId() {
+        return localId;
+    }
+
+    public void setLocalId(long localId) {
+        this.localId = localId;
     }
 
     public long getId() {

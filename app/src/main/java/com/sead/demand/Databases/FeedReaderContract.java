@@ -34,6 +34,7 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_USER_JOB_POSITION = "job_position";
         public static final String COLUMN_NAME_USER_STATUS = "status";
         public static final String COLUMN_NAME_USER_SUPERIOR = "superior";
+        public static final String COLUMN_NAME_USER_JOB = "job";
         public static final String COLUMN_NAME_USER_FCM = "fcm";
         public static final String COLUMN_NAME_USER_CREATED_AT = "created_at";
         public static final String COLUMN_NAME_USER_UPDATED_AT = "updated_at";
@@ -57,5 +58,14 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_LEVEL = "level";
         public static final String COLUMN_NAME_AUTH_CREATED_AT = "created_at";
         public static final String COLUMN_NAME_AUTH_UPDATED_AT = "updated_at";
+    }
+
+    public static class JobEntry implements BaseColumns {
+        public static final String TABLE_NAME = "jobs";
+        public static final String COLUMN_NAME_JOB_ID = "job_id";
+        public static final String COLUMN_NAME_TITLE = "title";
+        public static final String COLUMN_NAME_POSITION = "position";
+        public static final String COLUMN_NAME_JOB_CREATED_AT = "created_at";
+        public static final String COLUMN_NAME_JOB_UPDATED_AT = "updated_at";
     }
 }

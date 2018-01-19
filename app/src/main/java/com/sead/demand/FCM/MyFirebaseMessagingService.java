@@ -105,7 +105,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private boolean amIThisReceiversSuperior(User receiver) {
         User currentUser = CommonUtils.getCurrentUserPreference(this);
         Log.e(TAG, "Current user:" + currentUser.getId() + " User receiver:" + receiver.getId());
-        return currentUser.getId() == receiver.getSuperior();
+        return currentUser.getId() == receiver.getSuperiorId();
     }
 
     // Check if current user is the receiver.
@@ -160,8 +160,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         if( type.equals(Constants.UNLOCK_USER)){
             try {
+                JSONObject jobJson = new JSONObject(bundle.get("job").toString());
+                com.sead.demand.Entities.Job job = com.sead.demand.Entities.Job.build(jobJson);
+                JSONObject superiorJson = new JSONObject(bundle.get("superior").toString());
+                User superior = User.build(superiorJson);
                 JSONObject userJson = new JSONObject(bundle.get("user").toString());
-                User user = User.build(userJson);
+                User user = User.build(job, superior, userJson);
                 // Try to add user, but if it already exists, then it'll update it.
                 CommonUtils.storeUserDB(user,type,this);
                 generateNotification(title, text, data);

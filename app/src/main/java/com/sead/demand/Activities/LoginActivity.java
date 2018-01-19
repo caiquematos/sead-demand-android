@@ -31,6 +31,7 @@ import android.widget.TextView;
 
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.sead.demand.Databases.MyDBManager;
+import com.sead.demand.Entities.Job;
 import com.sead.demand.Entities.User;
 import com.sead.demand.R;
 import com.sead.demand.Tools.CommonUtils;
@@ -346,10 +347,11 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         protected void onPostExecute(String jsonResponse) {
             mAuthTask = null;
             JSONObject jsonObject;
-            JSONObject userJson = null;
-            String message = "";
-            User user = null;
-            boolean success = false;
+            JSONObject userJson;
+            JSONObject jobJson;
+            JSONObject superiorJson;
+            User user;
+            boolean success;
 
             Log.d(TAG, "string json response: " + jsonResponse);
 
@@ -357,50 +359,57 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 userJson = jsonObject.getJSONObject("user");
+                jobJson = jsonObject.getJSONObject("job");
+                superiorJson = jsonObject.getJSONObject("superior");
 
-                user = User.build(userJson);
-                Log.d(TAG, "user response email:" + user.getEmail());
+                Job job = Job.build(jobJson);
+                User superior = User.build(superiorJson);
+                user = User.build(job, superior, userJson);
+                Log.d(TAG, "user:" + user.toString());
 
-                message = jsonObject.getString("msg"); // maybe necessary in the future
+                if (success && user != null) {
+                    // Try to store user
+                    MyDBManager myDBManager = new MyDBManager(mActivity);
+                    long isUserStored = myDBManager.addUser(user);
+                    if (isUserStored >= 0) Log.e(TAG, "User stored");
+
+                    SharedPreferences.Editor editor = mPrefs.edit();
+                    editor.putString(Constants.USER_PREFERENCES, userJson.toString());
+                    editor.putString(Constants.JOB_PREFERENCES, jobJson.toString());
+                    editor.putString(Constants.SUPERIOR_PREFERENCES, superiorJson.toString());
+                    editor.putBoolean(Constants.IS_LOGGED,true);
+                    editor.putInt(Constants.LOGGED_USER_ID, user.getId());
+                    editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
+                    editor.putString(Constants.LOGGED_USER_JOB_POSITION, user.getPosition());
+                    if (editor.commit()){
+                        Log.d(TAG,"User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
+                        Log.d(TAG,"Job json in prefs:" + mPrefs.getString(Constants.JOB_PREFERENCES, "NOT FOUND"));
+                        Log.d(TAG,"Superior json in prefs:" + mPrefs.getString(Constants.SUPERIOR_PREFERENCES, "NOT FOUND"));
+                        Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
+                        Log.d(TAG,"User email prefs:" + mPrefs.getString(Constants.LOGGED_USER_EMAIL,""));
+                        Log.d(TAG,"User job position prefs:" + mPrefs.getString(Constants.LOGGED_USER_JOB_POSITION,""));
+                        Log.d(TAG,"User id prefs:" + mPrefs.getInt(Constants.LOGGED_USER_ID,-1));
+                    } else {
+                        Log.d(TAG,"Could not save prefs!");
+                    }
+
+                    Intent intent = new Intent(getApplication(), MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    // mPasswordView.setError(getString(R.string.error_incorrect_password));
+                    // mPasswordView.requestFocus();
+                    throw new JSONException("success hit false!");
+                }
+
             } catch (JSONException e) {
                 Snackbar.make(findViewById(R.id.email_sign_in_button), R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
 
-            if (success && user != null) {
-                // Try to store user
-                MyDBManager myDBManager = new MyDBManager(mActivity);
-                long isUserStored = myDBManager.addUser(user);
-                if (isUserStored >= 0) Log.e(TAG, "User stored");
-
-                SharedPreferences.Editor editor = mPrefs.edit();
-                editor.putString(Constants.USER_PREFERENCES, userJson.toString());
-                editor.putBoolean(Constants.IS_LOGGED,true);
-                editor.putInt(Constants.LOGGED_USER_ID, user.getId());
-                editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
-                editor.putString(Constants.LOGGED_USER_JOB_POSITION, user.getPosition());
-                if (editor.commit()){
-                    Log.d(TAG,"User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
-                    Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
-                    Log.d(TAG,"User email prefs:" + mPrefs.getString(Constants.LOGGED_USER_EMAIL,""));
-                    Log.d(TAG,"User job position prefs:" + mPrefs.getString(Constants.LOGGED_USER_JOB_POSITION,""));
-                    Log.d(TAG,"User id prefs:" + mPrefs.getInt(Constants.LOGGED_USER_ID,-1));
-                } else {
-                    Log.d(TAG,"Could not save prefs!");
-                }
-                Intent intent = new Intent(getApplication(), MainActivity.class);
-                if (mPDLogin.isShowing()){
-                    mPDLogin.dismiss();
-                }
-                startActivity(intent);
-                finish();
-            } else {
-                if (mPDLogin.isShowing()){
-                    mPDLogin.dismiss();
-                }
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                mPasswordView.requestFocus();
+            if (mPDLogin.isShowing()){
+                mPDLogin.dismiss();
             }
         }
 

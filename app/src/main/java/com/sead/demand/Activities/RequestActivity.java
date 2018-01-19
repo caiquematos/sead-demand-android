@@ -61,6 +61,8 @@ public class RequestActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.BROADCAST_REQUEST_ACT));
+        List<Authority> authorities = fetchAuthoritiesBySuperior(mCurrentUser.getId());
+        loadRequest(mCurrentUser.getId(), authorities);
     }
 
     @Override
