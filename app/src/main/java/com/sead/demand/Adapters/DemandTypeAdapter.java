@@ -2,6 +2,8 @@ package com.sead.demand.Adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,14 +24,15 @@ public class DemandTypeAdapter extends RecyclerView.Adapter<DemandTypeAdapter.Vi
     private String TAG = getClass().getSimpleName();
     private List<DemandType> demandTypeList;
     private Context context;
-    private SparseBooleanArray mSelectedItemsIds;
     private SparseBooleanArray mGeneralSelectedItems;
+    private SparseArray<DemandType> mGeneralSelectedDemandTypes;
 
-    public DemandTypeAdapter(List<DemandType> demandTypeList, SparseBooleanArray generalSelectedItems, Context context) {
+    public DemandTypeAdapter(List<DemandType> demandTypeList, SparseArray<DemandType> generalSelectedDemandTypes, SparseBooleanArray generalSelectedItems, Context context) {
         this.demandTypeList = demandTypeList;
         this.context = context;
-        this.mSelectedItemsIds = new SparseBooleanArray();
         this.mGeneralSelectedItems = generalSelectedItems;
+        Log.d(TAG, "general selected items:" + this.mGeneralSelectedItems.toString());
+        this.mGeneralSelectedDemandTypes = generalSelectedDemandTypes;
     }
 
     @Override
@@ -52,7 +55,9 @@ public class DemandTypeAdapter extends RecyclerView.Adapter<DemandTypeAdapter.Vi
         holder.getCheckBox().setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mSelectedItemsIds.put((int) demandType.getId(),isChecked);
+                mGeneralSelectedItems.put((int) demandType.getId(),isChecked);
+                if (isChecked) mGeneralSelectedDemandTypes.put((int) demandType.getId(), demandType);
+                else mGeneralSelectedDemandTypes.delete((int) demandType.getId());
             }
         });
     }
@@ -63,7 +68,11 @@ public class DemandTypeAdapter extends RecyclerView.Adapter<DemandTypeAdapter.Vi
     }
 
     public SparseBooleanArray getSelectedIds() {
-        return mSelectedItemsIds;
+        return mGeneralSelectedItems;
+    }
+
+    public SparseArray<DemandType> getSelectedDemandTypes() {
+        return mGeneralSelectedDemandTypes;
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

@@ -93,8 +93,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent mainIntent = new Intent(MainActivity.this, CreateDemandActivity.class);
-                startActivity(mainIntent);
+                if (CommonUtils.isOnline(mActivity)) {
+                    Intent mainIntent = new Intent(MainActivity.this, CreateDemandActivity.class);
+                    startActivity(mainIntent);
+                } else {
+                    Snackbar.make(mFab, R.string.internet_error, Snackbar.LENGTH_LONG).show();
+                }
             }
         });
 

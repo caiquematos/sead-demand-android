@@ -11,7 +11,9 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.SparseArray;
 import android.util.SparseBooleanArray;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -47,18 +49,17 @@ public class DemandTypeActivity extends AppCompatActivity {
     private DemandTypeAdapter mDemandTypeAdapter;
     private ProgressBar mProgressBar;
     private SparseBooleanArray mSelectedItems;
+    private SparseArray<DemandType> mSelectedDemandTypes;
+    private SparseArray<DemandType> mDefinitiveSelectedDemandTypes;
     private Button mDoneBtn;
     private DesignateDemandTypesTask mDesignateDemandTypesTask;
     private User mUser;
     private FetchDemandTypesByUserTask mFetchDemandTypesByUserTask;
-    private  ArrayList<Integer> mDemandTypesIds;
+    private ArrayList<Integer> mDemandTypesIds;
 
     public DemandTypeActivity() {
         this.mActivity = this;
     }
-
-    // TODO: return to parent activity with the name of demand types designated.
-    // TODO: start checkbox's progress bar only after department been chosen.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +77,7 @@ public class DemandTypeActivity extends AppCompatActivity {
         Log.d(TAG, "User:" + mUser.toString());
 
         mSelectedItems = new SparseBooleanArray();
+        mSelectedDemandTypes = new SparseArray<>();
 
         mProgressBar = (ProgressBar) findViewById(R.id.demand_type_progress_bar);
 
@@ -91,7 +93,8 @@ public class DemandTypeActivity extends AppCompatActivity {
                 Log.d(TAG, "department selected:" + position);
                 /** Accumulate selected items from all department before changing department and confirming **/
                 if (mDemandTypeAdapter != null) {
-                    addSelectedItems(mDemandTypeAdapter.getSelectedIds());
+                    updateSelectedItems(mDemandTypeAdapter.getSelectedIds()); //update selected or not
+                    updateSelectedItems(mDemandTypeAdapter.getSelectedDemandTypes()); //update selected or not
                     showSelectedItems();
                     Log.d(TAG, "Sparse to String:" + mSelectedItems.toString());
                 }
@@ -111,19 +114,43 @@ public class DemandTypeActivity extends AppCompatActivity {
         mDoneBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addSelectedItems(mDemandTypeAdapter.getSelectedIds()); //update selected or not
+                updateSelectedItems(mDemandTypeAdapter.getSelectedIds()); //update selected or not
+                updateSelectedItems(mDemandTypeAdapter.getSelectedDemandTypes()); //update selected or not
+                showSelectedItems();
                 designateActivities();
             }
         });
 
-        if (CommonUtils.isOnline(this)) {
-            fetchDemandTypesIds(mUser);
-        } else {
-            Snackbar.make(mDepartmentSpinner, R.string.internet_error, Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-            finish();
-        }
+        fetchDemandTypesIds(mUser);
 
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+                Intent intent = new Intent();
+                intent.putExtra("user", mUser);
+                intent.putExtra("mode", "ADMIN");
+                Log.d(TAG, "array before going back:" + mDefinitiveSelectedDemandTypes.toString());
+                intent.putExtra("selected_types", sparseArrayToJson(mDefinitiveSelectedDemandTypes));
+                setResult(RESULT_OK,intent);
+                finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        Intent intent = new Intent();
+        intent.putExtra("user", mUser);
+        intent.putExtra("mode", "ADMIN");
+        Log.d(TAG, "array before back pressed:" + mDefinitiveSelectedDemandTypes.toString());
+        intent.putExtra("selected_types", sparseArrayToJson(mDefinitiveSelectedDemandTypes));
+        setResult(RESULT_OK,intent);
     }
 
     private void designateActivities() {
@@ -142,17 +169,30 @@ public class DemandTypeActivity extends AppCompatActivity {
         }
     }
 
-    private void addSelectedItems(SparseBooleanArray selectedItems) {
+    private void updateSelectedItems(SparseBooleanArray selectedItems) {
+        mSelectedItems = selectedItems;
+        /*
         if (selectedItems.size() > 0) {
             for (int i = 0; i < selectedItems.size(); i++) {
                 mSelectedItems.put(selectedItems.keyAt(i),selectedItems.valueAt(i));
             }
+        }*/
+    }
+
+    private void updateSelectedItems(SparseArray<DemandType> selectedTypes) {
+        mSelectedDemandTypes = selectedTypes;
+        /*
+        if (selectedTypes.size() > 0) {
+            for (int i = 0; i < selectedTypes.size(); i++) {
+                mSelectedDemandTypes.put(selectedTypes.keyAt(i),selectedTypes.valueAt(i));
+            }
         }
+        */
     }
 
     private void showSelectedItems() {
-        for (int i = 0; i < mSelectedItems.size(); i++) {
-            Log.d(TAG, "id:" + mSelectedItems.keyAt(i) + " value:" + mSelectedItems.valueAt(i));
+        for (int i = 0; i < mSelectedDemandTypes.size(); i++) {
+            Log.d(TAG, "id:" + mSelectedDemandTypes.keyAt(i) + " value:" + mSelectedDemandTypes.valueAt(i).toString());
         }
     }
 
@@ -208,6 +248,33 @@ public class DemandTypeActivity extends AppCompatActivity {
         }
         Log.d(TAG, "Json Array created:" + jsonArray.toString());
         return jsonArray.toString();
+    }
+
+    private String sparseArrayToJson(SparseArray<DemandType> sparseArray) {
+        try {
+            JSONArray jsonArray = new JSONArray();
+            JSONObject jsonObject;
+            for (int i = 0; i < sparseArray.size(); i++) {
+                jsonObject = new JSONObject();
+                jsonObject.put("id", sparseArray.keyAt(i));
+                jsonObject.put("title", sparseArray.valueAt(i).getTitle());
+                jsonArray.put(jsonObject);
+                Log.d(TAG, "id:" + sparseArray.keyAt(i) + " value:" + sparseArray.valueAt(i).toString());
+            }
+            Log.d(TAG, "Json Array created:" + jsonArray.toString());
+            return jsonArray.toString();
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    private void copySparseArray(SparseArray<DemandType> src, SparseArray<DemandType> dest) {
+        dest.clear();
+        for (int i = 0; i < src.size(); i++) {
+            dest.put(src.keyAt(i), src.valueAt(i));
+        }
+        Log.d(TAG, "Array copied:" + dest.toString());
     }
 
     private class FetchDepartmentsTask extends AsyncTask<Void, Void, String> {
@@ -314,14 +381,12 @@ public class DemandTypeActivity extends AppCompatActivity {
                         demandTypesTitles.add(demandType.getTitle());
                     }
 
-                    if (!demandTypesTitles.isEmpty()) {
-                        mDemandTypeAdapter = new DemandTypeAdapter(mDemandTypesArray, mSelectedItems, mActivity);
-                    } else {
-                        mDemandTypeAdapter = new DemandTypeAdapter(mDemandTypesArray,mSelectedItems, mActivity);
+                    if (demandTypesTitles.isEmpty()) {
                         Snackbar.make(mDemandTypeList,"Não há demandas disponíveis nesse setor!", Snackbar.LENGTH_LONG)
                                 .setAction("Action", null).show();
                     }
 
+                    mDemandTypeAdapter = new DemandTypeAdapter(mDemandTypesArray, mSelectedDemandTypes, mSelectedItems, mActivity);
                     mDemandTypeList.setAdapter(mDemandTypeAdapter);
                 } else {
                     throw new JSONException("success hit false");
@@ -338,12 +403,10 @@ public class DemandTypeActivity extends AppCompatActivity {
     }
 
     private class DesignateDemandTypesTask extends AsyncTask<Void, Void, String> {
-        private SparseBooleanArray sparseBooleanArray;
         private User user;
         private String typesJsonArrayString;
 
         public DesignateDemandTypesTask(SparseBooleanArray sparseBooleanArray, User user) throws JSONException {
-            this.sparseBooleanArray = sparseBooleanArray;
             this.user = user;
             this.typesJsonArrayString = sparseBooleanArrayToJson(sparseBooleanArray);
         }
@@ -376,12 +439,26 @@ public class DemandTypeActivity extends AppCompatActivity {
             }
 
             try {
-                JSONObject jsonObject = null;
+                JSONObject jsonObject;
                 jsonObject = new JSONObject(s);
                 boolean success = jsonObject.getBoolean("success");
                 if (success) {
+                    JSONArray jsonArray = jsonObject.getJSONArray("demand_types");
+                    mSelectedDemandTypes = new SparseArray<>();
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject demandTypeJson = jsonArray.getJSONObject(i);
+                        DemandType demandType = DemandType.build(demandTypeJson);
+                        mSelectedDemandTypes.put((int) demandType.getId(), demandType);
+                    }
+                    copySparseArray(mSelectedDemandTypes, mDefinitiveSelectedDemandTypes);
                     Snackbar.make(mDoneBtn,"Concluído.", Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
+                    Intent intent = new Intent();
+                    intent.putExtra("user", mUser);
+                    intent.putExtra("mode", "ADMIN");
+                    intent.putExtra("selected_types", sparseArrayToJson(mDefinitiveSelectedDemandTypes));
+                    setResult(RESULT_OK,intent);
+                    finish();
                 } else {
                     throw new JSONException("success hit false");
                 }
@@ -421,19 +498,22 @@ public class DemandTypeActivity extends AppCompatActivity {
             mFetchDemandTypesByUserTask = null;
 
             try {
-                JSONObject jsonObject = null;
+                JSONObject jsonObject;
                 jsonObject = new JSONObject(s);
                 boolean success = jsonObject.getBoolean("success");
 
                 if (success) {
-                    JSONArray demandTypesUsersJson = jsonObject.getJSONArray("demand_types_ids");
-                    mDemandTypesIds = new ArrayList<>();
-                    for (int i=0; i<demandTypesUsersJson.length(); i++) {
-                        JSONObject demandTypeUserJson = demandTypesUsersJson.getJSONObject(i);
-                        mDemandTypesIds.add(demandTypeUserJson.getInt("demand_type"));
-                        mSelectedItems.put(mDemandTypesIds.get(i), true);
+                    JSONArray demandTypesJson = jsonObject.getJSONArray("demand_types");
+                    mDemandTypesArray = new ArrayList<>();
+                    for (int i=0; i<demandTypesJson.length(); i++) {
+                        JSONObject demandTypeJson = demandTypesJson.getJSONObject(i);
+                        DemandType demandType = DemandType.build(demandTypeJson);
+                        mDemandTypesArray.add(demandType);
+                        mSelectedItems.put((int) demandType.getId(), true);
+                        mSelectedDemandTypes.put((int) demandType.getId(), demandType);
                     }
-                    addSelectedItems(mSelectedItems);
+                    mDefinitiveSelectedDemandTypes = new SparseArray<>();
+                    copySparseArray(mSelectedDemandTypes, mDefinitiveSelectedDemandTypes);
                     fetchDepartments();
                 } else {
                     throw new JSONException("success hit false");
@@ -445,5 +525,7 @@ public class DemandTypeActivity extends AppCompatActivity {
 
         }
     }
+
+
 
 }

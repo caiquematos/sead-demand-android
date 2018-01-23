@@ -16,6 +16,7 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_SENDER_ID = "sender_id";
         public static final String COLUMN_NAME_RECEIVER_ID = "receiver_id";
         public static final String COLUMN_NAME_REASON_ID = "reason_id";
+        public static final String COLUMN_NAME_TYPE_ID = "type_id";
         public static final String COLUMN_NAME_SUBJECT = "subject";
         public static final String COLUMN_NAME_DESCRIPTION = "description";
         public static final String COLUMN_NAME_STATUS = "status";

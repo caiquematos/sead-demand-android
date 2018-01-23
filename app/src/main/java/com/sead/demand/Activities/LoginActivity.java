@@ -365,6 +365,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 Job job = Job.build(jobJson);
                 User superior = User.build(superiorJson);
                 user = User.build(job, superior, userJson);
+                Log.d(TAG, "superior:" + user.getSuperior().toString());
+                Log.d(TAG, "job:" + user.getJob().toString());
                 Log.d(TAG, "user:" + user.toString());
 
                 if (success && user != null) {

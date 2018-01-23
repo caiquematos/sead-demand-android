@@ -38,7 +38,7 @@
     <!-- Strings relates toName Home Activity -->
     <string name="dummy_button">Dummy Button</string>
     <string name="prompt_name">Nome</string>
-    <string name="prompt_confirm">Reptir Senha</string>
+    <string name="prompt_confirm">Repetir Senha</string>
     <string name="register_category">Posição</string>
     <string name="register_superior">Superior</string>
 

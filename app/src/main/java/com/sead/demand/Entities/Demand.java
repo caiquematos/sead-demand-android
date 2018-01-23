@@ -14,7 +14,7 @@ public class Demand implements Serializable {
     private User sender;
     private User receiver;
     private PredefinedReason reason;
-    private String prior;
+    private DemandType type;
     private String subject;
     private String description;
     private String status;
@@ -23,6 +23,7 @@ public class Demand implements Serializable {
     private Date createdAt;
     private Date updatedAt;
 
+    /*
    public static Demand build(JSONObject json) throws JSONException {
         User sender = new User(
                 json.getInt("sender"),
@@ -40,8 +41,9 @@ public class Demand implements Serializable {
 
         return Demand.build(sender, receiver, reason, json);
     }
+    */
 
-    public static Demand build(User sender, User receiver, PredefinedReason reason, JSONObject json) throws JSONException {
+    public static Demand build(User sender, User receiver, PredefinedReason reason, DemandType type, JSONObject json) throws JSONException {
 
         return new Demand(
                 -1,
@@ -49,7 +51,7 @@ public class Demand implements Serializable {
                 sender,
                 receiver,
                 reason,
-                json.getString("prior"),
+                type,
                 json.getString("subject"),
                 json.getString("description"),
                 json.getString("status"),
@@ -65,7 +67,7 @@ public class Demand implements Serializable {
             User sender,
             User receiver,
             PredefinedReason reason,
-            String prior,
+            DemandType type,
             String subject,
             String description,
             String status,
@@ -81,37 +83,18 @@ public class Demand implements Serializable {
         setSubject(subject);
         setDescription(description);
         setStatus(status);
-        setPrior(prior);
+        setType(type);
         setSeen(seen);
         setCreatedAt(CommonUtils.convertTimestampToDate(created_at));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updated_at));
     }
 
-    public Demand(
-            long localId,
-            int demandId,
-            User sender,
-            User receiver,
-            PredefinedReason reason,
-            String subject,
-            String description,
-            String status,
-            String seen,
-            String created_at,
-            String updated_at) {
+    public DemandType getType() {
+        return type;
+    }
 
-        setLocalId(localId);
-        setId(demandId);
-        setSender(sender);
-        setReceiver(receiver);
-        setReason(reason);
-        setSubject(subject);
-        setDescription(description);
-        setStatus(status);
-        setPrior(prior);
-        setSeen(seen);
-        setCreatedAt(CommonUtils.convertTimestampToDate(created_at));
-        setUpdatedAt(CommonUtils.convertTimestampToDate(updated_at));
+    public void setType(DemandType type) {
+        this.type = type;
     }
 
     public boolean isArchive() {
@@ -140,14 +123,6 @@ public class Demand implements Serializable {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    public String getPrior() {
-        return prior;
-    }
-
-    public void setPrior(String prior) {
-        this.prior = prior;
     }
 
     public String getSubject() {
@@ -190,11 +165,11 @@ public class Demand implements Serializable {
                 + " Receiver:" + receiver.getId()
                 + " " + receiver.getEmail()
                 + " " + receiver.getName()
+                + " Type:" + getType().getTitle()
                 + " Demand:" + getLocalId()
                 + " " + getId()
                 + " " + getStatus()
                 + " " + getSeen()
-                + " " + getPrior()
                 + " " + getCreatedAt()
                 + " " + getUpdatedAt()
                 + " " + getSubject()

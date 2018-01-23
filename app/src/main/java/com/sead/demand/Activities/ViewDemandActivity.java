@@ -29,6 +29,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
 import com.sead.demand.Entities.Demand;
+import com.sead.demand.Entities.DemandType;
 import com.sead.demand.Entities.PredefinedReason;
 import com.sead.demand.Entities.User;
 import com.sead.demand.Handlers.AlarmReceiver;
@@ -171,7 +172,7 @@ public class ViewDemandActivity extends AppCompatActivity {
 
         // Finally set changes.
 
-        showDemandPrior(mDemand.getPrior());
+        showDemandPrior(mDemand.getType().getPriority());
 
         mPriorTV.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -805,33 +806,46 @@ public class ViewDemandActivity extends AppCompatActivity {
             super.onPostExecute(jsonResponse);
             mDemandTask = null;
 
-            JSONObject jsonObject;
-            JSONObject senderJson;
-            JSONObject receiverJson;
-            JSONObject demandJson;
-            Demand demandResponse = null;
-            boolean success = false;
-
-            Log.e(TAG, "Json Response (resend): " + jsonResponse);
-
             try {
+                JSONObject jsonObject;
+                JSONObject senderJson;
+                JSONObject receiverJson;
+                JSONObject demandJson;
+                JSONObject demandTypeJson;
+                Demand demandResponse = null;
+                boolean success = false;
+
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 senderJson = jsonObject.getJSONObject("sender");
                 receiverJson = jsonObject.getJSONObject("receiver");
+                demandTypeJson = jsonObject.getJSONObject("demand_type");
                 demandJson = jsonObject.getJSONObject("demand");
 
                 User sender = User.build(senderJson);
                 User receiver = User.build(receiverJson);
-                demandResponse = Demand.build(sender, receiver, null, demandJson);
+                DemandType demandType = DemandType.build(demandTypeJson);
+                demandResponse = Demand.build(sender, receiver, null, demandType, demandJson);
 
                 Log.e(TAG,
                         "Json Resend Response:" + demandResponse.toString()
                                 + " sender:" + sender.toString()
                                 + " receiver:" + receiver.toString()
+                                + " demandType:" + demandType.toString()
                 );
+
+                if (success) {
+                    Intent intent = new Intent(mActivity, ViewDemandActivity.class);
+                    intent.putExtra(Constants.INTENT_ACTIVITY, mActivity.getClass().getSimpleName());
+                    intent.putExtra(Constants.INTENT_PAGE, mPage);
+                    intent.putExtra(Constants.INTENT_DEMAND, demandResponse);
+                    finish();
+                    mActivity.startActivity(intent);
+                } else {
+                    throw new JSONException("success hit false");
+                }
             } catch (JSONException e) {
-                Snackbar.make(mFabResend, R.string.server_error, Snackbar.LENGTH_LONG)
+                Snackbar.make(mFabResend, R.string.send_demand_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
@@ -840,17 +854,6 @@ public class ViewDemandActivity extends AppCompatActivity {
                 mPDDemand.dismiss();
             }
 
-            if (success) {
-                Intent intent = new Intent(mActivity, ViewDemandActivity.class);
-                intent.putExtra(Constants.INTENT_ACTIVITY, mActivity.getClass().getSimpleName());
-                intent.putExtra(Constants.INTENT_PAGE, mPage);
-                intent.putExtra(Constants.INTENT_DEMAND, demandResponse);
-                finish();
-                mActivity.startActivity(intent);
-            } else {
-                Snackbar.make(mFabResend, R.string.send_demand_error, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
         }
     }
 
@@ -950,20 +953,23 @@ public class ViewDemandActivity extends AppCompatActivity {
         protected void onPostExecute(String jsonResponse) {
             super.onPostExecute(jsonResponse);
             mStatusTask = null;
-            JSONObject jsonObject;
-            JSONObject demandJson;
-            JSONObject senderJson;
-            JSONObject receiverJson;
-            Demand demandResponse = null;
-            boolean success = false;
 
             Log.e(TAG, jsonResponse);
 
             try {
+                JSONObject jsonObject;
+                JSONObject demandJson;
+                JSONObject senderJson;
+                JSONObject receiverJson;
+                JSONObject demandTypeJson;
+                Demand demandResponse = null;
+                boolean success = false;
+
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 senderJson = jsonObject.getJSONObject("sender");
                 receiverJson = jsonObject.getJSONObject("receiver");
+                demandTypeJson = jsonObject.getJSONObject("demand_type");
                 demandJson = jsonObject.getJSONObject("demand");
 
                 PredefinedReason reason;
@@ -979,60 +985,59 @@ public class ViewDemandActivity extends AppCompatActivity {
 
                 User sender = User.build(senderJson);
                 User receiver = User.build(receiverJson);
-                demandResponse = Demand.build(sender, receiver, reason, demandJson);
+                DemandType demandType = DemandType.build(demandTypeJson);
+                demandResponse = Demand.build(sender, receiver, reason, demandType, demandJson);
+
+                String message;
+
+                if (success) {
+                    switch(demandResponse.getStatus()){
+                        case Constants.ACCEPT_STATUS:
+                            message = "Demanda Deferida com Sucesso.";
+                            break;
+                        case Constants.POSTPONE_STATUS:
+                            message = "Demanda Adiada com Sucesso.";
+                            mShouldCancelAlarm = false;
+                            break;
+                        case Constants.CANCEL_STATUS:
+                            message = "Demanda Cancelada com Sucesso.";
+                            break;
+                        case Constants.REOPEN_STATUS:
+                            message = "Demanda Reaberta com Sucesso.";
+                            break;
+                        case Constants.REJECT_STATUS:
+                            message = "Demanda Indeferida com Sucesso.";
+                            break;
+                        case Constants.DONE_STATUS:
+                            message = "Demanda Concluída com Sucesso.";
+                            Log.e(TAG, "On Done status, should cancel alarme");
+                            // We can use the same logic here for DONE status, because before a demand
+                            // is done, it would never be POSTPONE, so it is no problem.
+                            mShouldCancelAlarm = true;
+                            break;
+                        default:
+                            message = "Feito.";
+                    }
+
+                    // In case status changed from postponed to another, cancel alarm.
+                    if(mShouldCancelAlarm){
+                        CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.WARN_DUE_TIME_ALARM_TAG);
+                        CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.DUE_TIME_ALARM_TAG);
+                        CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.POSTPONE_ALARM_TAG);
+                        mShouldCancelAlarm = false;
+                        Log.e(TAG, "should cancel alarm was true!");
+                    }
+
+                    Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG).show();
+                    showDemandStatus(demandResponse.getStatus());
+                    //TODO: Change status locally also.
+                } else {
+                    throw new JSONException("success hit false!");
+                }
             } catch (JSONException e) {
                 Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
-            }
-
-            String message;
-
-            if (success) {
-                switch(demandResponse.getStatus()){
-                    case Constants.ACCEPT_STATUS:
-                        message = "Demanda Deferida com Sucesso.";
-                        break;
-                    case Constants.POSTPONE_STATUS:
-                        message = "Demanda Adiada com Sucesso.";
-                        mShouldCancelAlarm = false;
-                        break;
-                    case Constants.CANCEL_STATUS:
-                        message = "Demanda Cancelada com Sucesso.";
-                        break;
-                    case Constants.REOPEN_STATUS:
-                        message = "Demanda Reaberta com Sucesso.";
-                        break;
-                     case Constants.REJECT_STATUS:
-                        message = "Demanda Indeferida com Sucesso.";
-                        break;
-                    case Constants.DONE_STATUS:
-                        message = "Demanda Concluída com Sucesso.";
-                        Log.e(TAG, "On Done status, should cancel alarme");
-                        // We can use the same logic here for DONE status, because before a demand
-                        // is done, it would never be POSTPONE, so it is no problem.
-                        mShouldCancelAlarm = true;
-                        break;
-                    default:
-                        message = "Feito.";
-                }
-
-                // In case status changed from postponed to another, cancel alarm.
-                if(mShouldCancelAlarm){
-                    CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.WARN_DUE_TIME_ALARM_TAG);
-                    CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.DUE_TIME_ALARM_TAG);
-                    CommonUtils.cancelDueTime(demandResponse,getApplicationContext(),Constants.POSTPONE_ALARM_TAG);
-                    mShouldCancelAlarm = false;
-                    Log.e(TAG, "should cancel alarm was true!");
-                }
-
-                Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                showDemandStatus(demandResponse.getStatus());
-                //TODO: Change status locally also.
-            } else {
-                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
             }
 
             if (mPDDemand.isShowing()){
@@ -1080,20 +1085,23 @@ public class ViewDemandActivity extends AppCompatActivity {
         protected void onPostExecute(String jsonResponse) {
             super.onPostExecute(jsonResponse);
             mRejectTask = null;
-            JSONObject jsonObject;
-            JSONObject demandJson;
-            JSONObject senderJson;
-            JSONObject receiverJson;
-            Demand demandResponse = null;
-            boolean success = false;
 
             Log.e(TAG, jsonResponse);
 
             try {
+                JSONObject jsonObject;
+                JSONObject demandJson;
+                JSONObject senderJson;
+                JSONObject receiverJson;
+                JSONObject demandTypeJson;
+                Demand demandResponse;
+                boolean success;
+
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 senderJson = jsonObject.getJSONObject("sender");
                 receiverJson = jsonObject.getJSONObject("receiver");
+                demandTypeJson = jsonObject.getJSONObject("demand_type");
                 demandJson = jsonObject.getJSONObject("demand");
 
                 JSONObject reasonJson;
@@ -1109,32 +1117,30 @@ public class ViewDemandActivity extends AppCompatActivity {
 
                 User sender = User.build(senderJson);
                 User receiver = User.build(receiverJson);
-                demandResponse = Demand.build(sender, receiver, reason, demandJson);
-            } catch (JSONException e) {
-                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                e.printStackTrace();
-            }
+                DemandType demandType = DemandType.build(demandTypeJson);
+                demandResponse = Demand.build(sender, receiver, reason, demandType, demandJson);
 
-            String message;
+                String message;
 
-            if (success) {
-                switch(demandResponse.getStatus()){
-                     case Constants.REJECT_STATUS:
-                        message = "Demanda Indeferida com Sucesso.";
-                        break;
-                    default:
-                        message = "Feito.";
+                if (success) {
+                    switch(demandResponse.getStatus()){
+                        case Constants.REJECT_STATUS:
+                            message = "Demanda Indeferida com Sucesso.";
+                            break;
+                        default:
+                            message = "Feito.";
+                    }
+
+                    Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG).show();
+                    showDemandStatus(demandResponse.getStatus());
+                    showDemandReason(demandResponse);
+                    Log.e(TAG, "demand reason: " + demandResponse.getReason().getTitle());
+                } else {
+                    throw new JSONException("success hit false!");
                 }
-
-                Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                showDemandStatus(demandResponse.getStatus());
-                showDemandReason(demandResponse);
-                Log.e(TAG, "demand reason: " + demandResponse.getReason().getTitle());
-            } else {
-                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+            } catch (JSONException e) {
+                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG).show();
+                e.printStackTrace();
             }
 
             if (mPDDemand.isShowing()){

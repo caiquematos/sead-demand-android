@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.sead.demand.Entities.Authority;
 import com.sead.demand.Entities.Demand;
+import com.sead.demand.Entities.DemandType;
 import com.sead.demand.Entities.Job;
 import com.sead.demand.Entities.PredefinedReason;
 import com.sead.demand.Entities.User;
@@ -52,7 +53,6 @@ public class MyDBManager {
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT, demand.getSubject());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION, demand.getDescription());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS, demand.getStatus());
-        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR, demand.getPrior());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN, demand.getSeen());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
                 new Timestamp(demand.getCreatedAt().getTime()).toString());
@@ -78,15 +78,18 @@ public class MyDBManager {
         ContentValues values = new ContentValues();
 
         // Fist: Add Job and Superior if they're not null and don't exist in db.
-        Log.d(TAG, "job:" + user.getJob().toString());
+        // Must check if job is not null, usually, a superior user won't have a job object defined.
         if (user.getJob() != null) {
+            Log.d(TAG, "job:" + user.getJob().toString());
             if (addJob(user.getJob()) < 0)
                 Log.e(TAG, "Job not added! Prob it exists already.");
             else Log.e(TAG, "Job added successfully:" + user.getJob().getId());
             values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJob().getId());
         }
-        Log.d(TAG, "superior:" + user.getSuperior().toString());
+
+        // As done right before, must check if Superior is defined.
         if (user.getSuperior() != null) {
+            Log.d(TAG, "superior:" + user.getSuperior().toString());
             if (addUser(user.getSuperior()) < 0)
                 Log.e(TAG, "Superior not added! Prob it exists already.");
             else Log.e(TAG, "Superior added successfully:" + user.getSuperior().getId());
@@ -99,8 +102,6 @@ public class MyDBManager {
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_NAME, user.getName());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_EMAIL, user.getEmail());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION, user.getPosition());
-        //values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJobId());
-        //values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperiorId());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS, user.getStatus());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM, user.getGcm());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT,
@@ -482,11 +483,11 @@ public class MyDBManager {
             int demandId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID));
             int senderId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID));
             int receiverId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID));
+            int demandTypeId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID));
             int reasonId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID));
             String subject = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT));
             String description = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION));
             String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS));
-            String prior = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR));
             String seen = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN));
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT));
@@ -494,6 +495,7 @@ public class MyDBManager {
             // Search for local instances of users
             User sender = findUserByServerId(senderId);
             User receiver = findUserByServerId(receiverId);
+            DemandType type = findDemandTypeByServerId();
             PredefinedReason reason = findReasonByServerId(reasonId);
 
             if(sender != null && receiver != null){
@@ -503,7 +505,7 @@ public class MyDBManager {
                         sender,
                         receiver,
                         reason,
-                        prior,
+                        type,
                         subject,
                         description,
                         status,

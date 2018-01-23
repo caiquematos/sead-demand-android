@@ -26,23 +26,27 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.sead.demand.Databases.FeedReaderContract;
+import com.sead.demand.Entities.DemandType;
 import com.sead.demand.Entities.User;
 import com.sead.demand.R;
 import com.sead.demand.Tools.CommonUtils;
 import com.sead.demand.Tools.Constants;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
 public class ProfileActivity extends AppCompatActivity {
     static final int REQUEST_IMAGE_CAPTURE = 1;
     static final int REQUEST_IMAGE_PICK = 2;
+    static final int DESIGNATE_DEMAND_TYPES = 3;
 
     private String TAG = getClass().getSimpleName();
     private SharedPreferences mPrefs;
@@ -56,14 +60,14 @@ public class ProfileActivity extends AppCompatActivity {
     private StatusTask mStatusTask;
     private User me;
     private User mUser;
+    private FetchDemandTypesByUserTask mFetchDemandTypesByUserTask;
+    private ArrayList<DemandType> mDemandTypesArray;
 
     private ProfileActivity mActivity;
 
     public ProfileActivity() {
         this.mActivity = this;
     }
-
-    // TODO: load photo profile (offline), job (online), and superior (online).
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,14 +144,20 @@ public class ProfileActivity extends AppCompatActivity {
         mAddActivityIV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), DemandTypeActivity.class);
-                intent.putExtra("user", referenceUser);
-                startActivity(intent);
+                if (CommonUtils.isOnline(mActivity)) {
+                    Intent intent = new Intent(getApplicationContext(), DemandTypeActivity.class);
+                    intent.putExtra("user", referenceUser);
+                    startActivityForResult(intent, DESIGNATE_DEMAND_TYPES);
+                } else {
+                    Snackbar.make(mAddActivityIV, R.string.internet_error, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
             }
         });
 
         showUserStatus(referenceUser.getStatus());
         loadImage(referenceUser.getId());
+        loadActivities(referenceUser);
     }
 
     @Override
@@ -159,6 +169,16 @@ public class ProfileActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void loadActivities(User user) {
+        if(mFetchDemandTypesByUserTask == null && CommonUtils.isOnline(this)){
+            mFetchDemandTypesByUserTask = new FetchDemandTypesByUserTask(user);
+            mFetchDemandTypesByUserTask.execute();
+        } else {
+            Snackbar.make(mActivitiesTV, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
     }
 
     private void loadImage(int id) {
@@ -276,9 +296,42 @@ public class ProfileActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else if (requestCode == DESIGNATE_DEMAND_TYPES && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            String selectedTypesJson =  extras.getString("selected_types");
+            showSelectedDemandTypes(selectedTypesJson);
+            Log.d(TAG, "Types selected json:" + selectedTypesJson);
         } else {
             Log.d(TAG, "Something wrong!!!");
         }
+    }
+
+    private void showSelectedDemandTypes(String selectedTypesJson) {
+        try {
+            JSONArray jsonArray = new JSONArray(selectedTypesJson);
+            Log.d(TAG, "jsonArray:" + jsonArray.toString());
+            String activities = "";
+            for (int i = 0; i < jsonArray.length(); i++) {
+                if (i > 0) activities = activities.concat(", ");
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                activities = activities.concat(jsonObject.getString("title"));
+                Log.d(TAG, "jsonObject:" + jsonObject.toString() + " string:" + activities);
+            }
+            activities = activities.concat(".");
+            mActivitiesTV.setText(activities);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showSelectedDemandTypes(ArrayList<DemandType> mDemandTypesArray) {
+        String activities = "";
+        for (int i = 0; i < mDemandTypesArray.size(); i++) {
+            if (i > 0) activities = activities.concat(", ");
+            activities = activities.concat(mDemandTypesArray.get(i).getTitle());
+        }
+        activities = activities.concat(".");
+        mActivitiesTV.setText(activities);
     }
 
     private File createImageFile() throws IOException {
@@ -421,6 +474,58 @@ public class ProfileActivity extends AppCompatActivity {
             if (mProgressDialogUser.isShowing()){
                 mProgressDialogUser.dismiss();
             }
+        }
+    }
+
+    private class FetchDemandTypesByUserTask extends AsyncTask<Void, Void, String> {
+        private User user;
+
+        public FetchDemandTypesByUserTask(User user) {
+            this.user = user;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mActivitiesTV.setText("Carregando...");
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            ContentValues values = new ContentValues();
+            values.put("user_id", user.getId());
+            return CommonUtils.POST("/demandtype/get-by-user", values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            Log.d(TAG, "Response:" + s);
+            mFetchDemandTypesByUserTask = null;
+
+            try {
+                JSONObject jsonObject = null;
+                jsonObject = new JSONObject(s);
+                boolean success = jsonObject.getBoolean("success");
+
+                if (success) {
+                    JSONArray demandTypesJson = jsonObject.getJSONArray("demand_types");
+                    mDemandTypesArray = new ArrayList<>();
+                    for (int i=0; i<demandTypesJson.length(); i++) {
+                        JSONObject demandTypeJson = demandTypesJson.getJSONObject(i);
+                        DemandType demandType = DemandType.build(demandTypeJson);
+                        mDemandTypesArray.add(demandType);
+                    }
+                    showSelectedDemandTypes(mDemandTypesArray);
+                } else {
+                    throw new JSONException("success hit false");
+                }
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+                mActivitiesTV.setText("Falhou! Por favor, tente mais tarde.");
+            }
+
         }
     }
 

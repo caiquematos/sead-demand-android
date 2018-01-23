@@ -5,19 +5,22 @@ import com.sead.demand.Tools.CommonUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
  * Created by caiqu on 12/21/2017.
  */
 
-public class DemandType {
+public class DemandType implements Serializable{
     private long id;
     private String title;
+    private int complexity;
+    private String priority;
     private Date created_at;
     private Date updated_at;
 
-    public DemandType(long id, String title, String created_at, String updated_at) {
+    public DemandType(long id, String title, String priority, int complexity, String created_at, String updated_at) {
         this.id = id;
         this.title = title;
         this.created_at = CommonUtils.convertTimestampToDate(created_at);
@@ -28,6 +31,8 @@ public class DemandType {
         return new DemandType(
                 json.getLong("id"),
                 json.getString("title"),
+                json.getString("priority"),
+                json.getInt("complexity"),
                 json.getString("created_at"),
                 json.getString("updated_at")
         );
@@ -49,6 +54,22 @@ public class DemandType {
         this.title = title;
     }
 
+    public int getComplexity() {
+        return complexity;
+    }
+
+    public void setComplexity(int complexity) {
+        this.complexity = complexity;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
     public Date getCreated_at() {
         return created_at;
     }
@@ -67,11 +88,6 @@ public class DemandType {
 
     @Override
     public String toString() {
-        return "DemandType{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", created_at=" + created_at +
-                ", updated_at=" + updated_at +
-                '}';
+        return super.toString();
     }
 }

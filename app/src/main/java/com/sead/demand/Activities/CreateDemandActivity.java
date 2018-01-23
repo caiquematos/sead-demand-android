@@ -21,6 +21,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 
@@ -53,19 +55,21 @@ public class CreateDemandActivity extends AppCompatActivity{
     private SendDemandTask mDemandTask;
     private  ArrayList<String> mEmployeesEmails;
     private int mReceiverIndex;
-    private String mReceiverName;
     private SharedPreferences mPrefs;
     private int mPage;
     private int mMenuType;
     private FloatingActionButton mFab;
-    private List<String> mAutocompleteArray;
-    private User mCurrentUser;
     private FetchDemandsTask mFetchDemandsTask;
     private FetchUsersTask mFetchUsersTask;
     private FetchDepartmentsTask mFetchDepartmentsTask;
     private ProgressDialog mPDDepartment;
     private ArrayList<Department> mDepartmentsArray;
     private ArrayList<DemandType> mDemandTypesArray;
+    private ArrayList<User> mUsersArray;
+    private CheckBox mCheckBox;
+    private User mUser;
+    private User mReceiver;
+    private DemandType mDemandTypeSelected;
 
     public CreateDemandActivity() {
         this.mActivity = this;
@@ -88,13 +92,12 @@ public class CreateDemandActivity extends AppCompatActivity{
         mReceiverIndex = -1;
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
-        mReceiverView = (AutoCompleteTextView) findViewById(R.id.demand_receiver_act);
+        mUser = CommonUtils.getCurrentUserPreference(this);
+
         mSubjectView = (EditText) findViewById(R.id.demand_subject_et);
         mDescriptionView = (EditText) findViewById(R.id.demand_description_et);
 
         mDepartmentSpinner = (Spinner) findViewById(R.id.demand_department_spinner);
-        mDemandTypesSpinner = (Spinner) findViewById(R.id.demand_demand_spinner);
-
         mDepartmentSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -108,9 +111,13 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         });
 
+        mDemandTypesSpinner = (Spinner) findViewById(R.id.demand_type_spinner);
         mDemandTypesSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                mDemandTypeSelected = mDemandTypesArray.get(position);
+                mReceiver = null;
+                mReceiverView.setText("");
                 fetchUsers(position);
             }
 
@@ -120,17 +127,27 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         });
 
+        mReceiverView = (AutoCompleteTextView) findViewById(R.id.demand_receiver_act);
         mReceiverView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                mReceiverName = mReceiverView.getText().toString();
-                mReceiverIndex = mAutocompleteArray.indexOf(mReceiverName);
-                Log.d(TAG, "Receiver Index:" + mReceiverIndex
-                        + " Receiver name:" + mReceiverName);
+                Log.d(TAG, "To position:" + position + " Id:" + id);
+                mReceiver = mUsersArray.get(position);
+                Log.d(TAG, "Receiver Selected:" + mReceiver.toString());
             }
         });
 
-        // TODO: Create a job for each attempt to queue it.
+        mCheckBox = (CheckBox) findViewById(R.id.demand_check_box);
+        mCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mDepartmentSpinner.setEnabled(!isChecked);
+                mDemandTypesSpinner.setEnabled(!isChecked);
+                mReceiverView.setEnabled(!isChecked);
+            }
+        });
+
+        // TODO: Create a job service for each attempt to queue it.
         mFab = (FloatingActionButton) findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -201,11 +218,6 @@ public class CreateDemandActivity extends AppCompatActivity{
     }
 
     private void attemptSendDemand() {
-        String senderEmail = "";
-        boolean cancel = false;
-        View focusView = null;
-        Demand demand = null;
-
         if (!CommonUtils.isOnline(mActivity)) {
             Snackbar.make(mFab, R.string.internet_error, Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
@@ -216,62 +228,60 @@ public class CreateDemandActivity extends AppCompatActivity{
             return;
         }
 
+        boolean cancel = false;
+        View focusView = null;
+        Demand demand = null;
+
         // Reset errors.
         mSubjectView.setError(null);
         mReceiverView.setError(null);
         // Get logged in user email
-        senderEmail = mPrefs.getString(Constants.LOGGED_USER_EMAIL,"");
-        Log.d(TAG, "Shared Prefs:" + senderEmail);
-        Log.d(TAG, "Receiver Index:" + mReceiverIndex);
-        Log.d(TAG, "Receiver Email:" + mEmployeesEmails.get(mReceiverIndex));
 
-
-        User sender = CommonUtils.getCurrentUserPreference(this);
-        User receiver = new User(
-                mReceiverIndex,
-                "",
-                mEmployeesEmails.get(mReceiverIndex)
-        );
-
-        if (mReceiverIndex == -1){
-            mReceiverView.setError(getString(R.string.error_field_required));
-            focusView = mReceiverView;
-            cancel = true;
+        if (mCheckBox.isChecked()) {
+            mReceiver = null;
         } else {
-            Log.d(TAG, "Receiver Email:" + mEmployeesEmails.get(mReceiverIndex));
-
-            demand = new Demand(
-                    -1,
-                    -1,
-                    sender,
-                    receiver,
-                    null,
-                    mSubjectView.getText().toString(),
-                    mDescriptionView.getText().toString(),
-                    Constants.UNDEFINE_STATUS,
-                    Constants.NO,
-                    null,
-                    null);
-
-            Log.d(TAG, "Demand Created:" + demand.toString());
-
-            if (demand.getSubject().isEmpty()){
-                mSubjectView.setError(getString(R.string.error_field_required));
-                focusView = mSubjectView;
-                cancel = true;
-            }
-
-            if (demand.getReceiver().getEmail().isEmpty()){
+            if (mReceiver == null){
                 mReceiverView.setError(getString(R.string.error_field_required));
                 focusView = mReceiverView;
                 cancel = true;
-            }
+            } else {
+                Log.d(TAG, "Receiver Email:" + mReceiver.getEmail());
 
-            if (!mReceiverName.equals(mReceiverView.getText().toString())){
-                mReceiverView.setError(getString(R.string.error_send_demand_receiver));
-                focusView = mReceiverView;
-                cancel = true;
+                if (!mReceiver.getName().equals(mReceiverView.getText().toString())){
+                    // in case user type a letter or erase it.
+                    mReceiverView.setError(getString(R.string.error_send_demand_receiver));
+                    focusView = mReceiverView;
+                    cancel = true;
+                }
             }
+        }
+
+        demand = new Demand(
+                -1,
+                -1,
+                mUser, // this current user.
+                mReceiver, // created at selection, @null.
+                null,
+                mDemandTypeSelected,
+                mSubjectView.getText().toString(),
+                mDescriptionView.getText().toString(),
+                Constants.UNDEFINE_STATUS,
+                Constants.NO,
+                null,
+                null);
+
+        Log.d(TAG, "Demand Created:" + demand.toString());
+
+        if (demand.getSubject().isEmpty()){
+            mSubjectView.setError(getString(R.string.error_field_required));
+            focusView = mSubjectView;
+            cancel = true;
+        }
+
+        if (demand.getReceiver().getEmail().isEmpty()){
+            mReceiverView.setError(getString(R.string.error_field_required));
+            focusView = mReceiverView;
+            cancel = true;
         }
 
         if (cancel) {
@@ -304,10 +314,10 @@ public class CreateDemandActivity extends AppCompatActivity{
 
         @Override
         protected String doInBackground(Void... params) {
+            // TODO: add object demandType and int complexity into Demand Object.
             ContentValues values = new ContentValues();
             values.put("sender", demand.getSender().getEmail());
-            values.put("receiver", demand.getReceiver().getEmail());
-            values.put("prior", demand.getPrior());
+            values.put("receiver", demand.getReceiver() == null ? demand.getReceiver().getEmail() : "");
             values.put("subject", demand.getSubject());
             values.put("description", demand.getDescription());
             return CommonUtils.POST("/demand/send", values);
@@ -324,6 +334,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             JSONObject senderJson;
             JSONObject receiverJson;
             JSONObject demandJson;
+            JSONObject demandTypeJson;
             Demand demandResponse = null;
             boolean success = false;
 
@@ -334,14 +345,17 @@ public class CreateDemandActivity extends AppCompatActivity{
                 success = jsonObject.getBoolean("success");
                 senderJson = jsonObject.getJSONObject("sender");
                 receiverJson = jsonObject.getJSONObject("receiver");
+                demandTypeJson = jsonObject.getJSONObject("demand_type");
                 demandJson = jsonObject.getJSONObject("demand");
 
                 User sender = User.build(senderJson);
                 User receiver = User.build(receiverJson);
+                DemandType demandType = DemandType.build(demandJson);
                 demandResponse = Demand.build(
                         sender,
                         receiver,
                         null,
+                        demandType,
                         demandJson
                 );
 
@@ -399,14 +413,13 @@ public class CreateDemandActivity extends AppCompatActivity{
         @Override
         protected String doInBackground(Void... voids) {
             ContentValues values = new ContentValues();
-            values.put("department", departmentId);
+            values.put("department_id", departmentId);
             return CommonUtils.POST("/demandtype/get-by-department", values);
         }
 
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-
             mFetchDemandsTask = null;
 
             try {
@@ -443,20 +456,56 @@ public class CreateDemandActivity extends AppCompatActivity{
     }
 
     private class FetchUsersTask extends AsyncTask<Void, Void, String> {
-        private int position;
+        private DemandType demandType;
 
         public FetchUsersTask(int position) {
-            this.position = position;
+            this.demandType = mDemandTypesArray.get(position);
+            Log.d(TAG, "Demand Type:" + this.demandType.toString());
         }
 
         @Override
         protected String doInBackground(Void... voids) {
-            return null;
+            ContentValues values = new ContentValues();
+            values.put("demand_type_id", demandType.getId());
+            return CommonUtils.POST("/user/get-by-demand-type", values);
         }
 
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
+            mFetchUsersTask = null;
+
+            try {
+                JSONObject jsonObject = new JSONObject(s);
+                boolean success = jsonObject.getBoolean("success");
+                if (success) {
+                    JSONArray usersJson = jsonObject.getJSONArray("users");
+                    List<String> usersNames = new ArrayList<>();
+                    mUsersArray = new ArrayList<>();
+                    for (int i = 0; i < usersJson.length(); i++) {
+                        JSONObject userJson = usersJson.getJSONObject(i);
+                        User user = User.build(userJson);
+                        mUsersArray.add(user);
+                        usersNames.add(user.getName());
+                    }
+
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity,
+                            android.R.layout.simple_dropdown_item_1line, usersNames);
+                    mReceiverView.setAdapter(adapter);
+
+                    if (usersNames.isEmpty()) {
+                        Snackbar.make(mReceiverView, "Ainda não há colaboradores(ras) para essa demanda.", Snackbar.LENGTH_LONG).show();
+                        mReceiverView.setEnabled(false);
+                    } else {
+                        mReceiverView.setEnabled(true);
+                        mReceiverView.showDropDown();
+                    }
+                } else {
+                    throw new JSONException("success hit false");
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
