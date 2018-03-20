@@ -13,6 +13,7 @@ import java.util.Date;
  */
 
 public class DemandType implements Serializable{
+    private long localId;
     private long id;
     private String title;
     private int complexity;
@@ -20,15 +21,19 @@ public class DemandType implements Serializable{
     private Date created_at;
     private Date updated_at;
 
-    public DemandType(long id, String title, String priority, int complexity, String created_at, String updated_at) {
+    public DemandType(long localId, long id, String title, String priority, int complexity, String created_at, String updated_at) {
+        this.localId = localId;
         this.id = id;
         this.title = title;
+        this.priority = priority;
+        this.complexity = complexity;
         this.created_at = CommonUtils.convertTimestampToDate(created_at);
         this.updated_at = CommonUtils.convertTimestampToDate(updated_at);
     }
 
     public static DemandType build(JSONObject json) throws JSONException {
         return new DemandType(
+                -1,
                 json.getLong("id"),
                 json.getString("title"),
                 json.getString("priority"),
@@ -70,19 +75,19 @@ public class DemandType implements Serializable{
         this.priority = priority;
     }
 
-    public Date getCreated_at() {
+    public Date getCreatedAt() {
         return created_at;
     }
 
-    public void setCreated_at(Date created_at) {
+    public void setCreatedAt(Date created_at) {
         this.created_at = created_at;
     }
 
-    public Date getUpdated_at() {
+    public Date getUpdatedAt() {
         return updated_at;
     }
 
-    public void setUpdated_at(Date updated_at) {
+    public void setUpdatedAt(Date updated_at) {
         this.updated_at = updated_at;
     }
 

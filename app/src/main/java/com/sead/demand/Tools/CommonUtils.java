@@ -9,20 +9,21 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.sead.demand.Databases.FeedReaderContract;
-import com.sead.demand.Databases.MyDBManager;
-import com.sead.demand.Entities.Authority;
-import com.sead.demand.Entities.Demand;
-import com.sead.demand.Entities.PredefinedReason;
-import com.sead.demand.Entities.User;
-import com.sead.demand.FCM.MyJobService;
-import com.sead.demand.Handlers.AlarmReceiver;
-import com.sead.demand.R;
 import com.firebase.jobdispatcher.Constraint;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
 import com.firebase.jobdispatcher.Job;
 import com.firebase.jobdispatcher.RetryStrategy;
+import com.sead.demand.Databases.FeedReaderContract;
+import com.sead.demand.Databases.MyDBManager;
+import com.sead.demand.Entities.Authority;
+import com.sead.demand.Entities.Demand;
+import com.sead.demand.Entities.DemandType;
+import com.sead.demand.Entities.PredefinedReason;
+import com.sead.demand.Entities.User;
+import com.sead.demand.FCM.MyJobService;
+import com.sead.demand.Handlers.AlarmReceiver;
+import com.sead.demand.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -313,6 +314,26 @@ public class CommonUtils {
 
     }
 
+    public static void updateDemandDB(String type, Demand demand, Context context) {
+        MyDBManager myDBManager = new MyDBManager(context);
+        long newRow = myDBManager.addDemand(demand);
+        Log.e(TAG, "New row inserted:" + newRow);
+        listAllDemandsDB(context);
+        listAllReasonsDB(context);
+
+        if(newRow > 0) {
+            String fragTag = "";
+            fragTag = Constants.BROADCAST_SENT_FRAG;
+            notifyDemandListView(demand,fragTag,type,context);
+            fragTag = Constants.BROADCAST_RECEIVER_FRAG;
+            notifyDemandListView(demand,fragTag,type,context);
+            fragTag = Constants.BROADCAST_ADMIN_FRAG;
+            notifyDemandListView(demand,fragTag,type,context);
+            fragTag = Constants.BROADCAST_STATUS_ACT;
+            notifyDemandListView(demand,fragTag,type, context);
+        }
+    }
+
     public static void updateDemandDB(Demand demand, String type, Context context){
         ContentValues values = new ContentValues();
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID, demand.getSender().getId());
@@ -320,9 +341,16 @@ public class CommonUtils {
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT, demand.getSubject());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION, demand.getDescription());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS, demand.getStatus());
-        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR, demand.getPrior());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN, demand.getSeen());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT, demand.getUpdatedAt().toString());
+        if (demand.getType() != null) {
+            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID, demand.getType().getId());
+            updateTypeDB(demand.getType(), context);
+        }
+        if (demand.getReason() != null) {
+            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID, demand.getReason().getServerId());
+            updateReasonDB(demand.getReason(), context);
+        }
 
         MyDBManager myDBManager = new MyDBManager(context);
         int newRow = myDBManager.updateDemand(demand.getId(), values);
@@ -343,11 +371,43 @@ public class CommonUtils {
         // listAllDemandsDB(context);
     }
 
+    private static void updateTypeDB(DemandType demandType, Context context) {
+        ContentValues values = new ContentValues();
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_ID, demandType.getId());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TITLE, demandType.getTitle());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_PRIORITY, demandType.getPriority());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_COMPLEXITY, demandType.getComplexity());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_UPDATED_AT, CommonUtils.formatDate(demandType.getUpdatedAt()));
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_CREATED_AT, CommonUtils.formatDate(demandType.getCreatedAt()));
+
+        MyDBManager myDBManager = new MyDBManager(context);
+        int newRow = myDBManager.updateType((int) demandType.getId(), values);
+        Log.e(TAG, "Demand Type BD updated:" + newRow);
+    }
+
+    private static void updateReasonDB(PredefinedReason reason, Context context) {
+        ContentValues values = new ContentValues();
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID, reason.getServerId());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_TYPE, reason.getType());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_TITLE, reason.getTitle());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_DESCRIPTION, reason.getDescription());
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_CREATED_AT, CommonUtils.formatDate(reason.getCreatedAt()));
+        values.put(FeedReaderContract.ReasonEntry.COLUMN_NAME_USER_UPDATED_AT, CommonUtils.formatDate(reason.getUpdatedAt()));
+
+        MyDBManager myDBManager = new MyDBManager(context);
+        int newRow = myDBManager.updateReason((int) reason.getServerId(), values);
+        Log.e(TAG, "Reason DB updated:" + newRow);
+    }
+
     public static void updateColumnDB(String columnName, String value, Demand demand, String type, Context context){
         MyDBManager myDBManager = new MyDBManager(context);
         int count = myDBManager.updateDemandColumn(demand,columnName,value);
 
         if(count > 0) {
+
+            if (demand.getReason() != null) {
+                updateReasonDB(demand.getReason(), context);
+            }
 
             // If demand is updated to ACCEPTED then check if this user is the receiver,
             // so warn alarm should be set.
@@ -358,7 +418,7 @@ public class CommonUtils {
                     User currentUser = User.build(userJson);
                     if (demand.getReceiver().getId() == currentUser.getId()){
                         Log.e(TAG, "setWarnDueTime called!");
-                        setWarnDueTime(demand,context);
+                        if (demand.getType() != null) setWarnDueTime(demand,context);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -451,22 +511,29 @@ public class CommonUtils {
     }
     // END DB methods.
 
-    // Set a warning alarm from now to y days.
-    // y = a - b.
-    // a = n days (based on demand prior)
-    // b = previous warning constant.
     public static void setWarnDueTime(Demand demand, Context context){
         Intent receiverIntent = new Intent(context, AlarmReceiver.class);
-        receiverIntent.setType(Constants.WARN_DUE_TIME_ALARM_TAG);
+        int type = Constants.WARN_DUE_TIME_ALARM_TAG;
+        receiverIntent.setType("" + type);
         receiverIntent.putExtra(Constants.INTENT_DEMAND, demand);
         receiverIntent.putExtra(Constants.INTENT_PAGE, Constants.RECEIVED_PAGE);
-        receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_DONE_MENU);
+        receiverIntent.putExtra(Constants.INTENT_MENU, Constants.RECEIVER_MENU);
         Log.e(TAG, "(warning) Alarm Key Type:" + receiverIntent.getType());
 
         Calendar c = Calendar.getInstance();
         Log.e(TAG, "(warning) Now:" + c.getTime().toString());
+        int postponeTime = getPriorityTime(demand.getType().getPriority());
+        c.add(Calendar.DAY_OF_YEAR, postponeTime - Constants.DUE_TIME_PREVIOUS_WARNING);
+        Log.e(TAG, "Warn Due time:" + c.getTime().toString());
+        long timeInMillis = c.getTimeInMillis();
+        Log.e(TAG, "Time in millis:" + timeInMillis);
+
+        MyAlarmManager.addAlarm(context, receiverIntent, demand.getId(), type, timeInMillis);
+    }
+
+    public static int getPriorityTime(String priority) {
         int postponeTime;
-        switch (demand.getPrior()){
+        switch (priority){
             case Constants.VERY_HIGH_PRIOR_TAG:
                 postponeTime = Constants.DUE_TIME[0];
                 break;
@@ -482,33 +549,40 @@ public class CommonUtils {
             default:
                 postponeTime = Constants.DUE_TIME[0];
         }
-        c.add(Calendar.DAY_OF_YEAR, postponeTime - Constants.DUE_TIME_PREVIOUS_WARNING);
-        Log.e(TAG, "Warn Due time:" + c.getTime().toString());
-        long timeInMillis = c.getTimeInMillis();
-        Log.e(TAG, "Time in millis:" + timeInMillis);
-
-        MyAlarmManager.addAlarm(context, receiverIntent, demand.getId(),timeInMillis);
+        return postponeTime;
     }
 
-    public static void cancelDueTime(Demand demand, Context context, String type){
+    public static void cancelDueTime(Demand demand, Context context, int type){
         Intent receiverIntent = new Intent(context, AlarmReceiver.class);
-        receiverIntent.setType(type);
+        receiverIntent.setType("" + type);
         Log.e(TAG, "(cancel warning) Alarm Key Type:" + receiverIntent.getType());
         receiverIntent.putExtra(Constants.INTENT_DEMAND, demand);
         receiverIntent.putExtra(Constants.INTENT_PAGE, Constants.RECEIVED_PAGE);
         receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_DONE_MENU);
         Log.e(TAG, "Is there any alarm for " + demand.getId() + ":"
                 + MyAlarmManager.hasAlarm(context,receiverIntent,demand.getId()));
-        MyAlarmManager.cancelAlarm(context,receiverIntent,demand.getId());
+        MyAlarmManager.cancelAlarm(context,receiverIntent,demand.getId(), type);
         Log.e(TAG, "Canceled alarm:" + demand.getSubject());
         Log.e(TAG, "Is there any alarm for " + demand.getId() + ":"
                 + MyAlarmManager.hasAlarm(context,receiverIntent,demand.getId()));
     }
 
+    public static void setAlarm(Context context, long dueTime, Demand demand, int type, int page, int menu) {
+        Intent intent = new Intent();
+        intent.putExtra(Constants.INTENT_DEMAND, demand);
+        intent.setType("" + type);
+        intent.putExtra(Constants.INTENT_PAGE, page);
+        intent.putExtra(Constants.INTENT_MENU, menu);
+        MyAlarmManager.addAlarm(context, intent, demand.getId(), type, dueTime);
+        Log.d(TAG, "Due Time (milli): " + dueTime
+                + " Due Date|Time: " + demand.getDueDate() + "|" + demand.getDueTime());
+    }
+
     // Set an alarm from now to plus (previous waring constant) days.
     public static void setDueTime(Demand demand, Context context){
         Intent receiverIntent = new Intent(context, AlarmReceiver.class);
-        receiverIntent.setType(Constants.DUE_TIME_ALARM_TAG);
+        int type = Constants.DUE_TIME_ALARM_TAG;
+        receiverIntent.setType("" + type);
         receiverIntent.putExtra(Constants.INTENT_DEMAND, demand);
         receiverIntent.putExtra(Constants.INTENT_PAGE, Constants.RECEIVED_PAGE);
         receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_DONE_MENU);
@@ -521,7 +595,13 @@ public class CommonUtils {
         long timeInMillis = c.getTimeInMillis();
         Log.e(TAG, "Time in millis:" + timeInMillis);
 
-        MyAlarmManager.addAlarm(context, receiverIntent, demand.getId(), timeInMillis);
+        MyAlarmManager.addAlarm(context, receiverIntent, demand.getId(), type, timeInMillis);
+    }
+
+    public static void cancelAllAlarms(Demand demand, Context context) {
+        CommonUtils.cancelDueTime(demand,context, Constants.WARN_DUE_TIME_ALARM_TAG);
+        CommonUtils.cancelDueTime(demand,context, Constants.DUE_TIME_ALARM_TAG);
+        CommonUtils.cancelDueTime(demand,context, Constants.POSTPONE_ALARM_TAG);
     }
 
     // For Demand Adapter List purposes

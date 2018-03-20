@@ -91,6 +91,9 @@
     <string name="reopen_demand_info">Essa demanda foi reaberta</string>
     <string name="undefined_demand_info">Essa demanda ainda está indefinida</string>
     <string name="resent_demand_info">Essa demanda foi reenviada</string>
+    <string name="transferred_demand_info">Essa demanda foi repassada</string>
+    <string name="deadline_requested_demand_info">Solicitado aumento de prazo</string>
+    <string name="deadline_accepted_demand_info">Essa demanda foi adiada</string>
 
     <!-- Reject Dialog -->
     <string-array name="array_reject_dialog_reasons">
@@ -162,5 +165,10 @@
     <string name="profile_add_activity_content">Adicionar atividade</string>
     <string name="profile_unblock_content">Bloquear</string>
     <string name="demand_type_text">Escolha o setor para abrir sua lista de atividades. Em seguida, selecione as atividades que deseja atribuir ao/à colaborador(a).</string>
+
+    <string-array name="institution_type_array">
+        <item>Privada</item>
+        <item>Pública</item>
+    </string-array>
 
 </resources>

@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 
 public class FeedReaderDBHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 4;
     public static final String DATABASE_NAME = "sead.db";
 
     // Table demands queries.
@@ -20,12 +20,13 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
                     FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " INTEGER," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " INTEGER," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID + " INTEGER," +
+                    FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID + " INTEGER," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT + " VARCHAR(60)," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " CHAR(2)," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN + " CHAR(2)," +
-                    FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR + " VARCHAR(12)," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " BOOLEAN DEFAULT false," +
+                    FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED + " INTEGER DEFAULT 0," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT + " TIMESTAMP," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT + " TIMESTAMP)";
 
@@ -69,7 +70,8 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
             "CREATE TABLE " + FeedReaderContract.AuthorityEntry.TABLE_NAME + " (" +
                     FeedReaderContract.AuthorityEntry._ID + " INTEGER PRIMARY KEY," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_ID + " INTEGER UNIQUE," +
-                    FeedReaderContract.AuthorityEntry.COLUMN_NAME_SUPERIOR + " INTEGER," +
+                    FeedReaderContract.AuthorityEntry.COLUMN_NAME_SUPERIOR + " INTEGER NULL," +
+                    FeedReaderContract.AuthorityEntry.COLUMN_NAME_DEMAND + " INTEGER NULL," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_USER + " INTEGER," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_LEVEL + " INTEGER," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_CREATED_AT + " TIMESTAMP," +
@@ -91,6 +93,20 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
     private static final String SQL_DELETE_JOB_TABLE =
             "DROP TABLE IF EXISTS " + FeedReaderContract.JobEntry.TABLE_NAME;
 
+    // Table demand types queries.
+    private static final String SQL_CREATE_DEMAND_TYPE_TABLE =
+            "CREATE TABLE " + FeedReaderContract.DemandTypeEntry.TABLE_NAME + " (" +
+                    FeedReaderContract.DemandTypeEntry._ID + " INTEGER PRIMARY KEY," +
+                    FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_ID + " INTEGER UNIQUE," +
+                    FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TITLE + " VARCHAR(250)," +
+                    FeedReaderContract.DemandTypeEntry.COLUMN_NAME_COMPLEXITY + " INTEGER," +
+                    FeedReaderContract.DemandTypeEntry.COLUMN_NAME_PRIORITY + " VARCHAR(60)," +
+                    FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_CREATED_AT + " TIMESTAMP," +
+                    FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_UPDATED_AT + " TIMESTAMP)";
+
+    private static final String SQL_DELETE_DEMAND_TYPE_TABLE =
+            "DROP TABLE IF EXISTS " + FeedReaderContract.DemandTypeEntry.TABLE_NAME;
+
     public FeedReaderDBHelper(Context context){
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -102,6 +118,7 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_DEMANDS_TABLE);
         db.execSQL(SQL_CREATE_AUTH_TABLE);
         db.execSQL(SQL_CREATE_JOB_TABLE);
+        db.execSQL(SQL_CREATE_DEMAND_TYPE_TABLE);
     }
 
     @Override
@@ -121,5 +138,6 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_DEMANDS_TABLE);
         db.execSQL(SQL_DELETE_AUTH_TABLE);
         db.execSQL(SQL_DELETE_JOB_TABLE);
+        db.execSQL(SQL_DELETE_DEMAND_TYPE_TABLE);
     }
 }

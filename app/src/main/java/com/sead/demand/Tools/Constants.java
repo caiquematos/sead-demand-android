@@ -17,9 +17,9 @@ public class Constants {
     public static final String BASE_URL_1 = "http://192.168.42.86:8000";
 
     // User's types.
-    public static final String INTERNAL_USER = "internal_user";
-    public static final String EXTERNAL_USER = "external_user";
-    public static final String UNIVASF_USER = "univasf_user";
+    public static final String INTERNAL_USER = "int";
+    public static final String EXTERNAL_USER = "ext";
+    public static final String UNIVASF_USER = "uni";
 
     // Menu references.
     public static final int SHOW_TRIO_MENU = 1; // Accept, Postpone, Reject.
@@ -28,6 +28,12 @@ public class Constants {
     public static final int SHOW_CANCEL_MENU = 4;
     public static final int SHOW_RESEND_MENU = 5;
     public static final int SHOW_DONE_MENU = 6;
+
+    // Menu references (new).
+    public static final int NO_MENU = 0;
+    public static final int RECEIVER_MENU = 1; // 1-pode atender?, 2-concluir, 3-solicitar prazo, 4-repassar por competência.
+    public static final int SUPERIOR_MENU = 2; // 1-repassar, 2-indeferir.
+    public static final int SENDER_MENU = 3; // 1-finalizar, 2-reabrir.
 
     // Page references.
     public static final int CREATE_PAGE = 0;
@@ -66,16 +72,22 @@ public class Constants {
     public static final String LOW_PRIOR_TAG = "low_level";
 
     // Demand Status.
-    public static final String ACCEPT_STATUS = "A";
-    public static final String DONE_STATUS = "D";
-    public static final String POSTPONE_STATUS = "P";
-    public static final String REJECT_STATUS = "X";
-    public static final String CANCEL_STATUS = "C";
-    public static final String REOPEN_STATUS = "R";
-    public static final String RESEND_STATUS = "S";
-    public static final String UNDEFINE_STATUS = "U";
-    public static final String LATE_STATUS = "L";
+    public static final String ACCEPT_STATUS = "A"; // Pode atender a demanda.
+    public static final String DONE_STATUS = "D"; // Demanda concluída pelo solicitado.
+    public static final String REJECT_STATUS = "X"; // Indeferida pelo superior.
+    public static final String CANCEL_STATUS = "C"; // Cancelada pelo solicitante.
+    public static final String REOPEN_STATUS = "R"; // Reaberta pelo solicitante (caso especial).
+    public static final String UNDEFINE_STATUS = "U"; // Indefinido (default).
+    public static final String LATE_STATUS = "L"; // Demanda atrasada (automaticamente).
     public static final String DELETE_STATUS = "E";
+    public static final String FINISH_STATUS = "F"; // Demanda finalizada pelo solicitante.
+    public static final String TRANSFER_STATUS = "T"; // Demanda Repassada.
+
+    public static final String DEADLINE_REQUESTED_STATUS = "Y"; // Solicitado aumento de prazo.
+    public static final String DEADLINE_ACCEPTED_STATUS = "Z"; // Solicitado aumento de prazo.
+    public static final String POSTPONE_STATUS = "P"; // Me lembre depois (não muda o estado).
+
+    public static final String RESEND_STATUS = "S"; // Eliminar essa opção.
 
     // Demand Seen.
     public static final String YES = "Y";
@@ -90,9 +102,10 @@ public class Constants {
 
     // Alarm Manager.
     public static final String ALARM_TYPE_KEY = "alarm-type-key";
-    public static final String POSTPONE_ALARM_TAG = "postpone-alarm-tag";
-    public static final String WARN_DUE_TIME_ALARM_TAG = "warn-due-time-alarm-tag";
-    public static final String DUE_TIME_ALARM_TAG = "due-time-alarm-tag";
+    public static final int POSTPONE_ALARM_TAG = 999;
+    public static final int REMIND_ME_ALARM_TAG = 998;
+    public static final int WARN_DUE_TIME_ALARM_TAG = 997;
+    public static final int DUE_TIME_ALARM_TAG = 996;
     public static final int DUE_TIME_PREVIOUS_WARNING = 1; // Warn user 1 day before due time.
 
     // Intent Tags.
@@ -129,8 +142,10 @@ public class Constants {
     public static final String BROADCAST_STATUS_ACT = "broadcast_status";
     public static final String BROADCAST_REQUEST_ACT = "broadcast_request";
 
-    // Activity for result.
+    // Activity for result View Demand.
     public static final int REJECT_DEMAND = 1;
+    public static final int NOT_ACCEPT_DEMAND = 2;
+    public static final int DEADLINE_DEMAND = 3;
 
     // Predefined Reasons.
     public static final int REASON_OTHER_POSITION = 0;

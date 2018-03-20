@@ -63,7 +63,8 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         final Demand demand = mDemandList.get(position);
 
         showDemandStatus(demand.getStatus(), holder);
-        showDemandPrior(demand.getPrior(), holder);
+        if(demand.getType() != null) showDemandPrior(demand.getType().getPriority(), holder);
+        else showDemandPrior(null, holder);
 
         /** Handle users' name **/
         String sender = "mim";
@@ -86,7 +87,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         /** Handle seen demands **/
         int color;
         int drawable;
-        // int visibility; (TODO) will be used for acknowledge messages.
+        // int visibility; (TODO) will be used for acknowledge messages. do not show any icon if message not received/acknowledge.
         if (demand.getSeen().equals(Constants.YES)) {
             color = ContextCompat.getColor(mContext, R.color.common_google_signin_btn_text_light);
             drawable = R.drawable.ic_visibility_black_24dp;
@@ -127,20 +128,16 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         int menuType = -1;
         switch(mPage){
             case Constants.RECEIVED_PAGE:
-                menuType = Constants.SHOW_NO_MENU;
-                if (demand.getStatus().equals(Constants.ACCEPT_STATUS)
-                        || demand.getStatus().equals(Constants.LATE_STATUS))
-                    menuType = Constants.SHOW_DONE_MENU;
+                menuType = Constants.RECEIVER_MENU;
                 break;
             case Constants.SENT_PAGE:
-                menuType = Constants.SHOW_NO_MENU;
-                if (demand.getStatus().equals(Constants.CANCEL_STATUS) || demand.getStatus().equals(Constants.REJECT_STATUS))
-                    menuType = Constants.SHOW_RESEND_MENU;
+                menuType = Constants.SENDER_MENU;
                 break;
             case Constants.ADMIN_PAGE:
-                menuType = Constants.SHOW_TRIO_MENU;
+                menuType = Constants.SUPERIOR_MENU;
                 break;
             case Constants.STATUS_PAGE:
+                //TODO: Change this according to the new way.
                 switch (demand.getStatus()) {
                     case Constants.ACCEPT_STATUS:
                         menuType = Constants.SHOW_CANCEL_MENU;
@@ -162,7 +159,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
     }
 
     private void setSeenStatus(View v, Demand demand, int position) {
-        if((mPage == Constants.ADMIN_PAGE || mPage == Constants.RECEIVED_PAGE) && demand.getSeen().equals(Constants.NO)){
+        if((mPage == Constants.RECEIVED_PAGE) && demand.getSeen().equals(Constants.NO)){
             int color = ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light);
             int drawable = R.drawable.ic_visibility_black_24dp;
             //v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
@@ -189,6 +186,10 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
 
     public void showDemand(View v, int position){
         Demand demand = mDemandList.get(position);
+        if (demand.getType() != null) Log.d(TAG, "demand type: " + demand.getType().getTitle());
+        else Log.d(TAG, "demand type null");
+        if (demand.getReason() != null) Log.d(TAG, "demand type: " + demand.getReason().getTitle());
+        else Log.d(TAG, "demand reason null");
         //change color in order to indicate seen status
         setSeenStatus(v, demand, position);
         Intent intent = new Intent(mContext, ViewDemandActivity.class);
@@ -239,18 +240,21 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         int color;
         ImageView profilePic = holder.profileImage;
 
-        switch (prior){
-            case Constants.VERY_HIGH_PRIOR_TAG:
-                color = ContextCompat.getColor(mContext,R.color.darkred);
-                break;
-            case Constants.HIGH_PRIOR_TAG:
-                color = ContextCompat.getColor(mContext,R.color.Red);
-                break;
-            case Constants.MEDIUM_PRIOR_TAG:
-                color = ContextCompat.getColor(mContext,R.color.dyellow);
-                break;
-            default:
-                color = ContextCompat.getColor(mContext,R.color.dGreen);
+        if (prior == null) color = ContextCompat.getColor(mContext,R.color.white);
+        else {
+            switch (prior) {
+                case Constants.VERY_HIGH_PRIOR_TAG:
+                    color = ContextCompat.getColor(mContext, R.color.darkred);
+                    break;
+                case Constants.HIGH_PRIOR_TAG:
+                    color = ContextCompat.getColor(mContext, R.color.Red);
+                    break;
+                case Constants.MEDIUM_PRIOR_TAG:
+                    color = ContextCompat.getColor(mContext, R.color.dyellow);
+                    break;
+                default:
+                    color = ContextCompat.getColor(mContext, R.color.white);
+            }
         }
 
         LayerDrawable layerDrawable = (LayerDrawable) profilePic.getBackground();
@@ -265,12 +269,20 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
 
         switch (status){
             case Constants.DONE_STATUS: // Done.
+                drawable = R.drawable.ic_check_circle_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.ForestGreen);
+                break;
+            case Constants.FINISH_STATUS: // Done.
                 drawable = R.drawable.ic_assignment_turned_in_white_24dp;
-                color = ContextCompat.getColor(mContext,R.color.darkgreen);
+                color = ContextCompat.getColor(mContext,R.color.dGreen);
                 break;
             case Constants.ACCEPT_STATUS: // Accepted.
                 drawable = R.drawable.ic_thumb_up_black_24dp;
                 color = ContextCompat.getColor(mContext,R.color.green);
+                break;
+            case Constants.TRANSFER_STATUS: // Accepted.
+                drawable = R.drawable.ic_swap_calls_white_24dp;
+                color = ContextCompat.getColor(mContext,R.color.Brown);
                 break;
             case Constants.REJECT_STATUS: // Rejected.
                 drawable = R.drawable.ic_thumb_down_black_24dp;
@@ -280,9 +292,13 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 drawable = R.drawable.ic_cancel_black_24dp;
                 color = ContextCompat.getColor(mContext,R.color.red);
                 break;
-            case Constants.POSTPONE_STATUS: // Postponed.
-                drawable = R.drawable.ic_timer_black_24dp;
-                color = ContextCompat.getColor(mContext,R.color.dyellow);
+            case Constants.DEADLINE_ACCEPTED_STATUS: // Postponed.
+                drawable = R.drawable.ic_alarm_on_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.DarkOrchid);
+                break;
+            case Constants.DEADLINE_REQUESTED_STATUS: // Deadline.
+                drawable = R.drawable.ic_alarm_add_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.DarkOrchid);
                 break;
             case Constants.RESEND_STATUS: // Resent.
                 drawable = R.drawable.ic_send_black_24dp;
@@ -293,6 +309,9 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 color = ContextCompat.getColor(mContext,R.color.primary_dark);
                 break;
             case Constants.REOPEN_STATUS: // Reopen.
+                drawable = R.drawable.ic_settings_backup_restore_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.Orange);
+                break;
             case Constants.UNDEFINE_STATUS: // Undefined.
             default:
                 drawable = R.drawable.ic_adjust_black_24dp;

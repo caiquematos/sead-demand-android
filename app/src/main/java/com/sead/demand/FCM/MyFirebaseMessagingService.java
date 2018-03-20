@@ -11,22 +11,24 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
-import com.sead.demand.Activities.MainActivity;
-import com.sead.demand.Activities.RequestActivity;
-import com.sead.demand.Activities.ViewDemandActivity;
-import com.sead.demand.Databases.FeedReaderContract;
-import com.sead.demand.Entities.Authority;
-import com.sead.demand.Entities.Demand;
-import com.sead.demand.Entities.PredefinedReason;
-import com.sead.demand.Entities.User;
-import com.sead.demand.R;
-import com.sead.demand.Tools.CommonUtils;
-import com.sead.demand.Tools.Constants;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
 import com.firebase.jobdispatcher.Job;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.sead.demand.Activities.MainActivity;
+import com.sead.demand.Activities.RequestActivity;
+import com.sead.demand.Activities.ViewDemandActivity;
+import com.sead.demand.Databases.FeedReaderContract;
+import com.sead.demand.Databases.MyDBManager;
+import com.sead.demand.Entities.Authority;
+import com.sead.demand.Entities.Demand;
+import com.sead.demand.Entities.DemandType;
+import com.sead.demand.Entities.PredefinedReason;
+import com.sead.demand.Entities.User;
+import com.sead.demand.R;
+import com.sead.demand.Tools.CommonUtils;
+import com.sead.demand.Tools.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -176,17 +178,27 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             try {
                 JSONObject authJson = new JSONObject(bundle.get("authority").toString());
                 Authority authority = Authority.build(authJson);
-                // Try to add authority, but if it already exists, then it'll update it.
-                CommonUtils.storeAuthDB(authority,type,this);
-                //generateNotification(title, text, data);
-                Log.d(TAG, "AUTH. End of the line. Implement notification later.");
+
+                String action = bundle.getString("action");
+                if (action.equals("add")) {
+                    // Try to add authority, but if it already exists, then it'll update it.
+                    CommonUtils.storeAuthDB(authority,type,this);
+                    //generateNotification(title, text, data);
+                    Log.d(TAG, "ADD AUTH. End of the line. Implement notification later: " + authority.toString());
+                } else {
+                    MyDBManager myDBManager = new MyDBManager(this);
+                    int count = myDBManager.deleteAuthById(authority.getId());
+                    Log.d(TAG, "REMOVE AUTH. count:" + count + ". Should remove auth from db: " + authority.toString());
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }else {
 
             JSONObject reasonJson;
-            PredefinedReason reason;
+            JSONObject demandTypeJson;
+            PredefinedReason reason = null;
+            DemandType demandType = null;
 
             try {
                 // Check if there is a reason attached to this demand.
@@ -195,8 +207,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     reasonJson = new JSONObject(bundle.get("reason").toString());
                     reason = PredefinedReason.build(reasonJson);
                     Log.e(TAG, " reason:" + reason.toString());
-                } else {
-                    reason = null;
+                }
+
+                if(bundle.get("demand_type") != null){
+                    Log.d(TAG, "bundle demand_type: " + bundle.get("demand_type").toString());
+                    demandTypeJson = new JSONObject(bundle.get("demand_type").toString());
+                    demandType = DemandType.build(demandTypeJson);
+                    Log.e(TAG, " type:" + demandType.toString());
                 }
 
                 JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
@@ -205,7 +222,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
                 User sender = User.build(senderJson);
                 User receiver = User.build(receiverJson);
-                Demand demand = Demand.build(sender, receiver, reason, demandJson);
+                Demand demand = Demand.build(sender, receiver, reason, demandType, demandJson);
 
                 Log.e(TAG, "demand:" + demand.toString()
                         + " sender:" + sender.toString()
@@ -213,8 +230,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 );
 
                 switch (type) {
-                    case Constants.INSERT_DEMAND_SENT:
                     case Constants.INSERT_DEMAND_RECEIVED:
+                        Log.d(TAG, "demand received: " + demand.toString());
+                        handleDeadlineAlarm(demand);
+                    case Constants.INSERT_DEMAND_SENT:
                     case Constants.INSERT_DEMAND_ADMIN:
                         CommonUtils.storeDemandDB(demand, type, this);
                         generateNotification(title, text, data);
@@ -224,23 +243,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                         generateNotification(title, text, data);
                         break;
                     case Constants.UPDATE_STATUS:
-                        CommonUtils.updateColumnDB(
-                                FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
-                                demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS),
-                                demand,
-                                type,
-                                this
-                        );
+                        Log.d(TAG, "Handle Now - Update Status:" + demand.getStatus());
+                        switch (demand.getStatus()) {
+                            case Constants.DEADLINE_ACCEPTED_STATUS:
+                                if (demand.getPostponed() != 0) {
+                                    Log.d(TAG, "demand postponed: " + demand.toString());
+                                    handleDeadlineAlarm(demand);
+                                }
+                                break;
+                        }
+                        CommonUtils.updateDemandDB(type, demand, this);
                         generateNotification(title, text, data);
-                        break;
-                    case Constants.UPDATE_PRIOR:
-                        CommonUtils.updateColumnDB(
-                                FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR,
-                                demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR),
-                                demand,
-                                type,
-                                this
-                        );
                         break;
                     case Constants.UPDATE_READ:
                         CommonUtils.updateColumnDB(
@@ -259,6 +272,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         Log.d(TAG, "Short lived task is done.");
+    }
+
+    private void handleDeadlineAlarm(Demand demand) {
+        CommonUtils.setAlarm(
+                this,
+                demand.getDueTimeInMillis(),
+                demand,
+                Constants.DUE_TIME_ALARM_TAG,
+                Constants.RECEIVED_PAGE,
+                Constants.RECEIVER_MENU
+        );
     }
 
     private void generateNotification(String title, String text, Map<String, String> data) {
@@ -351,6 +375,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
      */
     private void sendNotification(RemoteMessage.Notification notification, Map<String, String> data) {
         // TODO: set notifications' tag field on server and handle it here (TAG: demand or user?).
+
+        Log.d(TAG, "send notification data:" + data.toString());
 
         Intent intent;
         int notificationId;
@@ -445,9 +471,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         JSONObject senderJson;
         JSONObject receiverJson;
         JSONObject reasonJson;
+        JSONObject demandTypeJson;
         JSONObject demandJson;
         User sender;
         User receiver;
+        DemandType demandType;
         PredefinedReason reason;
         Demand demand;
 
@@ -460,12 +488,19 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 reason = null;
             }
 
+            if(data.get("reason") != null) {
+                demandTypeJson = new JSONObject(data.get("demand_type"));
+                demandType = DemandType.build(demandTypeJson);
+            } else {
+                demandType = null;
+            }
+
             senderJson = new JSONObject(data.get("sender"));
             receiverJson = new JSONObject(data.get("receiver"));
             demandJson = new JSONObject(data.get("demand"));
             sender = User.build(senderJson);
             receiver = User.build(receiverJson);
-            demand = Demand.build(sender,receiver,reason,demandJson);
+            demand = Demand.build(sender,receiver,reason,demandType,demandJson);
             Log.e(TAG, "Json (Notification):"
                     + demand.toString()
                     + " sender:" + sender.toString()

@@ -1,14 +1,18 @@
 package com.sead.demand.Entities;
 
+import android.util.Log;
+
 import com.sead.demand.Tools.CommonUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.util.Calendar;
 import java.util.Date;
 
 public class Demand implements Serializable {
+    private String TAG = getClass().getSimpleName();
     private long localId;
     private int id;
     private User sender;
@@ -19,29 +23,10 @@ public class Demand implements Serializable {
     private String description;
     private String status;
     private String seen;
+    private int postponed;
     private boolean archive;
     private Date createdAt;
     private Date updatedAt;
-
-    /*
-   public static Demand build(JSONObject json) throws JSONException {
-        User sender = new User(
-                json.getInt("sender"),
-                json.getString("senderName"),
-                json.getString("senderEmail")
-        );
-
-        User receiver = new User(
-                json.getInt("receiver"),
-                json.getString("receiverName"),
-                json.getString("receiverEmail")
-        );
-
-       PredefinedReason reason = null;
-
-        return Demand.build(sender, receiver, reason, json);
-    }
-    */
 
     public static Demand build(User sender, User receiver, PredefinedReason reason, DemandType type, JSONObject json) throws JSONException {
 
@@ -56,6 +41,7 @@ public class Demand implements Serializable {
                 json.getString("description"),
                 json.getString("status"),
                 json.getString("seen"),
+                json.getInt("postponed"),
                 json.getString("created_at"),
                 json.getString("updated_at")
         );
@@ -72,6 +58,7 @@ public class Demand implements Serializable {
             String description,
             String status,
             String seen,
+            int postponed,
             String created_at,
             String updated_at) {
 
@@ -85,6 +72,7 @@ public class Demand implements Serializable {
         setStatus(status);
         setType(type);
         setSeen(seen);
+        setPostponed(postponed);
         setCreatedAt(CommonUtils.convertTimestampToDate(created_at));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updated_at));
     }
@@ -162,18 +150,19 @@ public class Demand implements Serializable {
         return "Sender:" + sender.getId()
                 + " " + sender.getName()
                 + " " + sender.getEmail()
-                + " Receiver:" + receiver.getId()
-                + " " + receiver.getEmail()
-                + " " + receiver.getName()
-                + " Type:" + getType().getTitle()
+                + " Receiver" + receiver.getEmail()
+                + " " + receiver.getId()
                 + " Demand:" + getLocalId()
                 + " " + getId()
                 + " " + getStatus()
                 + " " + getSeen()
-                + " " + getCreatedAt()
-                + " " + getUpdatedAt()
                 + " " + getSubject()
                 + " " + getDescription()
+                + " " + getPostponed()
+                + " " + getCreatedAt()
+                + " " + getUpdatedAt()
+                + " reason: " + (this.getReason() != null ? getReason().getTitle() : "null")
+                + " type: " + (this.getType() != null ? getType().getTitle() : "null")
                 ;
     }
 
@@ -212,4 +201,55 @@ public class Demand implements Serializable {
     public void setReason(PredefinedReason reason) {
         this.reason = reason;
     }
+
+    public int getPostponed() {
+        return postponed;
+    }
+
+    public void setPostponed(int postponed) {
+        this.postponed = postponed;
+    }
+
+    public long getDueTimeInMillis() {
+        long time;
+        Calendar c = Calendar.getInstance();
+        Log.d(TAG, "c (now): " + c.getTimeInMillis());
+        c.setTime(getCreatedAt());
+        Log.d(TAG, "created_at: " + getCreatedAt().toString());
+        Log.d(TAG, "c (created): " + c.getTimeInMillis());
+        if (getType() != null) time = CommonUtils.getPriorityTime(getType().getPriority());
+        else time = 3;
+        Log.d(TAG, "time to be added bf postpone method: "  + time);
+        c.add(Calendar.DAY_OF_YEAR, (int) time);
+        Log.d(TAG,  "c with added time 1: " + c.getTimeInMillis());
+        Log.d(TAG, "times postponed: " + getPostponed());
+        for (int i = 1; i <= getPostponed(); i++) {
+            long timePostponed = time / i;
+            Log.d(TAG, "time to be added af postpone method: "  + timePostponed);
+            c.add(Calendar.DAY_OF_YEAR, (int) timePostponed);
+            Log.d(TAG,  "c with added time n: " + c.getTimeInMillis());
+        }
+        return c.getTimeInMillis();
+    }
+
+    public String getDueDate() {
+        long timeInMillis = getDueTimeInMillis();
+        Calendar cl = Calendar.getInstance();
+        cl.setTimeInMillis(timeInMillis);  //here your time in miliseconds
+        String date = "" + (cl.get(Calendar.DAY_OF_MONTH) < 10 ? 0 : "") + cl.get(Calendar.DAY_OF_MONTH) + "/"
+                + (cl.get(Calendar.MONTH) < 9 ? 0 : "")  + (cl.get(Calendar.MONTH) + 1) + "/"
+                + cl.get(Calendar.YEAR);
+        return date;
+    }
+
+    public String getDueTime() {
+        long timeInMillis = getDueTimeInMillis();
+        Calendar cl = Calendar.getInstance();
+        cl.setTimeInMillis(timeInMillis);  //here your time in miliseconds
+        String time = "" + cl.get(Calendar.HOUR_OF_DAY) + ":"
+                + (cl.get(Calendar.MINUTE) < 10 ? 0 : "")
+                + cl.get(Calendar.MINUTE);
+        return time;
+    }
+
 }

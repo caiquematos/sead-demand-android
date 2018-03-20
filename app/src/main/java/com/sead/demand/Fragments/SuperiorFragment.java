@@ -176,12 +176,16 @@ public class SuperiorFragment extends DemandFragment {
         selection = selection.concat( FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                         + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                         + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                        + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                        + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                         + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ?" );
         selection = selection.concat(")");
 
         argsArray.add(Constants.REOPEN_STATUS);
         argsArray.add(Constants.UNDEFINE_STATUS);
         argsArray.add(Constants.LATE_STATUS);
+        argsArray.add(Constants.TRANSFER_STATUS);
+        argsArray.add(Constants.DEADLINE_REQUESTED_STATUS);
         argsArray.add(Constants.RESEND_STATUS);
 
         selection = selection.concat(" AND ");

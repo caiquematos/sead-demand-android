@@ -22,9 +22,13 @@ public class MyAlarmManager {
     private static String TAG = "MyAlarmManager";
     private static final String sTagAlarms = ":alarms";
 
-    public static void addAlarm(Context context, Intent intent, int notificationId, long timeInMillis){
+    public static void addAlarm(Context context, Intent intent, int notificationId, int type, long timeInMillis){
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Log.d(TAG, "alarms now: " + getAlarmIds(context));
+        if (hasAlarm(context, intent, notificationId + type)) cancelAlarm(context, intent, notificationId, type);
+        Log.d(TAG, "alarms then: " + getAlarmIds(context));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
@@ -34,21 +38,22 @@ public class MyAlarmManager {
             alarmManager.set(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
         }
 
-        saveAlarmId(context, notificationId);
+        saveAlarmId(context, notificationId + type);
+        Log.d(TAG, "alarms later: " + getAlarmIds(context));
     }
 
-    public static void cancelAlarm(Context context, Intent intent, int notificationId){
+    public static void cancelAlarm(Context context, Intent intent, int notificationId, int type){
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         alarmManager.cancel(pendingIntent);
         pendingIntent.cancel();
 
-        removeAlarmId(context, notificationId);
+        removeAlarmId(context, notificationId + type);
     }
 
-    public static void cancelAllAlarms(Context context, Intent intent){
+    public static void cancelAllAlarms(Context context, Intent intent, int type){
         for (int idAlarm : getAlarmIds(context)) {
-            cancelAlarm(context, intent, idAlarm);
+            cancelAlarm(context, intent, idAlarm, type);
         }
     }
 
@@ -112,6 +117,14 @@ public class MyAlarmManager {
         editor.putString(context.getPackageName() + sTagAlarms, jsonArray.toString());
 
         editor.apply();
+    }
+
+    public String toString(Context context) {
+        String alarmIdsString = "";
+        for (int alarmId: getAlarmIds(context) ){
+            alarmIdsString = alarmIdsString + "[" + alarmId + "] ";
+        }
+        return alarmIdsString;
     }
 
 

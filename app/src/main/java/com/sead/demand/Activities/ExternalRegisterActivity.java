@@ -13,7 +13,10 @@ import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Spinner;
 
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.sead.demand.Entities.User;
@@ -34,6 +37,10 @@ public class ExternalRegisterActivity extends AppCompatActivity {
     private Button mRegisterBtn;
     private RegistrationTask mRegistrationTask;
     private ProgressDialog mPDRegister;
+    private CheckBox mInstitutional;
+    private CheckBox mNotInstitutional;
+    private EditText mInstitutionName;
+    private Spinner mInstitutionalType;
 
     public ExternalRegisterActivity() {
         mActivity = this;
@@ -53,7 +60,31 @@ public class ExternalRegisterActivity extends AppCompatActivity {
         mEmail = (EditText) findViewById(R.id.register_external_email);
         mPassword = (EditText) findViewById(R.id.register_external_password);
         mConfirmPassword = (EditText) findViewById(R.id.register_external_confirm_password);
+        mInstitutional = (CheckBox) findViewById(R.id.register_external_institutional_check_box);
+        mNotInstitutional = (CheckBox) findViewById(R.id.register_external_not_institutional_check_box);
+        mInstitutionName = (EditText) findViewById(R.id.register_external_institution_name);
+        mInstitutionalType = (Spinner) findViewById(R.id.register_external_institution_type);
         mRegisterBtn = (Button) findViewById(R.id.register_external_sign_up_button);
+
+        mInstitutional.setChecked(true);
+
+        mInstitutional.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mNotInstitutional.setChecked(!isChecked);
+                mInstitutionName.setEnabled(isChecked);
+                mInstitutionalType.setEnabled(isChecked);
+            }
+        });
+
+        mNotInstitutional.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mInstitutional.setChecked(!isChecked);
+                mInstitutionName.setEnabled(!isChecked);
+                mInstitutionalType.setEnabled(!isChecked);
+            }
+        });
 
         mRegisterBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -73,16 +104,32 @@ public class ExternalRegisterActivity extends AppCompatActivity {
         mName.setError(null);
         mEmail.setError(null);
         mPassword.setError(null);
+        mInstitutionName.setError(null);
         boolean cancel = false;
         View focusView = null;
+        String institution = "";
+        String institutionType = "";
+
+        if (mInstitutional.isChecked()) {
+            institution = mInstitutionName.getText().toString();
+            institutionType = mInstitutionalType.getSelectedItem().toString();
+        }
 
         User user = new User(
                 mEmail.getText().toString(),
                 mName.getText().toString(),
                 mPassword.getText().toString(),
                 FirebaseInstanceId.getInstance().getToken(),
-                Constants.EXTERNAL_USER
+                Constants.EXTERNAL_USER,
+                institution,
+                institutionType
         );
+
+        if (!confirmPasswordMatch(user.getPassword(),mConfirmPassword.getText().toString())) {
+            mConfirmPassword.setError("As senhas não combinam");
+            focusView = mConfirmPassword;
+            cancel = true;
+        }
 
         if (!isPasswordValid(user.getPassword())) {
             mPassword.setError(getString(R.string.error_invalid_password));
@@ -90,9 +137,9 @@ public class ExternalRegisterActivity extends AppCompatActivity {
             cancel = true;
         }
 
-        if (!confirmPasswordMatch(user.getPassword(),mConfirmPassword.getText().toString())) {
-            mConfirmPassword.setError("As senhas não combinam");
-            focusView = mConfirmPassword;
+        if (!isInstitutionValid(mInstitutionName.getText().toString())) {
+            mInstitutionName.setError(getString(R.string.error_field_required));
+            focusView = mInstitutionName;
             cancel = true;
         }
 
@@ -124,6 +171,18 @@ public class ExternalRegisterActivity extends AppCompatActivity {
             mRegistrationTask.execute();
         }
 
+    }
+
+    private boolean isInstitutionValid(String institutionName) {
+        if (mInstitutional.isChecked()) {
+            if (institutionName.isEmpty()) {
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return true;
+        }
     }
 
     private boolean isNameValid(String name) {
@@ -176,6 +235,8 @@ public class ExternalRegisterActivity extends AppCompatActivity {
             values.put("name", user.getName());
             values.put("gcm", user.getGcm());
             values.put("type", user.getType());
+            values.put("institution", user.getInstitution());
+            values.put("institution_type", user.getInstitutionType());
             return CommonUtils.POST("/user/register", values);
         }
 

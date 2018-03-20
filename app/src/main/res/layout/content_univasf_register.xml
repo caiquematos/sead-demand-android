@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.sead.demand.Activities.UnivasfRegisterActivity"
+    tools:layout_editor_absoluteY="81dp"
     tools:showIn="@layout/activity_univasf_register">
 
     <LinearLayout
@@ -22,19 +23,23 @@
         <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:maxLines="1"
             android:layout_marginTop="@dimen/text_margin">
+
             <EditText
                 android:id="@+id/register_univasf_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/prompt_name"
-                android:maxLines="1"/>
+                android:maxLines="1" />
         </android.support.design.widget.TextInputLayout>
 
         <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:maxLines="1"
             android:layout_marginTop="@dimen/text_margin">
+
             <AutoCompleteTextView
                 android:id="@+id/register_univasf_email"
                 android:layout_width="match_parent"
@@ -44,68 +49,47 @@
                 android:maxLines="1" />
         </android.support.design.widget.TextInputLayout>
 
-
-        <LinearLayout
+        <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="16dp"
-            android:baselineAligned="false">
+            android:maxLines="1"
+            android:layout_marginTop="@dimen/text_margin">
 
-            <LinearLayout
-                android:layout_width="0dp"
+            <AutoCompleteTextView
+                android:id="@+id/register_univasf_department"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_weight="50">
+                android:hint="@string/register_univasf_sector"
+                android:inputType="textEmailAddress"
+                android:maxLines="1" />
+        </android.support.design.widget.TextInputLayout>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/register_univasf_sector"
-                    android:textSize="18sp"
-                    android:layout_margin="5dp"/>
 
-                <Spinner
-                    android:id="@+id/register_univasf_sector_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-                </Spinner>
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:layout_marginTop="@dimen/text_margin">
 
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
+            <AutoCompleteTextView
+                android:id="@+id/register_univasf_job_title"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_weight="50">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/register_job_title"
-                    android:textSize="18sp"
-                    android:layout_margin="5dp"/>
-
-                <Spinner
-                    android:id="@+id/register_univasf_job_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-                </Spinner>
-
-            </LinearLayout>
-
-        </LinearLayout>
+                android:hint="@string/register_job_title"
+                android:maxLines="1" />
+        </android.support.design.widget.TextInputLayout>
 
         <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/text_margin">
+
             <EditText
                 android:id="@+id/register_univasf_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:hint="Senha"/>
+                android:hint="Senha"
+                android:inputType="textPassword" />
         </android.support.design.widget.TextInputLayout>
 
 
@@ -113,23 +97,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/text_margin">
+
             <EditText
                 android:id="@+id/register_univasf_confirm_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:hint="@string/prompt_confirm"/>
+                android:hint="@string/prompt_confirm"
+                android:inputType="textPassword" />
         </android.support.design.widget.TextInputLayout>
 
-
         <Button
-            android:id="@+id/email_sign_up_button"
+            android:id="@+id/register_univasf_sign_up"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:background="@color/accent"
-            android:textColor="@color/icons"
             android:text="@string/action_sign_up"
+            android:textColor="@color/icons"
             android:textStyle="bold" />
 
     </LinearLayout>

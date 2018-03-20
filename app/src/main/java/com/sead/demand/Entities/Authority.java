@@ -1,5 +1,7 @@
 package com.sead.demand.Entities;
 
+import android.util.Log;
+
 import com.sead.demand.Tools.CommonUtils;
 
 import org.json.JSONException;
@@ -19,12 +21,14 @@ public class Authority implements Serializable{
     private int user;
     private int superior;
     private int level;
+    private int demand;
     private Date createdAt;
     private Date updatedAt;
 
-    public Authority(long localId, int id, int user, int superior, int level, String createdAt, String updatedAt) {
+    public Authority(long localId, int id, int demand, int user, int superior, int level, String createdAt, String updatedAt) {
         this.id = id;
         this.localId = localId;
+        this.demand = demand;
         this.user = user;
         this.superior = superior;
         this.level = level;
@@ -33,11 +37,23 @@ public class Authority implements Serializable{
     }
 
     public static Authority build(JSONObject authJson) throws JSONException {
+        int superiorId;
+        int demandId;
+
+        if (authJson.has("superior") && !authJson.isNull("superior")) {
+            Log.d("Authority Class", "not null");
+            superiorId = authJson.getInt("superior");
+        } else superiorId = -1;
+
+        if (authJson.has("demand") && !authJson.isNull("demand")) demandId = authJson.getInt("demand");
+        else demandId = -1;
+
         return new Authority(
                 -1,
                 authJson.getInt("id"),
+                demandId,
                 authJson.getInt("user"),
-                authJson.getInt("superior"),
+                superiorId,
                 authJson.getInt("level"),
                 authJson.getString("created_at"),
                 authJson.getString("updated_at")
@@ -100,17 +116,16 @@ public class Authority implements Serializable{
         this.updatedAt = updatedAt;
     }
 
+    public int getDemand() {
+        return demand;
+    }
+
+    public void setDemand(int demand) {
+        this.demand = demand;
+    }
+
     @Override
     public String toString() {
-        return "Authority{" +
-                "TAG='" + TAG + '\'' +
-                ", id=" + id +
-                ", localId=" + localId +
-                ", user=" + user +
-                ", superior=" + superior +
-                ", level=" + level +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                '}';
+        return super.toString();
     }
 }

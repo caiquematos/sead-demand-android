@@ -39,11 +39,19 @@ public class RejectDialogActivity extends AppCompatActivity {
     private TextView mReasonOk;
     private ProgressBar mRejectPB;
     private  ArrayAdapter<String> mReasonSpinnerAdapter;
+    private TextView mDialogMessage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reject_dialog);
+
+        String title = getIntent().getExtras().getString("title");
+        String message = getIntent().getExtras().getString("message");
+
+        setTitle(title);
+        mDialogMessage = (TextView) findViewById(R.id.reject_dialog_message);
+        mDialogMessage.setText(message);
 
         mReasonDescriptionET = (EditText) findViewById(R.id.reject_dialog_reason_edit);
         mReasonTitleET = (EditText) findViewById(R.id.reject_reason_title);

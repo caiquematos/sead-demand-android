@@ -32,6 +32,8 @@ public class User implements Serializable{
     private String superiorEmail; // TODO: eliminate this. Its Superior Email Address.
     private long departmentId;
     private String type;
+    private String institution;
+    private String institutionType;
 
     public User(long localId, int id, String email, String name, String status, String position,
                 int superiorId, String gcm, String createdAt,
@@ -79,22 +81,27 @@ public class User implements Serializable{
     }
 
     // Univasf User
-    public User(String email, String password, String name, long departmentId, String gcm, long jobId) {
+    public User(String email, String name,  String password, Department department,
+                Job job, String gcm,String type) {
         this.email = email;
         this.password = password;
         this.name = name;
-        this.departmentId = departmentId;
+        this.department = department;
         this.gcm = gcm;
-        this.jobId = jobId;
+        this.job = job;
+        this.type = type;
     }
 
     // External User
-    public User(String email, String name, String password, String gcm, String type) {
+    public User(String email, String name, String password, String gcm, String type,
+                String institution, String institutionType) {
         this.email = email;
         this.name = name;
         this.password = password;
         this.gcm = gcm;
         this.type = type;
+        this.institution = institution;
+        this.institutionType = institutionType;
     }
 
     public User(int id, String name, String email){
@@ -277,6 +284,38 @@ public class User implements Serializable{
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
+    }
+
+    public long getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(long departmentId) {
+        this.departmentId = departmentId;
+    }
+
+    public String getInstitution() {
+        return institution;
+    }
+
+    public void setInstitution(String institution) {
+        this.institution = institution;
+    }
+
+    public String getInstitutionType() {
+        return institutionType;
+    }
+
+    public void setInstitutionType(String institutionType) {
+        this.institutionType = institutionType;
     }
 
     @Override

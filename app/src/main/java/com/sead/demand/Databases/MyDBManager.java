@@ -47,6 +47,14 @@ public class MyDBManager {
             values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID, demand.getReason().getServerId());
         }
 
+        // If there is a type, add it.
+        DemandType type = demand.getType();
+        if(type != null){
+            if(addType(demand.getType()) < 0) Log.e(TAG, "Type not added! Prob it exists already.");
+            else Log.e(TAG, "Type added successfully!");
+            values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID, demand.getType().getId());
+        }
+
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID, demand.getId());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID, demand.getSender().getId());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID, demand.getReceiver().getId());
@@ -54,6 +62,7 @@ public class MyDBManager {
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION, demand.getDescription());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS, demand.getStatus());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN, demand.getSeen());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED, demand.getPostponed());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
                 new Timestamp(demand.getCreatedAt().getTime()).toString());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT,
@@ -132,6 +141,7 @@ public class MyDBManager {
         values.put(FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_ID, auth.getId());
         values.put(FeedReaderContract.AuthorityEntry.COLUMN_NAME_USER, auth.getUser());
         values.put(FeedReaderContract.AuthorityEntry.COLUMN_NAME_SUPERIOR, auth.getSuperior());
+        values.put(FeedReaderContract.AuthorityEntry.COLUMN_NAME_DEMAND, auth.getDemand());
         values.put(FeedReaderContract.AuthorityEntry.COLUMN_NAME_LEVEL, auth.getLevel());
         values.put(FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_CREATED_AT,
                 new Timestamp(auth.getCreatedAt().getTime()).toString());
@@ -179,6 +189,34 @@ public class MyDBManager {
         }
     }
 
+    // If job already exists, then update it.
+    public long addType(DemandType type){
+
+        ContentValues values = new ContentValues();
+
+        Log.e(TAG, "Demand Type :" + type.getTitle());
+
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_ID, type.getId());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TITLE, type.getTitle());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_COMPLEXITY, type.getComplexity());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_PRIORITY, type.getPriority());
+        values.put(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_CREATED_AT,
+                new Timestamp(type.getCreatedAt().getTime()).toString());
+        values.put(FeedReaderContract.JobEntry.COLUMN_NAME_JOB_UPDATED_AT,
+                new Timestamp(type.getUpdatedAt().getTime()).toString());
+
+        if(findDemandTypeByServerId((int) type.getId()) == null) {
+            mDB = mMyDbHelper.getWritableDatabase();
+            long newRowId = mDB.insert(FeedReaderContract.DemandTypeEntry.TABLE_NAME, null, values);
+
+            mDB.close();
+
+            return newRowId;
+        }else{
+            mDB.close();
+            return updateType((int) type.getId(),values);
+        }
+    }
 
     // If reason already exists, then update it.
     public long addReason(PredefinedReason reason){
@@ -355,6 +393,25 @@ public class MyDBManager {
         return count;
     }
 
+    public int updateType(int typeId, ContentValues values) {
+
+        String selection = FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_ID + " = ?";
+        String[] selectionArgs = {"" + typeId};
+
+        mDB = mMyDbHelper.getReadableDatabase();
+
+        int count = mDB.update(
+                FeedReaderContract.DemandTypeEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+
+        mDB.close();
+
+        return count;
+    }
+
     public int updateReason(int reasonId, ContentValues values) {
 
         String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ?";
@@ -430,6 +487,20 @@ public class MyDBManager {
         return null;
     }
 
+    public DemandType findDemandTypeByServerId(int id){
+        List<DemandType> demandTypes;
+        String selection = FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_ID + " = ? ";
+        String [] args = {"" + id};
+
+        demandTypes = searchTypes(selection,args);
+
+        if(!demandTypes.isEmpty())
+            for (int i = 0; i <= demandTypes.size(); i ++)
+                return demandTypes.get(i);
+
+        return null;
+    }
+
     public PredefinedReason findReasonByServerId(int id){
             List<PredefinedReason> reasons;
             String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ? ";
@@ -451,12 +522,13 @@ public class MyDBManager {
                 FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID,
+                FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_PRIOR,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
+                FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT
         };
@@ -489,14 +561,20 @@ public class MyDBManager {
             String description = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION));
             String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS));
             String seen = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN));
+            int postponed = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED));
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT));
 
             // Search for local instances of users
             User sender = findUserByServerId(senderId);
             User receiver = findUserByServerId(receiverId);
-            DemandType type = findDemandTypeByServerId();
+            DemandType type = findDemandTypeByServerId(demandTypeId);
             PredefinedReason reason = findReasonByServerId(reasonId);
+
+            if (type != null) Log.d(TAG, "demand type:" + type.getTitle());
+            else Log.d(TAG, "type is null");
+            if (reason != null) Log.d(TAG, "demand reason:" + reason.getTitle());
+            else Log.d(TAG, "reason is null");
 
             if(sender != null && receiver != null){
                 Demand demand = new Demand(
@@ -510,6 +588,7 @@ public class MyDBManager {
                         description,
                         status,
                         seen,
+                        postponed,
                         created_at,
                         updated_at
                 );
@@ -621,6 +700,7 @@ public class MyDBManager {
         String[] projection = {
                 FeedReaderContract.AuthorityEntry._ID,
                 FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_ID,
+                FeedReaderContract.AuthorityEntry.COLUMN_NAME_DEMAND,
                 FeedReaderContract.AuthorityEntry.COLUMN_NAME_USER,
                 FeedReaderContract.AuthorityEntry.COLUMN_NAME_SUPERIOR,
                 FeedReaderContract.AuthorityEntry.COLUMN_NAME_LEVEL,
@@ -651,12 +731,14 @@ public class MyDBManager {
             int user = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.AuthorityEntry.COLUMN_NAME_USER));
             int superior = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.AuthorityEntry.COLUMN_NAME_SUPERIOR));
             int level = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.AuthorityEntry.COLUMN_NAME_LEVEL));
+            int demand = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.AuthorityEntry.COLUMN_NAME_DEMAND));
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_UPDATED_AT));
 
             Authority authority = new Authority(
                     itemId,
                     authId,
+                    demand,
                     user,
                     superior,
                     level,
@@ -727,6 +809,64 @@ public class MyDBManager {
         mDB.close();
 
         return jobs;
+    }
+
+    public List<DemandType> searchTypes(String selection, String[] selectionArgs){
+
+        String[] projection = {
+                FeedReaderContract.DemandTypeEntry._ID,
+                FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_ID,
+                FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TITLE,
+                FeedReaderContract.DemandTypeEntry.COLUMN_NAME_COMPLEXITY,
+                FeedReaderContract.DemandTypeEntry.COLUMN_NAME_PRIORITY,
+                FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_CREATED_AT,
+                FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_UPDATED_AT
+        };
+
+        String sortOrder =
+                FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_UPDATED_AT + " DESC";
+
+        mDB = mMyDbHelper.getReadableDatabase();
+
+        Cursor cursor = mDB.query(
+                FeedReaderContract.DemandTypeEntry.TABLE_NAME,
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                sortOrder
+        );
+
+        List<DemandType> demandTypes = new ArrayList<>();
+
+        while(cursor.moveToNext()) {
+            long itemId = cursor.getLong(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandTypeEntry._ID));
+            int typeId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_ID));
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TITLE));
+            int complexity = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_COMPLEXITY));
+            String priority = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_PRIORITY));
+            String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_CREATED_AT));
+            String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandTypeEntry.COLUMN_NAME_TYPE_UPDATED_AT));
+
+            DemandType demandType = new DemandType(
+                    itemId,
+                    typeId,
+                    title,
+                    priority,
+                    complexity,
+                    created_at,
+                    updated_at
+            );
+
+            demandTypes.add(demandType);
+        }
+
+        cursor.close();
+
+        mDB.close();
+
+        return demandTypes;
     }
 
     public List<PredefinedReason> searchReasons(String selection, String[] selectionArgs){
@@ -809,7 +949,7 @@ public class MyDBManager {
         String selection = FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_ID + " = ?";
         String[] selectionArgs = {"" + id};
         mDB = mMyDbHelper.getWritableDatabase();
-        int count = mDB.delete(FeedReaderContract.UserEntry.TABLE_NAME, selection, selectionArgs);
+        int count = mDB.delete(FeedReaderContract.AuthorityEntry.TABLE_NAME, selection, selectionArgs);
         mDB.close();
         return count;
     }

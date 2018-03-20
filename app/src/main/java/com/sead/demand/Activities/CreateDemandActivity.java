@@ -74,7 +74,7 @@ public class CreateDemandActivity extends AppCompatActivity{
     public CreateDemandActivity() {
         this.mActivity = this;
         this.mPage = Constants.CREATE_PAGE;
-        this.mMenuType = Constants.SHOW_NO_MENU;
+        this.mMenuType = Constants.NO_MENU;
     }
 
     @Override
@@ -230,7 +230,7 @@ public class CreateDemandActivity extends AppCompatActivity{
 
         boolean cancel = false;
         View focusView = null;
-        Demand demand = null;
+        Demand demand;
 
         // Reset errors.
         mSubjectView.setError(null);
@@ -239,6 +239,7 @@ public class CreateDemandActivity extends AppCompatActivity{
 
         if (mCheckBox.isChecked()) {
             mReceiver = null;
+            mDemandTypeSelected = null;
         } else {
             if (mReceiver == null){
                 mReceiverView.setError(getString(R.string.error_field_required));
@@ -267,6 +268,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                 mDescriptionView.getText().toString(),
                 Constants.UNDEFINE_STATUS,
                 Constants.NO,
+                0,
                 null,
                 null);
 
@@ -278,12 +280,6 @@ public class CreateDemandActivity extends AppCompatActivity{
             cancel = true;
         }
 
-        if (demand.getReceiver().getEmail().isEmpty()){
-            mReceiverView.setError(getString(R.string.error_field_required));
-            focusView = mReceiverView;
-            cancel = true;
-        }
-
         if (cancel) {
             // There was an error; don't attempt to send and focus the first
             // form field with an error.
@@ -291,17 +287,18 @@ public class CreateDemandActivity extends AppCompatActivity{
         } else {
             // Show a progress spinner, and kick off a background task to
             // perform the send demand attempt.
-            mDemandTask = new SendDemandTask(demand);
+            mDemandTask = new SendDemandTask(mCheckBox.isChecked(),demand);
             mDemandTask.execute((Void) null);
         }
-
     }
 
     private class SendDemandTask extends  AsyncTask<Void, Void, String>{
         private final Demand demand;
+        private final boolean isChecked;
 
-        public SendDemandTask(Demand demand) {
+        public SendDemandTask(boolean isChecked, Demand demand) {
             this.demand = demand;
+            this.isChecked = isChecked;
         }
 
         @Override
@@ -314,13 +311,17 @@ public class CreateDemandActivity extends AppCompatActivity{
 
         @Override
         protected String doInBackground(Void... params) {
-            // TODO: add object demandType and int complexity into Demand Object.
             ContentValues values = new ContentValues();
+            if (!isChecked) {
+                Log.d(TAG, "receiver:" + demand.getReceiver().getEmail());
+                values.put("receiver", demand.getReceiver() != null ? demand.getReceiver().getEmail() : "");
+                values.put("type", demand.getType().getId());
+            }
+            values.put("is_department_undefined", isChecked);
             values.put("sender", demand.getSender().getEmail());
-            values.put("receiver", demand.getReceiver() == null ? demand.getReceiver().getEmail() : "");
             values.put("subject", demand.getSubject());
             values.put("description", demand.getDescription());
-            return CommonUtils.POST("/demand/send", values);
+            return CommonUtils.POST("/send/send", values);
         }
 
         @TargetApi(Build.VERSION_CODES.N)
@@ -341,16 +342,19 @@ public class CreateDemandActivity extends AppCompatActivity{
             Log.d(TAG, "string json: " + jsonResponse);
 
             try {
+                DemandType demandType = null;
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 senderJson = jsonObject.getJSONObject("sender");
                 receiverJson = jsonObject.getJSONObject("receiver");
-                demandTypeJson = jsonObject.getJSONObject("demand_type");
+                if (!jsonObject.isNull("demand_type")){
+                    demandTypeJson = jsonObject.getJSONObject("demand_type");
+                    demandType = DemandType.build(demandTypeJson);
+                }
                 demandJson = jsonObject.getJSONObject("demand");
 
                 User sender = User.build(senderJson);
                 User receiver = User.build(receiverJson);
-                DemandType demandType = DemandType.build(demandJson);
                 demandResponse = Demand.build(
                         sender,
                         receiver,

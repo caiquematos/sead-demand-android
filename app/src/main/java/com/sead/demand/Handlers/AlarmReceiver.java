@@ -35,9 +35,10 @@ public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.e(TAG, "On AlarmReceiver");
-        String type = intent.getType();
+        int type = Integer.parseInt(intent.getType());
         Log.e(TAG, "Alarm Type:" + type);
         Demand demand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
+        Log.e(TAG, "Demand intent is null:" + demand == null ? "yes" : "no");
         Log.e(TAG, "Demand intent:" + demand.toString());
         String title = "";
         int drawable = -1;
@@ -56,7 +57,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 shouldStatusChange = false;
                 break;
             case Constants.DUE_TIME_ALARM_TAG:
-                title = "Fim do Prazo! (atrasada)";
+                title = "Fim do Prazo!";
                 drawable = R.drawable.ic_alarm_off_black_24dp;
                 status = Constants.LATE_STATUS;
                 break;
@@ -68,7 +69,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             attemptToChangeStatus(demand, context);
         } else {
             Log.e(TAG, "status change false");
-            CommonUtils.cancelDueTime(demand,context,Constants.WARN_DUE_TIME_ALARM_TAG);
+            CommonUtils.cancelDueTime(demand,context, Constants.WARN_DUE_TIME_ALARM_TAG);
             CommonUtils.setDueTime(demand,context);
         }
 

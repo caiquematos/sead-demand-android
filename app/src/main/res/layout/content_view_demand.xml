@@ -56,9 +56,20 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="Urgente"
+                    android:text="Indefinido"
                     android:gravity="center"
                     android:drawableLeft="@drawable/ic_error_black_24dp" />
+
+                <TextView
+                    android:id="@+id/view_demand_due_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent"
+                    android:text="13/02/2018 14:25"
+                    android:gravity="center"
+                    android:layout_gravity="end"/>
             </LinearLayout>
     </LinearLayout>
 

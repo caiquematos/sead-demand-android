@@ -80,7 +80,6 @@ public class ReceivedFragment extends DemandFragment{
         if (mUserId != -1) loadReceiverList(mUserId);
         else Log.e(TAG, "Logged User id not found!");
 
-
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
         mSwipeRefresh.setEnabled(false);
 
@@ -94,16 +93,24 @@ public class ReceivedFragment extends DemandFragment{
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? )";
         selection = selection.concat(" AND ");
         selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " = ?");
 
         String[] args = {
                 "" + receiverId,
+                Constants.UNDEFINE_STATUS,
                 Constants.ACCEPT_STATUS,
                 Constants.DONE_STATUS,
                 Constants.LATE_STATUS,
+                Constants.DEADLINE_REQUESTED_STATUS,
+                Constants.DEADLINE_ACCEPTED_STATUS,
                 Constants.CANCEL_STATUS,
+                Constants.FINISH_STATUS,
                 "" + false
         };
 

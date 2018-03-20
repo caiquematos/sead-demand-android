@@ -83,8 +83,8 @@ public class MyFirebaseInstanceIDService extends FirebaseInstanceIdService {
         @Override
         protected String doInBackground(Void... params) {
             ContentValues values = new ContentValues();
-            values.put("email", this.token);
-            values.put("fcm", this.email);
+            values.put("email", this.email);
+            values.put("fcm", this.token);
             String response = CommonUtils.POST("/user/update-fcm", values);
             return response;
         }

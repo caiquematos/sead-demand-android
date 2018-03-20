@@ -100,7 +100,7 @@ public class StatusActivity extends AppCompatActivity {
                     case Constants.CANCEL_STATUS:
                         activityTitle = "Demandas Canceladas";
                         break;
-                    case Constants.POSTPONE_STATUS:
+                    case Constants.DEADLINE_ACCEPTED_STATUS:
                         activityTitle = "Demandas Adiadas";
                         break;
                     case Constants.DONE_STATUS:

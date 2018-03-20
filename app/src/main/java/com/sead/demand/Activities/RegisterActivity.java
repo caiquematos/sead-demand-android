@@ -615,6 +615,7 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             values.put("position", mUser.getPosition());
             values.put("gcm", mUser.getGcm());
             values.put("job", mUser.getJobId());
+            values.put("type", mUser.getType());
             return CommonUtils.POST("/user/register", values);
         }
 

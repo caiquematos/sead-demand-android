@@ -34,7 +34,7 @@ public class Job implements Serializable{
                 -1,
                 jobJson.getInt("id"),
                 jobJson.getString("title"),
-                jobJson.getString("position"),
+                jobJson.has("position")? jobJson.getString("position"): "",
                 jobJson.getString("created_at"),
                 jobJson.getString("updated_at")
         );
