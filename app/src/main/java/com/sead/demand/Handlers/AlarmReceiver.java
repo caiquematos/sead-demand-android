@@ -42,35 +42,25 @@ public class AlarmReceiver extends BroadcastReceiver {
         Log.e(TAG, "Demand intent:" + demand.toString());
         String title = "";
         int drawable = -1;
-        String status = Constants.UNDEFINE_STATUS;
-        boolean shouldStatusChange = true;
 
         switch (type) {
-            case Constants.POSTPONE_ALARM_TAG:
-                title = "Avaliar Demanda!";
-                drawable = R.drawable.ic_alarm_black_24dp;
-                status = Constants.UNDEFINE_STATUS;
-                break;
             case Constants.WARN_DUE_TIME_ALARM_TAG:
-                title = "Expira Amanhã!";
+                title = "Expira em "
+                        + Constants.DUE_TIME_PREVIOUS_WARNING
+                        + (Constants.DUE_TIME_PREVIOUS_WARNING > 1 ? " dias" : " dia");
                 drawable = R.drawable.ic_alarm_black_24dp;
-                shouldStatusChange = false;
                 break;
             case Constants.DUE_TIME_ALARM_TAG:
-                title = "Fim do Prazo!";
+                title = "Prazo expirou!!!";
                 drawable = R.drawable.ic_alarm_off_black_24dp;
-                status = Constants.LATE_STATUS;
+                demand.setStatus(Constants.LATE_STATUS);
+                attemptToChangeStatus(demand, context);
                 break;
-        }
-
-        if(shouldStatusChange) {
-            // Change demand status.
-            demand.setStatus(status);
-            attemptToChangeStatus(demand, context);
-        } else {
-            Log.e(TAG, "status change false");
-            CommonUtils.cancelDueTime(demand,context, Constants.WARN_DUE_TIME_ALARM_TAG);
-            CommonUtils.setDueTime(demand,context);
+            case Constants.REMIND_ME_ALARM_TAG:
+                title = "Lembrete!";
+                // Todo: change icon.
+                drawable = R.drawable.ic_alarm_black_24dp;
+                break;
         }
 
         Intent targetIntent = new Intent(context, ViewDemandActivity.class);

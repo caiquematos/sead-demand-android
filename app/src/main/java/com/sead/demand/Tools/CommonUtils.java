@@ -213,28 +213,17 @@ public class CommonUtils {
     // Only for test purposes.
     public static void listAllDemandsDB(Context context){
         MyDBManager myDBManager = new MyDBManager(context);
-        // Listing all demands stored
-        List<Demand> demands;
-
-        String selection = FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " = ?";
-        String[] args = {"1"};
-        demands = myDBManager.searchDemands(selection,args);
-
+        List<Demand> demands = myDBManager.getAllDemands();
         for (int index = 0; index < demands.size(); index++)
-            Log.e(TAG, "Demanda " + index + ":" + demands.get(index).toString() + "\n");
+            Log.d(TAG, "listAllDemand Demanda: " + demands.get(index).toString());
     }
 
     // Only for test purposes.
     public static void listAllUsersDB(Context context){
         MyDBManager myDBManager = new MyDBManager(context);
-        List<User> users;
-
-        String selection = FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID + " = ?";
-        String[] args = {"1"};
-        users = myDBManager.searchUsers(selection,args);
-
+        List<User> users = myDBManager.getAllUsers();
         for (int index = 0; index < users.size(); index++)
-            Log.e(TAG, "User " + index + ":" + users.get(index).toString() + "\n");
+            Log.d(TAG, "listAllUsers User: " + users.get(index).toString());
     }
 
     // Only for test purposes.
@@ -317,7 +306,7 @@ public class CommonUtils {
     public static void updateDemandDB(String type, Demand demand, Context context) {
         MyDBManager myDBManager = new MyDBManager(context);
         long newRow = myDBManager.addDemand(demand);
-        Log.e(TAG, "New row inserted:" + newRow);
+        Log.e(TAG, "New row updated:" + newRow);
         listAllDemandsDB(context);
         listAllReasonsDB(context);
 
@@ -559,16 +548,16 @@ public class CommonUtils {
         receiverIntent.putExtra(Constants.INTENT_DEMAND, demand);
         receiverIntent.putExtra(Constants.INTENT_PAGE, Constants.RECEIVED_PAGE);
         receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_DONE_MENU);
-        Log.e(TAG, "Is there any alarm for " + demand.getId() + ":"
-                + MyAlarmManager.hasAlarm(context,receiverIntent,demand.getId()));
+        Log.e(TAG, "Is there any alarm for type " + type + " e id " + demand.getId() + ":"
+                + MyAlarmManager.hasAlarm(context,receiverIntent,demand.getId(), type));
         MyAlarmManager.cancelAlarm(context,receiverIntent,demand.getId(), type);
-        Log.e(TAG, "Canceled alarm:" + demand.getSubject());
-        Log.e(TAG, "Is there any alarm for " + demand.getId() + ":"
-                + MyAlarmManager.hasAlarm(context,receiverIntent,demand.getId()));
+        Log.e(TAG, "Canceled alarm:" + demand.getId());
+        Log.e(TAG, "Is there any alarm for type " + type + " e id " + demand.getId() + ":"
+                + MyAlarmManager.hasAlarm(context,receiverIntent,demand.getId(), type));
     }
 
     public static void setAlarm(Context context, long dueTime, Demand demand, int type, int page, int menu) {
-        Intent intent = new Intent();
+        Intent intent = new Intent(context, AlarmReceiver.class);
         intent.putExtra(Constants.INTENT_DEMAND, demand);
         intent.setType("" + type);
         intent.putExtra(Constants.INTENT_PAGE, page);
@@ -602,6 +591,25 @@ public class CommonUtils {
         CommonUtils.cancelDueTime(demand,context, Constants.WARN_DUE_TIME_ALARM_TAG);
         CommonUtils.cancelDueTime(demand,context, Constants.DUE_TIME_ALARM_TAG);
         CommonUtils.cancelDueTime(demand,context, Constants.POSTPONE_ALARM_TAG);
+    }
+
+    public static String convertMillisToDate(long timeInMillis) {
+        Calendar cl = Calendar.getInstance();
+        cl.setTimeInMillis(timeInMillis);  //here your time in miliseconds
+        String date = "" + (cl.get(Calendar.DAY_OF_MONTH) < 10 ? 0 : "") + cl.get(Calendar.DAY_OF_MONTH) + "/"
+                + (cl.get(Calendar.MONTH) < 9 ? 0 : "")  + (cl.get(Calendar.MONTH) + 1) + "/"
+                + cl.get(Calendar.YEAR);
+        return date;
+    }
+
+    public static String convertMillisToTime(long timeInMillis) {
+        Calendar cl = Calendar.getInstance();
+        cl.setTimeInMillis(timeInMillis);  //here your time in miliseconds
+        String time = "" + (cl.get(Calendar.HOUR_OF_DAY) < 10 ? 0 : "")
+                + cl.get(Calendar.HOUR_OF_DAY) + ":"
+                + (cl.get(Calendar.MINUTE) < 10 ? 0 : "")
+                + cl.get(Calendar.MINUTE);
+        return time;
     }
 
     // For Demand Adapter List purposes

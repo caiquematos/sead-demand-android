@@ -86,14 +86,17 @@
     <string name="done_demand_info">Essa demanda foi concluída</string>
     <string name="accepted_demand_info">Essa demanda foi deferida</string>
     <string name="rejected_demand_info">Essa demanda foi indeferida</string>
-    <string name="canceled_demand_info">Essa demanda foi cancelada</string>
+    <string name="cancel_accepted_demand_info">Essa demanda foi cancelada</string>
+    <string name="cancel_requested_demand_info">Solicitação de cancelamento pendente</string>
     <string name="postponed_demand_info">Essa demanda foi adiada</string>
     <string name="reopen_demand_info">Essa demanda foi reaberta</string>
     <string name="undefined_demand_info">Essa demanda ainda está indefinida</string>
     <string name="resent_demand_info">Essa demanda foi reenviada</string>
     <string name="transferred_demand_info">Essa demanda foi repassada</string>
-    <string name="deadline_requested_demand_info">Solicitado aumento de prazo</string>
+    <string name="deadline_requested_demand_info">Solicitação de aumento de prazo pendente</string>
     <string name="deadline_accepted_demand_info">Essa demanda foi adiada</string>
+    <string name="unfinished_demand_info">Essa demanda foi marcada como não finalizada</string>
+    <string name="finished_demand_info">Essa demanda foi finalizada</string>
 
     <!-- Reject Dialog -->
     <string-array name="array_reject_dialog_reasons">
@@ -170,5 +173,10 @@
         <item>Privada</item>
         <item>Pública</item>
     </string-array>
+    <string name="title_activity_transfer">TransferActivity</string>
+    <string name="transfer_activity_description_text">Informe quem será o novo destinatário</string>
+    <string name="transfer_activity_transfer_fab_description">Transferir</string>
+    <string name="view_activity_transfer_reason_description">Quando a demanda não pode ser atendida, ela é repassada ao seu superior. Por favor, escolha um motivo.</string>
+    <string name="finished_demands">Finalizadas</string>
 
 </resources>

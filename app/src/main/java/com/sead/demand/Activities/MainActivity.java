@@ -260,9 +260,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else if (id == R.id.nav_admin_rejected) {
                 status = Constants.REJECT_STATUS;
             } else if (id == R.id.nav_admin_canceled) {
-                status = Constants.CANCEL_STATUS;
+                status = Constants.CANCEL_ACCEPTED_STATUS;
             } else if (id == R.id.nav_admin_postponed) {
-                status = Constants.POSTPONE_STATUS;
+                status = Constants.DEADLINE_ACCEPTED_STATUS;
+            } else if (id == R.id.nav_admin_finished) {
+                status = Constants.FINISH_STATUS;
             } else if (id == R.id.nav_admin_done) {
                 status = Constants.DONE_STATUS;
             }

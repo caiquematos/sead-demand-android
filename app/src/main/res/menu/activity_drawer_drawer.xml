@@ -13,8 +13,12 @@
     <item android:id="@+id/nav_admin_items" android:title="@string/admin_drawer_menu">
         <menu>
             <item
-                android:id="@+id/nav_admin_done"
+                android:id="@+id/nav_admin_finished"
                 android:icon="@drawable/ic_assignment_turned_in_white_24dp"
+                android:title="@string/finished_demands" />
+            <item
+                android:id="@+id/nav_admin_done"
+                android:icon="@drawable/ic_check_circle_black_24dp"
                 android:title="@string/done_demands" />
             <item
                 android:id="@+id/nav_admin_accepted"

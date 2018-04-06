@@ -24,10 +24,10 @@ public class MyAlarmManager {
 
     public static void addAlarm(Context context, Intent intent, int notificationId, int type, long timeInMillis){
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, generateAlarmId(notificationId, type), intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Log.d(TAG, "alarms now: " + getAlarmIds(context));
-        if (hasAlarm(context, intent, notificationId + type)) cancelAlarm(context, intent, notificationId, type);
+        if (hasAlarm(context, intent, generateAlarmId(notificationId, type), type)) cancelAlarm(context, intent, notificationId, type);
         Log.d(TAG, "alarms then: " + getAlarmIds(context));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -38,17 +38,17 @@ public class MyAlarmManager {
             alarmManager.set(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
         }
 
-        saveAlarmId(context, notificationId + type);
+        saveAlarmId(context, generateAlarmId(notificationId, type));
         Log.d(TAG, "alarms later: " + getAlarmIds(context));
     }
 
     public static void cancelAlarm(Context context, Intent intent, int notificationId, int type){
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, generateAlarmId(notificationId,type), intent, PendingIntent.FLAG_UPDATE_CURRENT);
         alarmManager.cancel(pendingIntent);
         pendingIntent.cancel();
 
-        removeAlarmId(context, notificationId + type);
+        removeAlarmId(context, generateAlarmId(notificationId, type));
     }
 
     public static void cancelAllAlarms(Context context, Intent intent, int type){
@@ -57,8 +57,8 @@ public class MyAlarmManager {
         }
     }
 
-    public static boolean hasAlarm(Context context, Intent intent, int notificationId){
-        return PendingIntent.getBroadcast(context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT) != null;
+    public static boolean hasAlarm(Context context, Intent intent, int notificationId, int type){
+        return PendingIntent.getBroadcast(context, generateAlarmId(notificationId,type), intent, PendingIntent.FLAG_UPDATE_CURRENT) != null;
     }
 
     private static void saveAlarmId(Context context, int id){
@@ -125,6 +125,16 @@ public class MyAlarmManager {
             alarmIdsString = alarmIdsString + "[" + alarmId + "] ";
         }
         return alarmIdsString;
+    }
+
+    // Generate a unique alarm id using two parameters.
+    // In this case: demand_id, type_number.
+    private static int generateAlarmId(int p1, int p2) {
+        String sp1 = "" + p1;
+        String sp2 = "" + p2;
+        String sresult = sp1 + sp2;
+        int result = Integer.parseInt(sresult);
+        return result;
     }
 
 

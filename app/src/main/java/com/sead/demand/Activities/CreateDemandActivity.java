@@ -70,6 +70,7 @@ public class CreateDemandActivity extends AppCompatActivity{
     private User mUser;
     private User mReceiver;
     private DemandType mDemandTypeSelected;
+    private SendingPermissionTask mSendingPermissionTask;
 
     public CreateDemandActivity() {
         this.mActivity = this;
@@ -156,7 +157,19 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         });
 
-        fetchDepartments();
+        this.checkSendingPermission();
+    }
+
+    private void checkSendingPermission() {
+        if (CommonUtils.isOnline(this)) {
+            if (mSendingPermissionTask == null) {
+                mSendingPermissionTask = new SendingPermissionTask(mUser);
+                mSendingPermissionTask.execute();
+            }
+        } else {
+            Snackbar.make(mFab, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
     }
 
     private void fetchUsers(int position) {
@@ -572,5 +585,86 @@ public class CreateDemandActivity extends AppCompatActivity{
                 mPDDepartment.dismiss();
             }
         }
+    }
+
+    public class SendingPermissionTask extends AsyncTask<String, Void, String> {
+        private User user;
+
+        public SendingPermissionTask(User user) {
+            this.user = user;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDDemand.setMessage(getString(R.string.progress_dialog_wait));
+            mPDDemand.setCancelable(false);
+            mPDDemand.show();
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            ContentValues values = new ContentValues();
+            values.put("user_id", user.getId());
+            return CommonUtils.POST("/send/check-sending-permission", values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mSendingPermissionTask = null;
+            if (mPDDemand.isShowing()){
+                mPDDemand.dismiss();
+            }
+            Log.e(TAG, s);
+            try {
+                JSONObject jsonObject;
+                boolean success;
+
+                jsonObject = new JSONObject(s);
+                success = jsonObject.getBoolean("success");
+
+                if (success) {
+                    boolean isSendingAllowed = jsonObject.getBoolean("permission");
+                    if (isSendingAllowed){
+                        fetchDepartments();
+                    } else {
+                        showSendingPermissionDialog(Constants.PERMISSION_FALSE);
+                    }
+                } else {
+                    throw new JSONException("success hit false!");
+                }
+            } catch (JSONException e) {
+                Snackbar.make(mFab, R.string.server_error, Snackbar.LENGTH_LONG).show();
+                e.printStackTrace();
+                showSendingPermissionDialog(Constants.PERMISSION_ERROR);
+            }
+        }
+    }
+
+    private void showSendingPermissionDialog(int type) {
+        String message;
+        switch (type) {
+            case Constants.PERMISSION_FALSE:
+                message = "Há 3 ou mais demandas \"Concluídas\" pendentes. Avalie-as," +
+                        " antes, para ser permitido criar uma nova demanda.";
+                break;
+            case Constants.PERMISSION_ERROR:
+                message = "Não foi possível avaliar a permissão de envio, por favor, tente mais tarde";
+                break;
+            default:
+                message = "Erro!";
+        }
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+        alertBuilder.setTitle("Permissão de Envio");
+        alertBuilder.setMessage(message);
+        alertBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mActivity.finish();
+            }
+        });
+        alertBuilder.create();
+        alertBuilder.show();
     }
 }

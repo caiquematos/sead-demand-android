@@ -16,6 +16,9 @@ public class Constants {
     public static final String BASE_URL_5 = "http://192.168.1.3:8000";
     public static final String BASE_URL_1 = "http://192.168.42.86:8000";
 
+    // Predefined Reasons' type
+    public static final int REASON_MISSING_DOCUMENT = 70;
+
     // User's types.
     public static final String INTERNAL_USER = "int";
     public static final String EXTERNAL_USER = "ext";
@@ -75,18 +78,18 @@ public class Constants {
     public static final String ACCEPT_STATUS = "A"; // Pode atender a demanda.
     public static final String DONE_STATUS = "D"; // Demanda concluída pelo solicitado.
     public static final String REJECT_STATUS = "X"; // Indeferida pelo superior.
-    public static final String CANCEL_STATUS = "C"; // Cancelada pelo solicitante.
     public static final String REOPEN_STATUS = "R"; // Reaberta pelo solicitante (caso especial).
     public static final String UNDEFINE_STATUS = "U"; // Indefinido (default).
     public static final String LATE_STATUS = "L"; // Demanda atrasada (automaticamente).
     public static final String DELETE_STATUS = "E";
     public static final String FINISH_STATUS = "F"; // Demanda finalizada pelo solicitante.
+    public static final String UNFINISH_STATUS = "V"; // Demanda marcada como não finalizada (pelo solicitante).
     public static final String TRANSFER_STATUS = "T"; // Demanda Repassada.
-
     public static final String DEADLINE_REQUESTED_STATUS = "Y"; // Solicitado aumento de prazo.
     public static final String DEADLINE_ACCEPTED_STATUS = "Z"; // Solicitado aumento de prazo.
     public static final String POSTPONE_STATUS = "P"; // Me lembre depois (não muda o estado).
-
+    public static final String CANCEL_REQUESTED_STATUS = "W"; // Sender request to cancel demand.
+    public static final String CANCEL_ACCEPTED_STATUS = "C"; // Receiver accept request.
     public static final String RESEND_STATUS = "S"; // Eliminar essa opção.
 
     // Demand Seen.
@@ -146,10 +149,19 @@ public class Constants {
     public static final int REJECT_DEMAND = 1;
     public static final int NOT_ACCEPT_DEMAND = 2;
     public static final int DEADLINE_DEMAND = 3;
+    public static final int SUPERIOR_TRANSFER_DEMAND = 4;
+    public static final int CANCEL_REQUEST_DEMAND = 5;
+    public static final int CANCEL_ACCEPT_DEMAND = 6;
+    public static final int MARK_AS_UNFINISHED_DEMAND = 7;
 
     // Predefined Reasons.
     public static final int REASON_OTHER_POSITION = 0;
     public static final String REASON_OTHER_TYPE = "O";
     public static final String REASON_PREDEFINED_TYPE = "P";
+
+    // Sending Permission
+    public static final int PERMISSION_ERROR = 0;
+    public static final int PERMISSION_TRUE = 1;
+    public static final int PERMISSION_FALSE = 2;
 
 }

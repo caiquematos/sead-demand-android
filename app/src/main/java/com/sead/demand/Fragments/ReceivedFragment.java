@@ -97,6 +97,9 @@ public class ReceivedFragment extends DemandFragment{
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                 + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? )";
         selection = selection.concat(" AND ");
         selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " = ?");
@@ -109,8 +112,11 @@ public class ReceivedFragment extends DemandFragment{
                 Constants.LATE_STATUS,
                 Constants.DEADLINE_REQUESTED_STATUS,
                 Constants.DEADLINE_ACCEPTED_STATUS,
-                Constants.CANCEL_STATUS,
+                Constants.CANCEL_ACCEPTED_STATUS,
+                Constants.REOPEN_STATUS,
+                Constants.CANCEL_REQUESTED_STATUS,
                 Constants.FINISH_STATUS,
+                Constants.UNFINISH_STATUS,
                 "" + false
         };
 

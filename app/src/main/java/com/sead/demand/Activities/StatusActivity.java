@@ -97,8 +97,11 @@ public class StatusActivity extends AppCompatActivity {
                     case Constants.REJECT_STATUS:
                         activityTitle = "Demandas Indeferidas";
                         break;
-                    case Constants.CANCEL_STATUS:
+                    case Constants.CANCEL_ACCEPTED_STATUS:
                         activityTitle = "Demandas Canceladas";
+                        break;
+                    case Constants.FINISH_STATUS:
+                        activityTitle = "Demandas Finalizadas";
                         break;
                     case Constants.DEADLINE_ACCEPTED_STATUS:
                         activityTitle = "Demandas Adiadas";

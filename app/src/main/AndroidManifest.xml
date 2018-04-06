@@ -164,7 +164,7 @@
             android:name=".Activities.ProfileActivity"
             android:parentActivityName=".Activities.MainActivity"
             android:theme="@style/AppTheme.NoActionBar"
-            android:windowSoftInputMode="adjustPan"></activity>
+            android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".Activities.ExternalRegisterActivity"
             android:label="@string/title_activity_external_register"
@@ -183,10 +183,20 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.sead.demand.Activities.LoginActivity" />
         </activity>
-        <activity android:name=".Activities.DemandTypeActivity"
-            android:theme="@style/AppTheme.NoActionBar"
+        <activity
+            android:name=".Activities.DemandTypeActivity"
             android:label="Atividades"
-            android:parentActivityName=".Activities.ProfileActivity"></activity>
+            android:parentActivityName=".Activities.ProfileActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".Activities.TransferActivity"
+            android:label="@string/title_activity_transfer"
+            android:parentActivityName=".Activities.ViewDemandActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.sead.demand.Activities.ViewDemandActivity" />
+        </activity>
     </application>
 
 </manifest>

@@ -146,6 +146,7 @@ public class SuperiorFragment extends DemandFragment {
                 selection = selection.concat(" OR ");
                 selection = selection.concat(FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID + " = ?");
                 argsArray.add("" + authorities.get(i).getUser());
+                Log.d("fetchUsersUnderMySup", "auth upon: " + authorities.get(i).getUser());
             }
         }
 
@@ -155,6 +156,12 @@ public class SuperiorFragment extends DemandFragment {
 
         MyDBManager myDBManager = new MyDBManager(getContext());
         users = myDBManager.searchUsers(selection,args);
+
+        for (User user : users ) {
+            Log.d("fetchUsersUnderMySup", "user:" + user.getId());
+        }
+
+        CommonUtils.listAllUsersDB(getContext());
 
         return users;
     }
@@ -178,6 +185,8 @@ public class SuperiorFragment extends DemandFragment {
                         + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                         + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                         + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                        + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
+                        + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ? OR "
                         + FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " = ?" );
         selection = selection.concat(")");
 
@@ -186,6 +195,8 @@ public class SuperiorFragment extends DemandFragment {
         argsArray.add(Constants.LATE_STATUS);
         argsArray.add(Constants.TRANSFER_STATUS);
         argsArray.add(Constants.DEADLINE_REQUESTED_STATUS);
+        argsArray.add(Constants.CANCEL_REQUESTED_STATUS);
+        argsArray.add(Constants.UNFINISH_STATUS);
         argsArray.add(Constants.RESEND_STATUS);
 
         selection = selection.concat(" AND ");

@@ -19,6 +19,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
@@ -29,11 +30,9 @@ import com.sead.demand.Entities.Demand;
 import com.sead.demand.Entities.DemandType;
 import com.sead.demand.Entities.PredefinedReason;
 import com.sead.demand.Entities.User;
-import com.sead.demand.Handlers.AlarmReceiver;
 import com.sead.demand.R;
 import com.sead.demand.Tools.CommonUtils;
 import com.sead.demand.Tools.Constants;
-import com.sead.demand.Tools.MyAlarmManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -55,10 +54,11 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private TextView mTimeTV;
     private TextView mDescriptionTV;
     private TextView mDueTimeTV;
-    private TextView mReason;
+    private TextView mReasonTV;
+    private TextView mTypeTV;
     private View mScrollView;
     private StatusTask mStatusTask;
-    private ProgressDialog mPDDemand;
+    private static ProgressDialog mPDDemand;
     private FloatingActionButton mFabYes;
     private FloatingActionButton mFabLater;
     private FloatingActionButton mFabNo;
@@ -100,6 +100,9 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private TransferTask mTransferTask;
     private DeadlineRequestTask mDeadlineRequestTask;
     private DeadlineAcceptedTask mDeadlineAcceptedTask;
+    private AdminTransferTask mAdminTransferTask;
+    private CancelTask mCancelTask;
+    private MarkAsUnfinishedTask mMarkAsUnfinishedTask;
 
     public ViewDemandActivity() {
         mActivity = this;
@@ -116,7 +119,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mCurrentUser = CommonUtils.getCurrentUserPreference(this);
 
         // Before any change, get intent data.
-
         Intent intent = getIntent();
         mDemand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
         mPage = intent.getIntExtra(Constants.INTENT_PAGE, -1);
@@ -129,57 +131,8 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         if (mDemand.getReason() != null) Log.d(TAG, "demand type: " + mDemand.getReason().getTitle());
         else Log.d(TAG, "demand reason null");
 
-
         // Setting activity title.
-        String activityTitle;
-        switch(mPage) {
-            case Constants.ADMIN_PAGE:
-                activityTitle = "Demanda (admin)";
-                break;
-            case Constants.RECEIVED_PAGE:
-                activityTitle = "Demanda Recebida";
-                break;
-            case Constants.SENT_PAGE:
-                activityTitle = "Demanda Enviada";
-                break;
-            case Constants.STATUS_PAGE:
-                switch (mDemand.getStatus()){
-                    case Constants.DONE_STATUS:
-                        activityTitle = "Demanda Concluída (admin)";
-                        break;
-                    case Constants.ACCEPT_STATUS:
-                        activityTitle = "Demanda Deferida (admin)";
-                        break;
-                    case Constants.POSTPONE_STATUS:
-                        activityTitle = "Demanda Adiada (admin)";
-                        break;
-                    case Constants.CANCEL_STATUS:
-                        activityTitle = "Demanda Cancelada (admin)";
-                        break;
-                    case Constants.REJECT_STATUS:
-                        activityTitle = "Demanda Indeferida (admin)";
-                        break;
-                    case Constants.TRANSFER_STATUS:
-                        activityTitle = "Demanda Transferida (admin)";
-                        break;
-                    // These last two won't be be accessed so far.
-                    case Constants.UNDEFINE_STATUS:
-                        activityTitle = "Demanda Não Definida (admin)";
-                        break;
-                    case Constants.LATE_STATUS:
-                        activityTitle = "Demanda Atrasada (admin)";
-                        break;
-                    // These last two.
-                    default:
-                        activityTitle = "Demanda (admin)";
-                }
-                break;
-            case Constants.CREATE_PAGE:
-            default:
-                activityTitle = "Demanda";
-        }
-
-        setTitle(activityTitle);
+        setTitle(generateActivityTitle());
 
         // Get object references.
         mMenuButtonsList = new ArrayList<>();
@@ -193,17 +146,22 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mTimeTV = (TextView) findViewById(R.id.view_demand_time);
         mDueTimeTV = (TextView) findViewById(R.id.view_demand_due_time);
         mDescriptionTV = (TextView) findViewById(R.id.view_demand_description);
-        mReason = (TextView) findViewById(R.id.view_demand_reason);
+        mReasonTV = (TextView) findViewById(R.id.view_demand_reason);
+        mTypeTV = (TextView) findViewById(R.id.view_demand_type);
         mPDDemand = new ProgressDialog(mActivity);
 
-        // Finally set changes.
-
-        if (mDemand.getType() != null) showDemandPrior(mDemand.getType().getPriority());
+        /* Finally set changes */
+        if (mDemand.getType() != null) {
+            mTypeTV.setText(mDemand.getType().getTitle());
+            showDemandPrior(mDemand.getType().getPriority());
+        }else {
+            mTypeTV.setVisibility(View.GONE);
+        }
 
         mPriorTV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                // todo: show a box info.
             }
         });
         mPriorTV.setClickable(true);
@@ -225,21 +183,44 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mAlert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if (mAlertType.equals(Constants.RESEND_STATUS)) {
-                    attemptSendDemand();
-                } else if (mAlertType.equals(Constants.TRANSFER_STATUS)) {
-                    startReasonDialog("Não Pode Atender?", "Quando a demanda não pode ser atendida, ela é repassada ao seu superior. Por favor, escolha um motivo.", Constants.NOT_ACCEPT_DEMAND);
-                } else if (mAlertType.equals(Constants.DEADLINE_REQUESTED_STATUS)) {
-                    startReasonDialog("Solicitar Aumento de Prazo?", "A solicitação será enviada ao seu superior.", Constants.DEADLINE_DEMAND);
-                } else {
-                    setDemandStatus(mAlertType);
+                switch (mAlertType) {
+                    case Constants.RESEND_STATUS:
+                        attemptSendDemand();
+                        break;
+                    case Constants.TRANSFER_STATUS:
+                        handleTransfer(mPage);
+                        break;
+                    case Constants.DEADLINE_REQUESTED_STATUS:
+                        startReasonDialog("Solicitar Aumento de Prazo?",
+                                "Por favor, insira o motivo da solicitação, e em seguida clique em \"ok\" para enviá-la para o seu superior.",
+                                Constants.DEADLINE_DEMAND);
+                        break;
+                    case Constants.CANCEL_ACCEPTED_STATUS:
+                        startReasonDialog("Solicitar cancelamento?",
+                                "Por favor, insira o motivo da solicitação, e em seguida clique em \"ok\" para enviá-la para o colaborador responsável",
+                                Constants.CANCEL_REQUEST_DEMAND);
+                        break;
+                    default:
+                        setDemandStatus(mAlertType);
+                }
+            }
+
+            private void handleTransfer(int page) {
+                switch (page) {
+                    case Constants.ADMIN_PAGE:
+                        startTransferActivity(Constants.SUPERIOR_TRANSFER_DEMAND);
+                        break;
+                    case Constants.RECEIVED_PAGE:
+                        startReasonDialog("Repassar Por Competência?",
+                                getString(R.string.view_activity_transfer_reason_description),
+                                Constants.NOT_ACCEPT_DEMAND);
+                        break;
                 }
             }
         });
         mAlert.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-
             }
         });
 
@@ -250,7 +231,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mFabTransfer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mAlert.setTitle("Repassar por competência?");
+                mAlert.setTitle("Repassar a demanda?");
                 mAlertType = Constants.TRANSFER_STATUS;
                 mAlert.show();
             }
@@ -269,7 +250,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                     mAlertType = Constants.DEADLINE_REQUESTED_STATUS;
                     mAlert.show();
                 } else {
-                    Snackbar.make(mFabMenu, "Você já solicitou o aumento de prazo 3 vezes!", Snackbar.LENGTH_LONG)
+                    Snackbar.make(mFabMenu, "Você já atingiu o limite de 3 solicitações!", Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
                 }
             }
@@ -282,9 +263,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mFabFinish.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mAlert.setTitle("Finalizar?");
-                mAlertType = Constants.FINISH_STATUS;
-                mAlert.show();
+                buildSenderFinishMenu();
             }
         }); // Finish
 
@@ -316,20 +295,14 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                         Constants.POSTPONE_OPTIONS[2] + " dias",
                         Constants.POSTPONE_OPTIONS[3] + " dias"
                 };
-               // mPostponeDialog.setMessage("Você receberá uma notificação te relembrando que precisa avaliar essa demanda.");
                 mPostponeDialog.setItems(postponeOptions, new DialogInterface.OnClickListener(){
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        setPostponeTime(Constants.POSTPONE_OPTIONS[which]);
+                        setReminder(mDemand, Constants.POSTPONE_OPTIONS[which]);
                     }
                 });
                 mPostponeDialog.create();
                 mPostponeDialog.show();
-                /*
-                mAlert.setTitle("Adiar a demanda?");
-                mAlertType = Constants.POSTPONE_STATUS;
-                mAlert.show();
-                */
             }
         }); //Postponed
 
@@ -341,7 +314,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             @Override
             public void onClick(View view) {
                 mAlert.setTitle("Cancelar a demanda?");
-                mAlertType = Constants.CANCEL_STATUS;
+                mAlertType = Constants.CANCEL_ACCEPTED_STATUS;
                 mAlert.show();
             }
         }); //Cancelled
@@ -406,202 +379,51 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
 
         showDueTime();
 
-        /*
-
-        mFabMenu.setOnClickListener(new View.OnClickListener(){
+        mScrollView = findViewById(R.id.view_demand_scroll_view);
+        mScrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
-            public void onClick(View v) {
-                if (mTurned) { // When 'close menu' button is hit.
-                    Log.e(TAG, "mTurned true. In first if");
-                    ViewCompat.animate(mFabMenu).
-                            rotation(0f).
-                            withLayer().
-                            setDuration(1000).
-                            setInterpolator(new OvershootInterpolator()).
-                            start();
-                    mTurned = false;
-                    if (mMenuType == Constants.SHOW_DONE_MENU){
-                        mFabDone.hide();
-                        mDoneTV.setVisibility(View.INVISIBLE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                        mFabResend.setVisibility(View.GONE);
-                        mResendTV.setVisibility(View.GONE);
-                    } else if (mMenuType == Constants.SHOW_REOPEN_MENU) { // Canceled Activity
-                        mFabReopen.hide();
-                        mReopenTV.setVisibility(View.INVISIBLE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                        mFabResend.setVisibility(View.GONE);
-                        mResendTV.setVisibility(View.GONE);
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                    } else if (mMenuType == Constants.SHOW_CANCEL_MENU){ // Accepted Activity.
-                        mFabNo.hide();
-                        mNoTV.setVisibility(View.INVISIBLE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabResend.setVisibility(View.GONE);
-                        mResendTV.setVisibility(View.GONE);
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                    } else if(mMenuType == Constants.SHOW_RESEND_MENU) {
-                        mFabResend.hide();
-                        mResendTV.setVisibility(View.INVISIBLE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                    } else {
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                        mFabResend.setVisibility(View.GONE);
-                        mResendTV.setVisibility(View.GONE);
-                        mFabReject.hide();
-                        mRejectTV.setVisibility(View.INVISIBLE);
-                        mFabLater.hide();
-                        mLaterTV.setVisibility(View.INVISIBLE);
-                        mFabYes.hide();
-                        mYesTV.setVisibility(View.INVISIBLE);
-                    }
-                } else { // When 'open menu' button is hit.
-                    Log.e(TAG, "mTurned false. In first else");
-                    ViewCompat.animate(mFabMenu).
-                            rotation(135f).
-                            withLayer().
-                            setDuration(1000).
-                            setInterpolator(new OvershootInterpolator()).
-                            start();
-                    mTurned = true;
-                    if (mMenuType == Constants.SHOW_DONE_MENU) {
-                        mFabDone.show();
-                        mDoneTV.setVisibility(View.VISIBLE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                    } else if (mMenuType == Constants.SHOW_REOPEN_MENU) { // Canceled Activity.
-                        mFabReopen.show();
-                        mReopenTV.setVisibility(View.VISIBLE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                    } else if (mMenuType == Constants.SHOW_CANCEL_MENU){ // Accepted Activity.
-                        mFabNo.show();
-                        mNoTV.setVisibility(View.VISIBLE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                    } else if(mMenuType == Constants.SHOW_RESEND_MENU) {
-                        mFabResend.show();
-                        mResendTV.setVisibility(View.VISIBLE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                        mFabReject.setVisibility(View.GONE);
-                        mRejectTV.setVisibility(View.GONE);
-                        mFabLater.setVisibility(View.GONE);
-                        mLaterTV.setVisibility(View.GONE);
-                        mFabYes.setVisibility(View.GONE);
-                        mYesTV.setVisibility(View.GONE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                    } else {
-                        mFabDone.setVisibility(View.GONE);
-                        mDoneTV.setVisibility(View.GONE);
-                        mFabReopen.setVisibility(View.GONE);
-                        mReopenTV.setVisibility(View.GONE);
-                        mFabNo.setVisibility(View.GONE);
-                        mNoTV.setVisibility(View.GONE);
-                        mFabResend.setVisibility(View.GONE);
-                        mResendTV.setVisibility(View.GONE);
-                        mFabYes.show();
-                        mYesTV.setVisibility(View.VISIBLE);
-                        mFabLater.show();
-                        mLaterTV.setVisibility(View.VISIBLE);
-                        mFabReject.show();
-                        mRejectTV.setVisibility(View.VISIBLE);
-                    }
-                }
+            public void onScrollChanged() {
+                int scrollY = mScrollView.getScrollY();
+                hideMenuOnScroll( scrollY);
             }
         });
-
-        // Select which activities has no menu.
-        if ( mMenuType == Constants.SHOW_NO_MENU || mMenuType == -1 ){
-            Log.e(TAG, "In second if");
-            noMenu();
-        }else{ // Hide menu when screen scrolled (for activities with menu).
-            Log.e(TAG, "In second else");
-            mScrollView = findViewById(R.id.view_demand_scroll_view);
-            mScrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
-                @Override
-                public void onScrollChanged() {
-                    int scrollY = mScrollView.getScrollY();
-                    hideMenuOnScroll( scrollY);
-                }
-            });
-        }
-
-        */
 
         Log.d(TAG, "Due Date | Time: " + mDemand.getDueDate() + " | " + mDemand.getDueTime());
     }
 
+    private void buildSenderFinishMenu() {
+        AlertDialog.Builder finishAlert = new AlertDialog.Builder(mActivity);
+        finishAlert.setTitle("Finalizar?");
+        finishAlert.setPositiveButton("Finalizar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                setDemandStatus(Constants.FINISH_STATUS);
+            }
+        });
+        finishAlert.setNegativeButton("Não Finalizar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                startReasonDialog("Marcar como Não Finalizada?",
+                        "Por favor, insira o motivo da opção escohida,  e em seguida clique em \"ok\" para enviá-la para o colaborador responsável",
+                        Constants.MARK_AS_UNFINISHED_DEMAND);
+            }
+        });
+        finishAlert.setNeutralButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        finishAlert.show();
+    }
+
     private void showDueTime() {
         mDueTimeTV.setText(mDemand.getDueDate() + " " + mDemand.getDueTime());
+    }
+
+    private void startTransferActivity(int type) {
+        Intent intent = new Intent(mActivity, TransferActivity.class);
+        startActivityForResult(intent,type);
     }
 
     private void startReasonDialog(String title, String message, int type) {
@@ -654,6 +476,9 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             case Constants.UNDEFINE_STATUS:
                 senderUndefinedMenu();
                 break;
+            case Constants.REOPEN_STATUS:
+                senderReopenMenu();
+                break;
             case Constants.ACCEPT_STATUS:
                 senderAcceptedMenu();
                 break;
@@ -662,6 +487,18 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 break;
             case Constants.REJECT_STATUS:
                 senderRejectedMenu();
+                break;
+            case Constants.DEADLINE_REQUESTED_STATUS:
+                senderDeadlineRequestedMenu();
+                break;
+            case Constants.DEADLINE_ACCEPTED_STATUS:
+                senderDeadlineAcceptedMenu();
+                break;
+            case Constants.CANCEL_REQUESTED_STATUS:
+                senderCancelRequestedMenu();
+                break;
+            case Constants.UNFINISH_STATUS:
+                senderUnfinishedMenu();
                 break;
             default:
                 noMenu();
@@ -672,6 +509,9 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         switch (status) {
             case Constants.UNDEFINE_STATUS:
                 receiverUndefinedMenu();
+                break;
+            case Constants.REOPEN_STATUS:
+                receiverReopenMenu();
                 break;
             case Constants.ACCEPT_STATUS:
                 receiverAcceptedMenu();
@@ -685,6 +525,15 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             case Constants.DEADLINE_ACCEPTED_STATUS:
                 receiverDeadlineAcceptedMenu();
                 break;
+            case Constants.CANCEL_REQUESTED_STATUS:
+                receiverCancelRequestedMenu();
+                break;
+            case Constants.TRANSFER_STATUS:
+                receiverTransferredMenu();
+                break;
+            case Constants.UNFINISH_STATUS:
+                receiverUnfinishedMenu();
+                break;
             default:
                 noMenu();
         }
@@ -694,6 +543,9 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         switch (status) {
             case Constants.UNDEFINE_STATUS:
                 superiorUndefinedMenu();
+                break;
+            case Constants.REOPEN_STATUS:
+                superiorReopenMenu();
                 break;
             case Constants.ACCEPT_STATUS:
                 superiorAcceptedMenu();
@@ -707,33 +559,79 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             case Constants.DEADLINE_REQUESTED_STATUS:
                 superiorDeadlineRequestedMenu();
                 break;
+            case Constants.REJECT_STATUS:
+                superiorRejectedMenu();
+                break;
+            case Constants.UNFINISH_STATUS:
+                superiorUnfinishedMenu();
+                break;
+            case Constants.CANCEL_REQUESTED_STATUS:
+                superiorCancelRequestedMenu();
+                break;
             default:
                 noMenu();
         }
     }
 
+    private void senderCancelRequestedMenu() {
+        showDemandReason(mDemand);
+        mMenuTag = "sender_cancel_requested_menu";
+    }
+
+    private void senderUnfinishedMenu() {
+        showDemandReason(mDemand);
+        mMenuTag = "sender_unfinished_menu";
+    }
+
     private void senderRejectedMenu() {
-        mFabMenu.setVisibility(View.VISIBLE);
-        mFabMenu.show();
+        if (mDemand.getReason() != null) {
+            if (mDemand.getReason().getServerId() == Constants.REASON_MISSING_DOCUMENT) {
+                mFabMenu.show();
+            } else {
+                noMenu();
+            }
+        }
         mMenuTag = "sender_reject_menu";
     }
 
     private void senderDoneMenu() {
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "sender_done_menu";
     }
 
     private void senderAcceptedMenu() {
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "sender_accepted_menu";
     }
 
     private void senderUndefinedMenu() {
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "sender_undefined_menu";
+    }
+
+    private void senderReopenMenu() {
+        mFabMenu.show();
+        mMenuTag = "sender_reopen_menu";
+    }
+
+    private void senderDeadlineRequestedMenu() {
+        mFabMenu.show();
+        mMenuTag = "sender_deadline_requested_menu";
+    }
+
+    private void senderDeadlineAcceptedMenu() {
+        mFabMenu.show();
+        mMenuTag = "sender_deadline_accepted_menu";
+    }
+
+    private void superiorCancelRequestedMenu() {
+        showDemandReason(mDemand);
+        mMenuTag = "superior_cancel_requested_menu";
+    }
+
+    private void superiorUnfinishedMenu() {
+        showDemandReason(mDemand);
+        mMenuTag = "superior_unfinished_menu";
     }
 
     private void superiorAcceptedMenu() {
@@ -741,13 +639,17 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void superiorUndefinedMenu() {
+        showDemandReason(mDemand);
         mMenuTag = "superior_undefined_menu";
+    }
+
+    private void superiorReopenMenu() {
+        mMenuTag =  "superior_reopen_menu";
     }
 
     private void superiorTransferredMenu() {
         showDemandReason(mDemand);
         if (checkDemandAuthority(mDemand.getId(), mCurrentUser.getId())) {
-            mFabMenu.setVisibility(View.VISIBLE);
             mFabMenu.show();
             mMenuTag = "superior_transferred_menu";
         } else {
@@ -757,7 +659,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
 
     private void superiorDeadlineRequestedMenu() {
         showDemandReason(mDemand);
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "superior_deadline_requested_menu";
         changeMenuState();
@@ -765,6 +666,10 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
 
     private void superiorDeadlineAcceptedMenu(){
         mMenuTag = "superior_deadline_accepted_menu";
+    }
+
+    private void superiorRejectedMenu() {
+        mMenuTag = "superior_rejected_menu";
     }
 
     private boolean checkDemandAuthority(int demandId, int userId) {
@@ -789,29 +694,48 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void receiverAcceptedMenu() {
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "receiver_accepted_menu";
     }
 
+    private void receiverUnfinishedMenu() {
+        showDemandReason(mDemand);
+        mFabMenu.show();
+        mMenuTag = "receiver_unfinished_menu";
+    }
+
     private void receiverUndefinedMenu() {
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "receiver_undefined_menu";
         changeMenuState();
     }
 
+    private void receiverReopenMenu() {
+        mFabMenu.show();
+        mMenuTag = "receiver_reopen_menu";
+        changeMenuState();
+    }
+
     private void receiverDeadlineRequestedMenu() {
         showDemandReason(mDemand);
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "receiver_deadline_requested_menu";
     }
 
     private void receiverDeadlineAcceptedMenu(){
-        mFabMenu.setVisibility(View.VISIBLE);
         mFabMenu.show();
         mMenuTag = "receiver_deadline_accepted_menu";
+    }
+
+    private void receiverCancelRequestedMenu() {
+        showDemandReason(mDemand);
+        mFabMenu.show();
+        mMenuTag = "receiver_cancel_requested_menu";
+        changeMenuState();
+    }
+
+    private void receiverTransferredMenu(){
+        mMenuTag = "receiver_transferred_menu";
     }
 
     private void changeMenuState() {
@@ -896,59 +820,13 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                         setListener(new ViewPropertyAnimatorListener() {
                             @Override
                             public void onAnimationStart(View view) {
-                                if (mPage == 4) { // if Canceled Activity
-                                    mFabReopen.hide();
-                                    mReopenTV.setVisibility(View.INVISIBLE);
-                                    mFabReject.setVisibility(View.GONE);
-                                    mRejectTV.setVisibility(View.GONE);
-                                    mFabLater.setVisibility(View.GONE);
-                                    mLaterTV.setVisibility(View.GONE);
-                                    mFabYes.setVisibility(View.GONE);
-                                    mYesTV.setVisibility(View.GONE);
-                                    mFabNo.setVisibility(View.GONE);
-                                    mNoTV.setVisibility(View.GONE);
-                                } else if (mPage == 5){ // if Accepted Activity
-                                    mFabNo.hide();
-                                    mNoTV.setVisibility(View.INVISIBLE);
-                                    mFabReject.setVisibility(View.GONE);
-                                    mRejectTV.setVisibility(View.GONE);
-                                    mFabLater.setVisibility(View.GONE);
-                                    mLaterTV.setVisibility(View.GONE);
-                                    mFabYes.setVisibility(View.GONE);
-                                    mYesTV.setVisibility(View.GONE);
-                                    mFabReopen.setVisibility(View.GONE);
-                                    mReopenTV.setVisibility(View.GONE);
-                                } else if(mPage == 2
-                                        && (mDemand.getStatus().equals(Constants.CANCEL_STATUS)
-                                        || mDemand.getStatus().equals(Constants.REJECT_STATUS))) { // if Received Tab (canceled demand)
-                                    mFabResend.hide();
-                                    mResendTV.setVisibility(View.INVISIBLE);
-                                    mFabNo.setVisibility(View.GONE);
-                                    mNoTV.setVisibility(View.GONE);
-                                    mFabReject.setVisibility(View.GONE);
-                                    mRejectTV.setVisibility(View.GONE);
-                                    mFabLater.setVisibility(View.GONE);
-                                    mLaterTV.setVisibility(View.GONE);
-                                    mFabYes.setVisibility(View.GONE);
-                                    mYesTV.setVisibility(View.GONE);
-                                    mFabReopen.setVisibility(View.GONE);
-                                    mReopenTV.setVisibility(View.GONE);
-                                } else {
-                                    mFabReject.hide();
-                                    mRejectTV.setVisibility(View.INVISIBLE);
-                                    mFabLater.hide();
-                                    mLaterTV.setVisibility(View.INVISIBLE);
-                                    mFabYes.hide();
-                                    mYesTV.setVisibility(View.INVISIBLE);
-                                }
+                               noMenu();
                             }
-
                             @Override
                             public void onAnimationEnd(View view) {
                                 mTurned = false;
                                 mFabMenu.hide();
                             }
-
                             @Override
                             public void onAnimationCancel(View view) {
                                 mTurned = true;
@@ -986,11 +864,68 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                     break;
                 case Constants.DEADLINE_DEMAND:
                     predefinedReason = (PredefinedReason) data.getSerializableExtra(Constants.INTENT_REJECT_PREDEFINED_REASON);
-                    attemptDeadlineRequest(mDemand,predefinedReason);
+                    attemptDeadlineRequest(mDemand, predefinedReason);
+                    break;
+                case Constants.SUPERIOR_TRANSFER_DEMAND:
+                    User user = (User) data.getSerializableExtra(Constants.INTENT_USER);
+                    Log.d(TAG, user.toString());
+                    attemptTransferDemand(mDemand.getId(), user.getId());
+                    break;
+                case Constants.CANCEL_REQUEST_DEMAND:
+                    predefinedReason = (PredefinedReason) data.getSerializableExtra(Constants.INTENT_REJECT_PREDEFINED_REASON);
+                    attemptCancelRequest(mDemand, predefinedReason);
+                    break;
+                case Constants.CANCEL_ACCEPT_DEMAND:
+                    predefinedReason = (PredefinedReason) data.getSerializableExtra(Constants.INTENT_REJECT_PREDEFINED_REASON);
+                    attemptNotAcceptCancelRequest(mDemand, predefinedReason);
+                    break;
+                case Constants.MARK_AS_UNFINISHED_DEMAND:
+                    predefinedReason = (PredefinedReason) data.getSerializableExtra(Constants.INTENT_REJECT_PREDEFINED_REASON);
+                    attemptMarkAsUnfinished(mDemand, predefinedReason);
                     break;
             }
         } else {
             Log.e(TAG, "OnActivityResult failed!!!");
+        }
+    }
+
+    private void attemptMarkAsUnfinished(Demand demand, PredefinedReason predefinedReason) {
+        if (mMarkAsUnfinishedTask == null && CommonUtils.isOnline(mActivity)) {
+            mMarkAsUnfinishedTask = new MarkAsUnfinishedTask(demand.getId(), predefinedReason);
+            mMarkAsUnfinishedTask.execute();
+        } else {
+            Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+    }
+
+    private void attemptCancelRequest(Demand demand, PredefinedReason predefinedReason) {
+        if (mCancelTask == null && CommonUtils.isOnline(mActivity)) {
+            mCancelTask = new CancelTask(demand.getId(), predefinedReason);
+            mCancelTask.execute("request");
+        } else {
+            Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+    }
+
+    private void attemptNotAcceptCancelRequest(Demand demand, PredefinedReason predefinedReason) {
+        if (mCancelTask == null && CommonUtils.isOnline(mActivity)) {
+            mCancelTask = new CancelTask(demand.getId(), predefinedReason);
+            mCancelTask.execute("not-accept");
+        } else {
+            Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+    }
+
+    private void attemptTransferDemand(int demandId, int userId) {
+        if (mAdminTransferTask == null && CommonUtils.isOnline(mActivity)){
+            mAdminTransferTask = new AdminTransferTask(demandId, userId);
+            mAdminTransferTask.execute();
+        } else {
+            Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
         }
     }
 
@@ -1004,10 +939,10 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         }
     }
 
-    private void attemptDeadlineAccept(Demand demand) {
+    private void attemptDeadlineAccept(Demand demand, String option) {
             if (mDeadlineAcceptedTask == null && CommonUtils.isOnline(mActivity)) {
                 mDeadlineAcceptedTask = new DeadlineAcceptedTask(demand.getId());
-                mDeadlineAcceptedTask.execute();
+                mDeadlineAcceptedTask.execute(option);
             } else {
                 Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
@@ -1028,16 +963,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     public boolean onSupportNavigateUp(){
         finish();
         return true;
-    }
-
-    private void setDemandPrior(String s) {
-        if (mPriorTask == null && CommonUtils.isOnline(mActivity)){
-            mPriorTask = new PriorTask(mDemand.getId(), s);
-            mPriorTask.execute();
-        } else {
-            Snackbar.make(mPriorTV, R.string.internet_error, Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-        }
     }
 
     private void showDemandPrior(String prior) {
@@ -1085,8 +1010,18 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 break;
             case Constants.DONE_STATUS: // Done.
                 description = R.string.done_demand_info;
-                drawable = R.drawable.ic_assignment_turned_in_white_24dp;
+                drawable = R.drawable.ic_check_circle_black_24dp;
                 color = ContextCompat.getColor(this,R.color.darkgreen);
+                break;
+            case Constants.FINISH_STATUS: // Done.
+                description = R.string.finished_demand_info;
+                drawable = R.drawable.ic_assignment_turned_in_white_24dp;
+                color = ContextCompat.getColor(this,R.color.dGreen);
+                break;
+            case Constants.UNFINISH_STATUS: // Unfinished.
+                description = R.string.unfinished_demand_info;
+                drawable = R.drawable.ic_assignment_return_black_24dp;
+                color = ContextCompat.getColor(this, R.color.Black);
                 break;
             case Constants.ACCEPT_STATUS: // Accepted.
                 description = R.string.accepted_demand_info;
@@ -1099,8 +1034,13 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 color = ContextCompat.getColor(this,R.color.darkred);
                 showDemandReason(mDemand);
                 break;
-            case Constants.CANCEL_STATUS: //Cancelled
-                description = R.string.canceled_demand_info;
+            case Constants.CANCEL_REQUESTED_STATUS: //Request to cancel.
+                description = R.string.cancel_requested_demand_info;
+                drawable = R.drawable.ic_cancel_black_24dp;
+                color = ContextCompat.getColor(this,R.color.OrangeRed);
+                break;
+            case Constants.CANCEL_ACCEPTED_STATUS: //Cancelled
+                description = R.string.cancel_accepted_demand_info;
                 drawable = R.drawable.ic_cancel_black_24dp;
                 color = ContextCompat.getColor(this,R.color.red);
                 break;
@@ -1115,6 +1055,10 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 color = ContextCompat.getColor(this, R.color.DarkOrchid);
                 break;
             case Constants.REOPEN_STATUS: //Reopen
+                description = R.string.reopen_demand_info;
+                drawable = R.drawable.ic_settings_backup_restore_black_24dp;
+                color = ContextCompat.getColor(this,R.color.Orange);
+                break;
             case Constants.UNDEFINE_STATUS: //Undefined
                 description = R.string.undefined_demand_info;
                 drawable = R.drawable.ic_adjust_black_24dp;
@@ -1144,9 +1088,17 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         }
         objDrawable = objDrawable.mutate();
 
-        mStatusTV.setText(getString(description));
+        mStatusTV.setText(getString(description) + getPostponedCounter(mDemand));
         mStatusTV.setCompoundDrawablesWithIntrinsicBounds(null,null, objDrawable,null);
         mStatusTV.getCompoundDrawables()[2].setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }
+
+    private String getPostponedCounter(Demand demand) {
+        String s = "";
+        if(demand.getStatus().equals(Constants.DEADLINE_ACCEPTED_STATUS)) {
+            s = " (" + demand.getPostponed() + "x)";
+        }
+        return s;
     }
 
     private void showDemandReason(Demand demand) {
@@ -1161,12 +1113,17 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                     + reason.getTitle()
                     + ") "
                     + reason.getDescription();
-            mReason.setText(reasonString);
-            mReason.setVisibility(View.VISIBLE);
+            mReasonTV.setText(reasonString);
+            mReasonTV.setVisibility(View.VISIBLE);
         } else {
             Log.d(TAG, "Reason null");
-            mReason.setVisibility(View.GONE);
+            mReasonTV.setVisibility(View.GONE);
         }
+    }
+
+    private void hideDemandReason(Demand demand) {
+            mReasonTV.setVisibility(View.GONE);
+            Log.d(TAG, "in hide reason");
     }
 
     private void setDemandStatus(String status){
@@ -1187,91 +1144,99 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mPriorTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
-    public void setPostponeTime(int postponeTime) {
-        // Set an alarm notification.
-        Intent receiverIntent = new Intent(this, AlarmReceiver.class);
-        int type = Constants.POSTPONE_ALARM_TAG;
-        receiverIntent.setType("" + type);
-        receiverIntent.putExtra(Constants.INTENT_DEMAND, mDemand);
-        receiverIntent.putExtra(Constants.INTENT_PAGE, mPage);
-        receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_TRIO_MENU);
+    public void setReminder(Demand demand, int postponeTime) {
         Calendar c = Calendar.getInstance();
-        double cBefore = c.getTimeInMillis();
-        Log.e(TAG, "Calendar instance:" + c.getTimeInMillis() + " postpon:" + postponeTime);
         c.add(Calendar.DAY_OF_YEAR, postponeTime);
-        Log.e(TAG, "Calendar added postpone time:" + c.getTimeInMillis());
-        long cAfter = c.getTimeInMillis();
-        //Log.e(TAG, "Time in days added:" + ((cAfter - cBefore) * 1000)/3600/24);
-        Log.e(TAG, "Time in days added:" + ((cAfter - cBefore) * 1000)/60);
-       // AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-       // am.set(AlarmManager.RTC_WAKEUP, timeInMillis, alarmSender);
-        MyAlarmManager.addAlarm(this, receiverIntent, mDemand.getId(), type, cAfter);
-        // Change status state on server.
-        //setDemandStatus(Constants.POSTPONE_STATUS);
+        long reminderTimeInMillis = c.getTimeInMillis();
+        CommonUtils.setAlarm(
+                this,
+                reminderTimeInMillis,
+                demand,
+                Constants.REMIND_ME_ALARM_TAG,
+                mPage,
+                mMenuType
+        );
+        String reminderDate = CommonUtils.convertMillisToDate(reminderTimeInMillis);
+        String reminderTime = CommonUtils.convertMillisToTime(reminderTimeInMillis);
+        Snackbar.make(mFabLater, "Lembrete adicionado para "
+                + reminderDate
+                + " "
+                + reminderTime, Snackbar.LENGTH_LONG).show();
     }
 
     @Override
     public void onClick(View v) {
-        rotate(mTurned);
-        switch (mMenuTag) {
-            /* receiver section --- */
-            case "receiver_accepted_menu":
-                showItems(asList(mFabDone, mFabLater, mFabTransfer, mFabDeadline));
-                break;
-            case "receiver_undefined_menu":
-                rotate(mTurned);
-                buildReceiverUndefinedMenu();
-                break;
-            case "receiver_deadline_requested_menu":
-                showItems(asList(mFabDone, mFabLater, mFabTransfer));
-                break;
-            case "receiver_deadline_accepted_menu":
-                showItems(asList(mFabDone, mFabLater, mFabTransfer, mFabDeadline));
-                break;
-            case "receiver_done_menu":
-            case "receiver_finished_menu":
-                noMenu();
-                break;
-            /* --- receiver section */
+        if (v.getId() == mFabMenu.getId()) {
+            rotate(mTurned);
+            switch (mMenuTag) {
+                /* receiver section --- */
+                case "receiver_unfinished_menu":
+                case "receiver_accepted_menu":
+                    showItems(asList(mFabDone, mFabLater, mFabTransfer, mFabDeadline));
+                    break;
+                case "receiver_reopen_menu":
+                case "receiver_undefined_menu":
+                    rotate(mTurned);
+                    buildReceiverUndefinedMenu();
+                    break;
+                case "receiver_deadline_requested_menu":
+                    showItems(asList(mFabDone, mFabLater, mFabTransfer));
+                    break;
+                case "receiver_deadline_accepted_menu":
+                    showItems(asList(mFabDone, mFabLater, mFabTransfer, mFabDeadline));
+                    break;
+                case "receiver_cancel_requested_menu":
+                    rotate(mTurned);
+                    buildReceiverCancelRequestedMenu();
+                    break;
+                case "receiver_transferred_menu":
+                case "receiver_done_menu":
+                case "receiver_finished_menu":
+                    noMenu();
+                    break;
+                /* --- receiver section */
 
-            /* sender section --- */
-            case "sender_done_menu":
-                showItems(asList(mFabReopen, mFabFinish));
-                break;
-            case "sender_reject_menu":
-                showItems(asList(mFabReopen));
-                break;
-            case "sender_accepted_menu":
-                showItems(asList(mFabNo));
-                break;
-            case "sender_undefined_menu":
-                showItems(asList(mFabNo));
-                break;
-            /* --- sender section */
+                /* sender section --- */
+                case "sender_done_menu":
+                    showItems(asList(mFabFinish));
+                    break;
+                case "sender_reject_menu":
+                    showItems(asList(mFabReopen));
+                    break;
+                case "sender_deadline_requested_menu":
+                case "sender_deadline_accepted_menu":
+                case "sender_accepted_menu":
+                case "sender_reopen_menu":
+                case "sender_undefined_menu":
+                    showItems(asList(mFabNo));
+                    break;
+                /* --- sender section */
 
-            /* superior section --- */
-            case "superior_accepted_menu":
-            case "superior_undefined_menu":
-                noMenu();
-                break;
-            case "superior_transferred_menu":
-                showItems(asList(mFabTransfer, mFabReject, mFabLater));
-                break;
-            case "superior_deadline_requested_menu":
-                rotate(mTurned);
-                buildSuperiorDeadlineRequestedMenu();
-                break;
-            case "superior_deadline_accepted_menu":
-                noMenu();
-                break;
-            /* --- superior section */
+                /* superior section --- */
+                case "superior_transferred_menu":
+                    showItems(asList(mFabTransfer, mFabReject, mFabLater));
+                    break;
+                case "superior_deadline_requested_menu":
+                    rotate(mTurned);
+                    buildSuperiorDeadlineRequestedMenu();
+                    break;
+                case "superior_unfinished_menu":
+                case "superior_accepted_menu":
+                case "superior_reopen_menu":
+                case "superior_undefined_menu":
+                case "superior_deadline_accepted_menu":
+                case "superior_rejected_menu":
+                    noMenu();
+                    break;
+                /* --- superior section */
 
-            case "no_menu":
-                noMenu();
-                break;
+                case "no_menu":
+                    noMenu();
+                    break;
 
-            default:
-                noMenu();
+                default:
+                    noMenu();
+            }
         }
     }
 
@@ -1282,12 +1247,13 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         dialog.setPositiveButton("SIM", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                attemptDeadlineAccept(mDemand);
+                attemptDeadlineAccept(mDemand, "accept");
             }
         });
         dialog.setNegativeButton("NÃO", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                attemptDeadlineAccept(mDemand, "not-accept");
             }
         });
         dialog.create();
@@ -1317,6 +1283,29 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         dialog.show();
     }
 
+    private void buildReceiverCancelRequestedMenu() {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(mActivity);
+        dialog.setTitle(mDemand.getReceiver().getName());
+        dialog.setMessage("Aceita a solicitação de cancelamento?");
+        dialog.setPositiveButton("SIM", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                setDemandStatus(Constants.CANCEL_ACCEPTED_STATUS);
+            }
+        });
+        dialog.setNegativeButton("NÃO", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(mActivity, RejectDialogActivity.class);
+                intent.putExtra("title", "Não Aceita?");
+                intent.putExtra("message", "Por favor, insira o motivo, e em seguida clique em \"OK\" para abortar o cancelamento.");
+                startActivityForResult(intent,Constants.CANCEL_ACCEPT_DEMAND);
+            }
+        });
+        dialog.create();
+        dialog.show();
+    }
+
     private void updateAccepted(Demand demandResponse) {
         restoreMenuState(); // back to normal form with a '+'.
         handleMenu(mMenuType, mDemand.getStatus());
@@ -1325,6 +1314,57 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private void updateDeadlineAccepted(Demand demandResponse) {
         restoreMenuState();
         handleMenu(mMenuType, mDemand.getStatus());
+    }
+
+    public String generateActivityTitle() {
+        String activityTitle;
+        switch(mPage) {
+            case Constants.ADMIN_PAGE:
+                activityTitle = "Demanda (admin)";
+                break;
+            case Constants.RECEIVED_PAGE:
+                activityTitle = "Demanda Recebida";
+                break;
+            case Constants.SENT_PAGE:
+                activityTitle = "Demanda Enviada";
+                break;
+            case Constants.STATUS_PAGE:
+                switch (mDemand.getStatus()){
+                    case Constants.DONE_STATUS:
+                        activityTitle = "Demanda Concluída (admin)";
+                        break;
+                    case Constants.ACCEPT_STATUS:
+                        activityTitle = "Demanda Deferida (admin)";
+                        break;
+                    case Constants.POSTPONE_STATUS:
+                        activityTitle = "Demanda Adiada (admin)";
+                        break;
+                    case Constants.CANCEL_ACCEPTED_STATUS:
+                        activityTitle = "Demanda Cancelada (admin)";
+                        break;
+                    case Constants.REJECT_STATUS:
+                        activityTitle = "Demanda Indeferida (admin)";
+                        break;
+                    case Constants.TRANSFER_STATUS:
+                        activityTitle = "Demanda Transferida (admin)";
+                        break;
+                    // These last two won't be be accessed so far.
+                    case Constants.UNDEFINE_STATUS:
+                        activityTitle = "Demanda Não Definida (admin)";
+                        break;
+                    case Constants.LATE_STATUS:
+                        activityTitle = "Demanda Atrasada (admin)";
+                        break;
+                    // These last two.
+                    default:
+                        activityTitle = "Demanda (admin)";
+                }
+                break;
+            case Constants.CREATE_PAGE:
+            default:
+                activityTitle = "Demanda";
+        }
+        return activityTitle;
     }
 
     private class SendDemandTask extends  AsyncTask<Void, Void, String>{
@@ -1559,10 +1599,15 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                             message = "Demanda Adiada com Sucesso.";
                             mShouldCancelAlarm = false;
                             break;
-                        case Constants.CANCEL_STATUS:
+                        case Constants.CANCEL_ACCEPTED_STATUS:
+                            mShouldCancelAlarm = true;
+                            restoreMenuState();
+                            showDemandReason(demandResponse);
+                            handleMenu(mMenuType,demandResponse.getStatus());
                             message = "Demanda Cancelada com Sucesso.";
                             break;
                         case Constants.REOPEN_STATUS:
+                            handleMenu(mMenuType, demandResponse.getStatus());
                             message = "Demanda Reaberta com Sucesso.";
                             break;
                         case Constants.REJECT_STATUS:
@@ -1570,8 +1615,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                             message = "Demanda Indeferida com Sucesso.";
                             break;
                         case Constants.DONE_STATUS:
-                            handleMenu(mMenuType, mDemand.getStatus());
+                            handleMenu(mMenuType,demandResponse.getStatus());
                             message = "Demanda Concluída com Sucesso.";
+                            break;
+                        case Constants.FINISH_STATUS:
+                            handleMenu(mMenuType,demandResponse.getStatus());
+                            message = "Demanda Finalizada com Sucesso.";
                             mShouldCancelAlarm = true;
                             break;
                         default:
@@ -1591,7 +1640,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                     throw new JSONException("success hit false!");
                 }
             } catch (JSONException e) {
-                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG)
+                Snackbar.make(mFabMenu, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }
@@ -1685,6 +1734,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                             message = "Demanda Indeferida com Sucesso.";
                             CommonUtils.cancelAllAlarms(demandResponse, mActivity);
                             showDemandReason(demandResponse);
+                            handleMenu(mMenuType,Constants.REJECT_STATUS);
                             break;
                         default:
                             message = "Feito.";
@@ -1791,7 +1841,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                             message = "Demanda transferida com Sucesso.";
                             CommonUtils.cancelAllAlarms(demandResponse, mActivity);
                             showDemandReason(demandResponse);
-                            noMenu();
+                            handleMenu(mMenuType,Constants.TRANSFER_STATUS);
                             break;
                         default:
                             message = "A demanda não pôde ser transferida.";
@@ -1890,6 +1940,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                         case Constants.DEADLINE_REQUESTED_STATUS:
                             message = "Solicitação enviada com Sucesso.";
                             handleMenu(mMenuType,demandResponse.getStatus());
+                            rotate(mTurned);
                             break;
                         default:
                             message = "Algo errado!.";
@@ -1910,7 +1961,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         }
     }
 
-    public class DeadlineAcceptedTask extends AsyncTask<Void, Void, String> {
+    public class DeadlineAcceptedTask extends AsyncTask<String, Void, String> {
         private long demandId;
 
         public DeadlineAcceptedTask(long demandId) {
@@ -1926,10 +1977,10 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         }
 
         @Override
-        protected String doInBackground(Void... voids) {
+        protected String doInBackground(String... strings) {
             ContentValues values = new ContentValues();
             values.put("demand_id", demandId);
-            return CommonUtils.POST("/send/deadline-accept", values);
+            return CommonUtils.POST("/send/deadline-" + strings[0], values);
         }
 
         @Override
@@ -1987,7 +2038,8 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                             handleMenu(mMenuType,demandResponse.getStatus());
                             break;
                         default:
-                            message = "Ops! Algo deu errado.";
+                            handleMenu(mMenuType, demandResponse.getStatus());
+                            message = "Solicitação não acieta.";
                     }
 
                     Snackbar.make(mFabMenu, message, Snackbar.LENGTH_LONG).show();
@@ -1997,6 +2049,312 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 }
             } catch (JSONException e) {
                 Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG).show();
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    public class AdminTransferTask extends AsyncTask<Void, Void, String> {
+        private long demandId;
+        private long userId;
+
+        public AdminTransferTask(long demandId, long userId) {
+            this.demandId = demandId;
+            this.userId = userId;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDDemand.setMessage(getString(R.string.progress_dialog_wait));
+            mPDDemand.setCancelable(false);
+            mPDDemand.show();
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            ContentValues values = new ContentValues();
+            values.put("demand_id", demandId);
+            values.put("new_user_id", userId);
+            return CommonUtils.POST("/send/transfer", values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mAdminTransferTask = null;
+
+            if (mPDDemand.isShowing()){
+                mPDDemand.dismiss();
+            }
+
+            Log.e(TAG, s);
+
+            try {
+                JSONObject jsonObject;
+                JSONObject demandJson;
+                JSONObject senderJson;
+                JSONObject receiverJson;
+                JSONObject demandTypeJson;
+                Demand demandResponse;
+                boolean success;
+
+                jsonObject = new JSONObject(s);
+                success = jsonObject.getBoolean("success");
+
+                if (success) {
+                    senderJson = jsonObject.getJSONObject("sender");
+                    receiverJson = jsonObject.getJSONObject("receiver");
+                    demandJson = jsonObject.getJSONObject("demand");
+
+                    JSONObject reasonJson;
+                    PredefinedReason reason = null;
+                    DemandType demandType = null;
+
+                    if(jsonObject.has("reason")){
+                        reasonJson = jsonObject.getJSONObject("reason");
+                        reason = PredefinedReason.build(reasonJson);
+                        Log.e(TAG, " reason:" + reason.toString());
+                    }
+
+                    if (!jsonObject.isNull("demand_type")){
+                        demandTypeJson = jsonObject.getJSONObject("demand_type");
+                        demandType = DemandType.build(demandTypeJson);
+                    }
+
+                    User sender = User.build(senderJson);
+                    User receiver = User.build(receiverJson);
+                    demandResponse = Demand.build(sender, receiver, reason, demandType, demandJson);
+
+                    showDemandStatus(demandResponse.getStatus());
+
+                    String message;
+                    switch(demandResponse.getStatus()){
+                        case Constants.UNDEFINE_STATUS:
+                            mDemand = demandResponse;
+                            message = "Demanda transferida com Sucesso.";
+                            CommonUtils.cancelAllAlarms(demandResponse, mActivity);
+                            CommonUtils.updateDemandDB(Constants.UPDATE_STATUS, demandResponse, mActivity);
+                            handleMenu(mMenuType,Constants.UNDEFINE_STATUS);
+                            Log.d(TAG, "(transfer) new receiver: " + demandResponse.getReceiver().toString());
+                            mReceiverTV.setText("Para: " + demandResponse.getReceiver().getName());
+                            hideDemandReason(mDemand);
+                            break;
+                        default:
+                            message = "A demanda não pôde ser transferida.";
+                    }
+
+                    Snackbar.make(mFabMenu, message, Snackbar.LENGTH_LONG).show();
+                } else {
+                    throw new JSONException("success hit false!");
+                }
+            } catch (JSONException e) {
+                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG).show();
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    public class CancelTask extends AsyncTask<String, Void, String> {
+        private long demandId;
+        private PredefinedReason predefinedReason;
+
+        public CancelTask(long demandId, PredefinedReason predefinedReason) {
+            this.demandId = demandId;
+            this.predefinedReason = predefinedReason;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDDemand.setMessage(getString(R.string.progress_dialog_wait));
+            mPDDemand.setCancelable(false);
+            mPDDemand.show();
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            ContentValues values = new ContentValues();
+            values.put("demand_id", demandId);
+            values.put("reason_id", predefinedReason.getServerId());
+            values.put("reason_title", predefinedReason.getTitle());
+            values.put("reason_description", predefinedReason.getDescription());
+            return CommonUtils.POST("/send/cancel-" + strings[0], values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mCancelTask = null;
+
+            if (mPDDemand.isShowing()){
+                mPDDemand.dismiss();
+            }
+
+            Log.e(TAG, s);
+
+            try {
+                JSONObject jsonObject;
+                JSONObject demandJson;
+                JSONObject senderJson;
+                JSONObject receiverJson;
+                JSONObject demandTypeJson;
+                Demand demandResponse;
+                boolean success;
+
+                jsonObject = new JSONObject(s);
+                success = jsonObject.getBoolean("success");
+
+                if (success) {
+                    senderJson = jsonObject.getJSONObject("sender");
+                    receiverJson = jsonObject.getJSONObject("receiver");
+                    demandJson = jsonObject.getJSONObject("demand");
+
+                    JSONObject reasonJson;
+                    PredefinedReason reason = null;
+                    DemandType demandType = null;
+
+                    if(jsonObject.has("reason")){
+                        reasonJson = jsonObject.getJSONObject("reason");
+                        reason = PredefinedReason.build(reasonJson);
+                        Log.e(TAG, " reason:" + reason.toString());
+                    }
+
+                    if (!jsonObject.isNull("demand_type")){
+                        demandTypeJson = jsonObject.getJSONObject("demand_type");
+                        demandType = DemandType.build(demandTypeJson);
+                    }
+
+                    User sender = User.build(senderJson);
+                    User receiver = User.build(receiverJson);
+                    demandResponse = Demand.build(sender, receiver, reason, demandType, demandJson);
+
+                    String message;
+
+                    switch(demandResponse.getStatus()){
+                        case Constants.CANCEL_REQUESTED_STATUS:
+                            message = "Solicitação enviada com Sucesso.";
+                            handleMenu(mMenuType,demandResponse.getStatus());
+                            break;
+                        default:
+                            restoreMenuState();
+                            showDemandReason(demandResponse);
+                            message = "Solicitação recusada com Sucesso.";
+                            handleMenu(mMenuType,demandResponse.getStatus());
+                    }
+
+                    Snackbar.make(mFabMenu, message, Snackbar.LENGTH_LONG).show();
+                    showDemandStatus(demandResponse.getStatus());
+                    showDemandReason(demandResponse);
+                    Log.e(TAG, "demand reason: " + demandResponse.getReason().getTitle());
+                } else {
+                    throw new JSONException("success hit false!");
+                }
+            } catch (JSONException e) {
+                Snackbar.make(mFabYes, R.string.server_error, Snackbar.LENGTH_LONG).show();
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    public class MarkAsUnfinishedTask extends AsyncTask<String, Void, String> {
+        private long demandId;
+        private PredefinedReason predefinedReason;
+
+        public MarkAsUnfinishedTask(long demandId, PredefinedReason predefinedReason) {
+            this.demandId = demandId;
+            this.predefinedReason = predefinedReason;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPDDemand.setMessage(getString(R.string.progress_dialog_wait));
+            mPDDemand.setCancelable(false);
+            mPDDemand.show();
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            ContentValues values = new ContentValues();
+            values.put("demand_id", demandId);
+            values.put("reason_id", predefinedReason.getServerId());
+            values.put("reason_title", predefinedReason.getTitle());
+            values.put("reason_description", predefinedReason.getDescription());
+            return CommonUtils.POST("/send/mark-as-unfinished", values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mMarkAsUnfinishedTask = null;
+
+            if (mPDDemand.isShowing()){
+                mPDDemand.dismiss();
+            }
+
+            Log.e(TAG, s);
+
+            try {
+                JSONObject jsonObject;
+                JSONObject demandJson;
+                JSONObject senderJson;
+                JSONObject receiverJson;
+                JSONObject demandTypeJson;
+                Demand demandResponse;
+                boolean success;
+
+                jsonObject = new JSONObject(s);
+                success = jsonObject.getBoolean("success");
+
+                if (success) {
+                    senderJson = jsonObject.getJSONObject("sender");
+                    receiverJson = jsonObject.getJSONObject("receiver");
+                    demandJson = jsonObject.getJSONObject("demand");
+
+                    JSONObject reasonJson;
+                    PredefinedReason reason = null;
+                    DemandType demandType = null;
+
+                    if(jsonObject.has("reason")){
+                        reasonJson = jsonObject.getJSONObject("reason");
+                        reason = PredefinedReason.build(reasonJson);
+                        Log.e(TAG, " reason:" + reason.toString());
+                    }
+
+                    if (!jsonObject.isNull("demand_type")){
+                        demandTypeJson = jsonObject.getJSONObject("demand_type");
+                        demandType = DemandType.build(demandTypeJson);
+                    }
+
+                    User sender = User.build(senderJson);
+                    User receiver = User.build(receiverJson);
+                    demandResponse = Demand.build(sender, receiver, reason, demandType, demandJson);
+
+                    String message;
+
+                    switch(demandResponse.getStatus()){
+                        case Constants.UNFINISH_STATUS:
+                            showDemandReason(demandResponse);
+                            message = "Demanda marcada como Não Finalizada.";
+                            handleMenu(mMenuType,demandResponse.getStatus());
+                            break;
+                        default:
+                            message = "Algo saiu errado! Por favor, tente mais tarde.";
+                            handleMenu(mMenuType,demandResponse.getStatus());
+                    }
+
+                    Snackbar.make(mFabMenu, message, Snackbar.LENGTH_LONG).show();
+                    showDemandStatus(demandResponse.getStatus());
+                    Log.e(TAG, "demand reason: " + demandResponse.getReason().getTitle());
+                } else {
+                    throw new JSONException("success hit false!");
+                }
+            } catch (JSONException e) {
+                Snackbar.make(mFabMenu, R.string.server_error, Snackbar.LENGTH_LONG).show();
                 e.printStackTrace();
             }
 

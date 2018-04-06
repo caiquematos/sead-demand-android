@@ -234,22 +234,12 @@ public class Demand implements Serializable {
 
     public String getDueDate() {
         long timeInMillis = getDueTimeInMillis();
-        Calendar cl = Calendar.getInstance();
-        cl.setTimeInMillis(timeInMillis);  //here your time in miliseconds
-        String date = "" + (cl.get(Calendar.DAY_OF_MONTH) < 10 ? 0 : "") + cl.get(Calendar.DAY_OF_MONTH) + "/"
-                + (cl.get(Calendar.MONTH) < 9 ? 0 : "")  + (cl.get(Calendar.MONTH) + 1) + "/"
-                + cl.get(Calendar.YEAR);
-        return date;
+        return CommonUtils.convertMillisToDate(timeInMillis);
     }
 
     public String getDueTime() {
         long timeInMillis = getDueTimeInMillis();
-        Calendar cl = Calendar.getInstance();
-        cl.setTimeInMillis(timeInMillis);  //here your time in miliseconds
-        String time = "" + cl.get(Calendar.HOUR_OF_DAY) + ":"
-                + (cl.get(Calendar.MINUTE) < 10 ? 0 : "")
-                + cl.get(Calendar.MINUTE);
-        return time;
+        return CommonUtils.convertMillisToTime(timeInMillis);
     }
 
 }

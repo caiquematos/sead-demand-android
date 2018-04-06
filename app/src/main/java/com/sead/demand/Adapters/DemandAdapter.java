@@ -145,7 +145,7 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                     case Constants.REJECT_STATUS:
                         menuType = Constants.SHOW_NO_MENU;
                         break;
-                    case Constants.CANCEL_STATUS:
+                    case Constants.CANCEL_ACCEPTED_STATUS:
                         menuType = Constants.SHOW_REOPEN_MENU;
                         break;
                     case Constants.POSTPONE_STATUS:
@@ -276,6 +276,10 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 drawable = R.drawable.ic_assignment_turned_in_white_24dp;
                 color = ContextCompat.getColor(mContext,R.color.dGreen);
                 break;
+            case Constants.UNFINISH_STATUS: // Unfinished.
+                drawable = R.drawable.ic_assignment_return_black_24dp;
+                color = ContextCompat.getColor(mContext, R.color.Black);
+                break;
             case Constants.ACCEPT_STATUS: // Accepted.
                 drawable = R.drawable.ic_thumb_up_black_24dp;
                 color = ContextCompat.getColor(mContext,R.color.green);
@@ -288,7 +292,11 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
                 drawable = R.drawable.ic_thumb_down_black_24dp;
                 color = ContextCompat.getColor(mContext,R.color.darkred);
                 break;
-            case Constants.CANCEL_STATUS: // Cancelled.
+            case Constants.CANCEL_REQUESTED_STATUS: //Request to cancel.
+                drawable = R.drawable.ic_cancel_black_24dp;
+                color = ContextCompat.getColor(mContext,R.color.OrangeRed);
+                break;
+            case Constants.CANCEL_ACCEPTED_STATUS: //Cancelled
                 drawable = R.drawable.ic_cancel_black_24dp;
                 color = ContextCompat.getColor(mContext,R.color.red);
                 break;

@@ -160,124 +160,161 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Log.d(TAG, "Data Type:" + type + " title:" + title + " text:" + text);
 
-        if( type.equals(Constants.UNLOCK_USER)){
-            try {
-                JSONObject jobJson = new JSONObject(bundle.get("job").toString());
-                com.sead.demand.Entities.Job job = com.sead.demand.Entities.Job.build(jobJson);
-                JSONObject superiorJson = new JSONObject(bundle.get("superior").toString());
-                User superior = User.build(superiorJson);
-                JSONObject userJson = new JSONObject(bundle.get("user").toString());
-                User user = User.build(job, superior, userJson);
-                // Try to add user, but if it already exists, then it'll update it.
-                CommonUtils.storeUserDB(user,type,this);
-                generateNotification(title, text, data);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        } else if (type.equals(Constants.AUTH)){
-            try {
-                JSONObject authJson = new JSONObject(bundle.get("authority").toString());
-                Authority authority = Authority.build(authJson);
-
-                String action = bundle.getString("action");
-                if (action.equals("add")) {
-                    // Try to add authority, but if it already exists, then it'll update it.
-                    CommonUtils.storeAuthDB(authority,type,this);
-                    //generateNotification(title, text, data);
-                    Log.d(TAG, "ADD AUTH. End of the line. Implement notification later: " + authority.toString());
-                } else {
-                    MyDBManager myDBManager = new MyDBManager(this);
-                    int count = myDBManager.deleteAuthById(authority.getId());
-                    Log.d(TAG, "REMOVE AUTH. count:" + count + ". Should remove auth from db: " + authority.toString());
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }else {
-
-            JSONObject reasonJson;
-            JSONObject demandTypeJson;
-            PredefinedReason reason = null;
-            DemandType demandType = null;
-
-            try {
-                // Check if there is a reason attached to this demand.
-                // If yes, create a reason object.
-                if(bundle.get("reason") != null) {
-                    reasonJson = new JSONObject(bundle.get("reason").toString());
-                    reason = PredefinedReason.build(reasonJson);
-                    Log.e(TAG, " reason:" + reason.toString());
-                }
-
-                if(bundle.get("demand_type") != null){
-                    Log.d(TAG, "bundle demand_type: " + bundle.get("demand_type").toString());
-                    demandTypeJson = new JSONObject(bundle.get("demand_type").toString());
-                    demandType = DemandType.build(demandTypeJson);
-                    Log.e(TAG, " type:" + demandType.toString());
-                }
-
-                JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
-                JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
-                JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
-
-                User sender = User.build(senderJson);
-                User receiver = User.build(receiverJson);
-                Demand demand = Demand.build(sender, receiver, reason, demandType, demandJson);
-
-                Log.e(TAG, "demand:" + demand.toString()
-                        + " sender:" + sender.toString()
-                        + " receiver:" + receiver.toString()
-                );
-
-                switch (type) {
-                    case Constants.INSERT_DEMAND_RECEIVED:
-                        Log.d(TAG, "demand received: " + demand.toString());
-                        handleDeadlineAlarm(demand);
-                    case Constants.INSERT_DEMAND_SENT:
-                    case Constants.INSERT_DEMAND_ADMIN:
-                        CommonUtils.storeDemandDB(demand, type, this);
-                        generateNotification(title, text, data);
-                        break;
-                    case Constants.UPDATE_DEMAND:
-                        CommonUtils.updateDemandDB(demand, type, this);
-                        generateNotification(title, text, data);
-                        break;
-                    case Constants.UPDATE_STATUS:
-                        Log.d(TAG, "Handle Now - Update Status:" + demand.getStatus());
-                        switch (demand.getStatus()) {
-                            case Constants.DEADLINE_ACCEPTED_STATUS:
-                                if (demand.getPostponed() != 0) {
-                                    Log.d(TAG, "demand postponed: " + demand.toString());
-                                    handleDeadlineAlarm(demand);
-                                }
-                                break;
-                        }
-                        CommonUtils.updateDemandDB(type, demand, this);
-                        generateNotification(title, text, data);
-                        break;
-                    case Constants.UPDATE_READ:
-                        CommonUtils.updateColumnDB(
-                                FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
-                                demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN),
-                                demand,
-                                type,
-                                this
-                        );
-                        break;
-                }
-
-            } catch (JSONException e){
-                e.printStackTrace();
-            }
+        switch(type) {
+            case Constants.UNLOCK_USER:
+                unlockUser(bundle, type, title, text, data);
+                break;
+            case Constants.AUTH:
+                handleAuthority(bundle, type);
+                break;
+            default:
+                handleDemand(bundle, type, title, text, data);
         }
 
         Log.d(TAG, "Short lived task is done.");
     }
 
+    private void handleDemand(Bundle bundle, String type, String title, String text, Map<String, String> data) {
+        JSONObject reasonJson;
+        JSONObject demandTypeJson;
+        PredefinedReason reason = null;
+        DemandType demandType = null;
+
+        try {
+            if(bundle.get("reason") != null) {
+                reasonJson = new JSONObject(bundle.get("reason").toString());
+                reason = PredefinedReason.build(reasonJson);
+                Log.e(TAG, " reason:" + reason.toString());
+            }
+
+            if(bundle.get("demand_type") != null){
+                Log.d(TAG, "bundle demand_type: " + bundle.get("demand_type").toString());
+                demandTypeJson = new JSONObject(bundle.get("demand_type").toString());
+                demandType = DemandType.build(demandTypeJson);
+                Log.e(TAG, " type:" + demandType.toString());
+            }
+
+            JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
+            JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
+            JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
+
+            User sender = User.build(senderJson);
+            User receiver = User.build(receiverJson);
+            Demand demand = Demand.build(sender, receiver, reason, demandType, demandJson);
+
+            Log.e(TAG, "demand:" + demand.toString()
+                    + " sender:" + sender.toString()
+                    + " receiver:" + receiver.toString()
+            );
+
+            switch (type) {
+                case Constants.INSERT_DEMAND_RECEIVED:
+                    Log.d(TAG, "demand received: " + demand.toString());
+                    handleDeadlineAlarm(demand);
+                case Constants.INSERT_DEMAND_SENT:
+                case Constants.INSERT_DEMAND_ADMIN:
+                    CommonUtils.storeDemandDB(demand, type, this);
+                    generateNotification(title, text, data);
+                    break;
+                case Constants.UPDATE_DEMAND:
+                    CommonUtils.updateDemandDB(demand, type, this);
+                    generateNotification(title, text, data);
+                    break;
+                case Constants.UPDATE_STATUS:
+                    handleUpdateStatus(demand, type, title, text, data);
+                    break;
+                case Constants.UPDATE_READ:
+                    CommonUtils.updateColumnDB(
+                            FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
+                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN),
+                            demand,
+                            type,
+                            this
+                    );
+                    break;
+            }
+
+        } catch (JSONException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void handleUpdateStatus(Demand demand, String type, String title, String text, Map<String, String> data) {
+        Log.d(TAG, "Handle Now - Update Status:" + demand.getStatus());
+        switch (demand.getStatus()) {
+            case Constants.DEADLINE_ACCEPTED_STATUS:
+                if (demand.getPostponed() != 0) {
+                    Log.d(TAG, "demand postponed: " + demand.toString());
+                    handleDeadlineAlarm(demand);
+                }
+                break;
+            case Constants.REOPEN_STATUS:
+                if (this.amITheReceiver(demand.getReceiver())) {
+                    Log.d(TAG, "I am the receiver: " + demand.toString());
+                    handleDeadlineAlarm(demand);
+                }
+        }
+        CommonUtils.updateDemandDB(type, demand, this);
+        generateNotification(title, text, data);
+    }
+
+    private void handleAuthority(Bundle bundle, String type) {
+        try {
+            JSONObject authJson = new JSONObject(bundle.get("authority").toString());
+            Authority authority = Authority.build(authJson);
+
+            String action = bundle.getString("action");
+            if (action.equals("add")) {
+                // Try to add authority, but if it already exists, then it'll update it.
+                CommonUtils.storeAuthDB(authority,type,this);
+                //generateNotification(title, text, data);
+                Log.d(TAG, "ADD AUTH. End of the line. Implement notification later: " + authority.toString());
+            } else {
+                MyDBManager myDBManager = new MyDBManager(this);
+                int count = myDBManager.deleteAuthById(authority.getId());
+                Log.d(TAG, "REMOVE AUTH. count:" + count + ". Should remove auth from db: " + authority.toString());
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void unlockUser(Bundle bundle, String type, String title, String text, Map<String, String> data) {
+        try {
+            JSONObject jobJson = new JSONObject(bundle.get("job").toString());
+            com.sead.demand.Entities.Job job = com.sead.demand.Entities.Job.build(jobJson);
+            JSONObject superiorJson = new JSONObject(bundle.get("superior").toString());
+            User superior = User.build(superiorJson);
+            JSONObject userJson = new JSONObject(bundle.get("user").toString());
+            User user = User.build(job, superior, userJson);
+            CommonUtils.storeUserDB(user,type,this);
+            generateNotification(title, text, data);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void handleDeadlineAlarm(Demand demand) {
+        long demandDueTimeInMillis = demand.getDueTimeInMillis();
+        int warnDueTimeInDays = Constants.DUE_TIME_PREVIOUS_WARNING;
+        long warnDueTimeInMillis = warnDueTimeInDays * 24 * 3600 * 1000;
+        Log.d(TAG, "Warn Time in Millis: " + warnDueTimeInMillis);
+        long warnDemandTimeInMillis = demandDueTimeInMillis - warnDueTimeInMillis;
+        Log.d(TAG, "Warn Demand in Millis: " + warnDemandTimeInMillis);
+
+        // first, set the due time WARNING alarm.
         CommonUtils.setAlarm(
                 this,
-                demand.getDueTimeInMillis(),
+                warnDemandTimeInMillis,
+                demand,
+                Constants.WARN_DUE_TIME_ALARM_TAG,
+                Constants.RECEIVED_PAGE,
+                Constants.RECEIVER_MENU
+        );
+        // finally, set the DUE TIME alarm.
+        CommonUtils.setAlarm(
+                this,
+                demandDueTimeInMillis,
                 demand,
                 Constants.DUE_TIME_ALARM_TAG,
                 Constants.RECEIVED_PAGE,

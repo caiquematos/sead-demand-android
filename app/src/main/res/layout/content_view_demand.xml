@@ -12,65 +12,76 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="start|center_vertical"
         android:elevation="2dp"
+        android:gravity="start|center_vertical"
+        android:orientation="vertical"
         android:padding="@dimen/text_margin">
 
-            <LinearLayout
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/view_demand_subject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Criar Banco de Dados de Certificados de Matrícula"
+                android:textColor="@color/primary_text"
+                android:textIsSelectable="true"
+                android:textSize="@dimen/max_title_size" />
+
+            <TextView
+                android:id="@+id/view_demand_type"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary_text"
+                android:text="Aqui é mostrado o tipo da demanda" />
 
-                <TextView
-                    android:id="@+id/view_demand_subject"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="20sp"
-                    android:textIsSelectable="true"
-                    android:textColor="@color/primary_text"
-                    android:text="Criar Banco de Dados de Certificados de Matrícula"/>
+            <TextView
+                android:id="@+id/view_demand_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:layout_marginTop="2dp"
+                android:drawablePadding="5dp"
+                android:drawableRight="@drawable/ic_fiber_manual_record_black_24dp"
+                android:gravity="center"
+                android:text="Essa demanda foi cancelada"/>
 
-                <TextView
-                    android:id="@+id/view_demand_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Essa demanda foi cancelada"
-                    android:layout_gravity="left"
-                    android:gravity="center"
-                    android:drawableRight="@drawable/ic_fiber_manual_record_black_24dp"/>
+            <TextView
+                android:id="@+id/view_demand_reason"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:layout_marginTop="16dp"
+                android:gravity="left"
+                android:text="Motivo: A demanda não corresponde a esse setor. Caso o texto seja maior, preencher o espaço abaixo."
+                android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/view_demand_reason"
-                    android:visibility="gone"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Motivo: A demanda não corresponde a esse setor. Caso o texto seja maior, preencher o espaço abaixo."
-                    android:layout_gravity="left"
-                    android:gravity="left"/>
+            <TextView
+                android:id="@+id/view_demand_prior"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_weight="50"
+                android:drawableLeft="@drawable/ic_error_black_24dp"
+                android:drawablePadding="4dp"
+                android:gravity="start"
+                android:layout_gravity="center_vertical"
+                android:text="Indefinido (4 - 8 dias)" />
 
-                <TextView
-                    android:id="@+id/view_demand_prior"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="Indefinido"
-                    android:gravity="center"
-                    android:drawableLeft="@drawable/ic_error_black_24dp" />
+            <TextView
+                android:id="@+id/view_demand_due_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="50"
+                android:gravity="end"
+                android:text="13/02/2018 14:25"
+                android:textColor="@color/accent"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/view_demand_due_time"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textStyle="bold"
-                    android:textColor="@color/accent"
-                    android:text="13/02/2018 14:25"
-                    android:gravity="center"
-                    android:layout_gravity="end"/>
-            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 
     <View
@@ -87,38 +98,38 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="@dimen/text_margin"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="@dimen/text_margin">
 
             <TextView
                 android:id="@+id/view_demand_sender"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="15dp"
-                android:textIsSelectable="true"
+                android:text="Marta Maria"
                 android:textColor="@color/primary_text"
-                android:text="Marta Maria"/>
+                android:textIsSelectable="true"
+                android:textSize="@dimen/max_subtitle_size" />
 
             <TextView
                 android:id="@+id/view_demand_receiver"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Para mim"/>
+                android:text="Para mim" />
 
             <TextView
                 android:id="@+id/view_demand_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="10:25 AM"/>
+                android:text="10:25 AM" />
 
             <TextView
                 android:id="@+id/view_demand_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="25dp"
-                android:textIsSelectable="true"
+                android:text="Aqui é o local reservado para o corpo de uma demanda, onde devem estar definidas todas as tarefas que a mesma envolve.\n\nEspaçamento\n\noutro espaçamento e fim da mensagem."
                 android:textColor="@color/primary_text"
-                android:text="Aqui é o local reservado para o corpo de uma demanda, onde devem estar definidas todas as tarefas que a mesma envolve.\n\nEspaçamento\n\noutro espaçamento e fim da mensagem."/>
+                android:textIsSelectable="true" />
 
         </LinearLayout>
 

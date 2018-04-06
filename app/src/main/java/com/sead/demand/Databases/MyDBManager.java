@@ -83,7 +83,7 @@ public class MyDBManager {
 
     // If user already exists, then update it.
     public long addUser(User user){
-
+        Log.d(TAG, "(addUser) user to be added: " + user.toString());
         ContentValues values = new ContentValues();
 
         // Fist: Add Job and Superior if they're not null and don't exist in db.
@@ -94,15 +94,21 @@ public class MyDBManager {
                 Log.e(TAG, "Job not added! Prob it exists already.");
             else Log.e(TAG, "Job added successfully:" + user.getJob().getId());
             values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJob().getId());
+        } else if (user.getJobId() > 0){
+            Log.d(TAG, "addUser: user is null, but job id: " + user.getJobId());
+            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJobId());
         }
 
         // As done right before, must check if Superior is defined.
         if (user.getSuperior() != null) {
-            Log.d(TAG, "superior:" + user.getSuperior().toString());
+            Log.d(TAG, "(addUser) superior:" + user.getSuperior().toString());
             if (addUser(user.getSuperior()) < 0)
                 Log.e(TAG, "Superior not added! Prob it exists already.");
             else Log.e(TAG, "Superior added successfully:" + user.getSuperior().getId());
             values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperior().getId());
+        } else if (user.getSuperiorId() > 0){
+            values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperiorId());
+            Log.d(TAG, "addUser: superior is null, but superior id: " + user.getSuperiorId());
         }
 
         Log.e(TAG, "User position:" + user.getPosition());
@@ -124,9 +130,11 @@ public class MyDBManager {
 
             mDB.close();
 
+            Log.d(TAG, "addUser: new user!");
             return newRowId;
         }else{
             mDB.close();
+            Log.d(TAG, "addUser: update user!");
             return updateUser(user.getId(),values);
         }
     }
@@ -351,6 +359,8 @@ public class MyDBManager {
         );
 
         mDB.close();
+
+        Log.d(TAG, "updateUser: " + values.toString());
 
         return count;
     }
@@ -964,5 +974,15 @@ public class MyDBManager {
         mDB.execSQL(dropQuery);
         dropQuery = "DELETE FROM " + FeedReaderContract.AuthorityEntry.TABLE_NAME;
         mDB.execSQL(dropQuery);
+    }
+
+    public List<User> getAllUsers() {
+        List<User> users = this.searchUsers(null, null);
+        return users;
+    }
+
+    public List<Demand> getAllDemands() {
+        List<Demand> demands = this.searchDemands(null, null);
+        return demands;
     }
 }

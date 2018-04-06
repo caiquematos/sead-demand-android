@@ -320,6 +320,10 @@ public class User implements Serializable{
 
     @Override
     public String toString() {
-        return super.toString();
+        return "(user) id: " + getId()
+                + " name: " + getName()
+                + " email: " + getEmail()
+                + " superior id: " + getSuperiorId()
+                + " superior: " + (getSuperior() == null ? "null" : "" + getSuperior().getId());
     }
 }
