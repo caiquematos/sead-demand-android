@@ -64,7 +64,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Check if message contains a notification payload.
         if (remoteMessage.getNotification() != null && dataBelongToCurrentUser(remoteMessage.getData())) {
             Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
-            sendNotification(remoteMessage.getNotification(), remoteMessage.getData());
+            try {
+                sendNotification(remoteMessage.getNotification(), doMapToBundle(remoteMessage.getData()));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -148,89 +152,74 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
      * @param data
      */
     private void handleNow(Map<String, String> data) {
-        Bundle bundle = doMapToBundle(data);
-        String type = bundle.getString("type");
+        Bundle bundleData = doMapToBundle(data);
+        String type = bundleData.getString("type");
         String title;
         String text;
-
         if (data.get("title") != null) title = data.get("title");
         else title = "Demanda SEAD";
-        if (data.get("text") != null) text = data.get("text");
+        if (data.get("text") != null && !data.get("text").isEmpty()) text = data.get("text");
         else text = "Clique para abrir";
 
-        Log.d(TAG, "Data Type:" + type + " title:" + title + " text:" + text);
+        Log.d(TAG, "(handleNow) DataType:" + type + " title:" + title + " text:" + text);
 
         switch(type) {
             case Constants.UNLOCK_USER:
-                unlockUser(bundle, type, title, text, data);
+                unlockUser(bundleData, type, title, text);
                 break;
             case Constants.AUTH:
-                handleAuthority(bundle, type);
+                handleAuthority(bundleData, type);
                 break;
             default:
-                handleDemand(bundle, type, title, text, data);
+                handleDemand(bundleData, type, title, text);
         }
 
-        Log.d(TAG, "Short lived task is done.");
+        Log.d(TAG, "(handleNow) done!");
     }
 
-    private void handleDemand(Bundle bundle, String type, String title, String text, Map<String, String> data) {
-        JSONObject reasonJson;
-        JSONObject demandTypeJson;
-        PredefinedReason reason = null;
-        DemandType demandType = null;
-
+    private void handleDemand(Bundle data, String type, String title,
+                              String text) {
         try {
-            if(bundle.get("reason") != null) {
-                reasonJson = new JSONObject(bundle.get("reason").toString());
-                reason = PredefinedReason.build(reasonJson);
-                Log.e(TAG, " reason:" + reason.toString());
-            }
+            Demand demand = generateDemand(data);
+            String bigTextTitle = demand.getSubject();
+            String bigText = "De: " + demand.getSender().getName() + "\n\n" + demand.getDescription();
 
-            if(bundle.get("demand_type") != null){
-                Log.d(TAG, "bundle demand_type: " + bundle.get("demand_type").toString());
-                demandTypeJson = new JSONObject(bundle.get("demand_type").toString());
-                demandType = DemandType.build(demandTypeJson);
-                Log.e(TAG, " type:" + demandType.toString());
-            }
-
-            JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
-            JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
-            JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
-
-            User sender = User.build(senderJson);
-            User receiver = User.build(receiverJson);
-            Demand demand = Demand.build(sender, receiver, reason, demandType, demandJson);
-
-            Log.e(TAG, "demand:" + demand.toString()
-                    + " sender:" + sender.toString()
-                    + " receiver:" + receiver.toString()
+            Log.d(TAG, "(handleDemand) demand:" + demand.toString()
+                    + "\nsender:" + demand.getSender().toString()
+                    + "\nreceiver:" + demand.getReceiver().toString()
             );
 
             switch (type) {
                 case Constants.INSERT_DEMAND_RECEIVED:
-                    Log.d(TAG, "demand received: " + demand.toString());
                     handleDeadlineAlarm(demand);
+                    Log.d(TAG, "handleDemand: on " + Constants.INSERT_DEMAND_RECEIVED);
                 case Constants.INSERT_DEMAND_SENT:
+                    Log.d(TAG, "handleDemand: on " + Constants.INSERT_DEMAND_SENT);
                 case Constants.INSERT_DEMAND_ADMIN:
+                    Log.d(TAG, "handleDemand: on " + Constants.INSERT_DEMAND_ADMIN);
                     CommonUtils.storeDemandDB(demand, type, this);
-                    generateNotification(title, text, data);
+                    generateNotification(title, text, bigTextTitle, bigText, data);
                     break;
                 case Constants.UPDATE_DEMAND:
                     CommonUtils.updateDemandDB(demand, type, this);
-                    generateNotification(title, text, data);
+                    generateNotification(title, text, bigTextTitle, bigText, data);
                     break;
                 case Constants.UPDATE_STATUS:
-                    handleUpdateStatus(demand, type, title, text, data);
+                    handleUpdateStatus(demand, type, title, text, bigTextTitle, bigText, data);
                     break;
                 case Constants.UPDATE_READ:
                     CommonUtils.updateColumnDB(
                             FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
-                            demandJson.getString(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN),
+                            demand.getSeen(),
                             demand,
                             type,
                             this
                     );
+                    break;
+                case Constants.LATE_WARNING:
+                    bigTextTitle = title;
+                    bigText = text;
+                    generateNotification(title, text, bigTextTitle, bigText, data);
                     break;
             }
 
@@ -239,23 +228,53 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     }
 
-    private void handleUpdateStatus(Demand demand, String type, String title, String text, Map<String, String> data) {
-        Log.d(TAG, "Handle Now - Update Status:" + demand.getStatus());
+    private Demand generateDemand(Bundle bundle) throws JSONException {
+        JSONObject reasonJson;
+        JSONObject demandTypeJson;
+        PredefinedReason reason = null;
+        DemandType demandType = null;
+
+        if(bundle.get("reason") != null) {
+            reasonJson = new JSONObject(bundle.get("reason").toString());
+            reason = PredefinedReason.build(reasonJson);
+            Log.d(TAG, "(handleDemand) reason:" + reason.toString());
+        } else {
+            Log.e(TAG, "(handleDemand) reason is null");
+        }
+
+        if(bundle.get("demand_type") != null){
+            demandTypeJson = new JSONObject(bundle.get("demand_type").toString());
+            demandType = DemandType.build(demandTypeJson);
+            Log.d(TAG, "(handleDemand) demand type:" + demandType.toString());
+        } else {
+            Log.e(TAG, "(handleDemand) demand type is null");
+        }
+
+        JSONObject senderJson = new JSONObject(bundle.get("sender").toString());
+        JSONObject receiverJson = new JSONObject(bundle.get("receiver").toString());
+        JSONObject demandJson = new JSONObject(bundle.get("demand").toString());
+
+        User sender = User.build(senderJson);
+        User receiver = User.build(receiverJson);
+        return Demand.build(sender, receiver, reason, demandType, demandJson);
+    }
+
+    private void handleUpdateStatus(Demand demand, String type, String title,
+                                    String text, String bigTextTitle, String bigText, Bundle data) throws JSONException {
+        Log.d(TAG, "(handleUpdateStatus) demand status:" + demand.getStatus());
         switch (demand.getStatus()) {
             case Constants.DEADLINE_ACCEPTED_STATUS:
                 if (demand.getPostponed() != 0) {
-                    Log.d(TAG, "demand postponed: " + demand.toString());
                     handleDeadlineAlarm(demand);
                 }
                 break;
             case Constants.REOPEN_STATUS:
                 if (this.amITheReceiver(demand.getReceiver())) {
-                    Log.d(TAG, "I am the receiver: " + demand.toString());
                     handleDeadlineAlarm(demand);
                 }
         }
         CommonUtils.updateDemandDB(type, demand, this);
-        generateNotification(title, text, data);
+        generateNotification(title, text, bigTextTitle, bigText, data);
     }
 
     private void handleAuthority(Bundle bundle, String type) {
@@ -268,39 +287,59 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 // Try to add authority, but if it already exists, then it'll update it.
                 CommonUtils.storeAuthDB(authority,type,this);
                 //generateNotification(title, text, data);
-                Log.d(TAG, "ADD AUTH. End of the line. Implement notification later: " + authority.toString());
+                Log.d(TAG, "(handleAuthority) added authority: " + authority.toString());
             } else {
                 MyDBManager myDBManager = new MyDBManager(this);
                 int count = myDBManager.deleteAuthById(authority.getId());
-                Log.d(TAG, "REMOVE AUTH. count:" + count + ". Should remove auth from db: " + authority.toString());
+                Log.d(TAG, "(handleAuthority) removed authority. count:" + count + ". authority: " + authority.toString());
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
-    private void unlockUser(Bundle bundle, String type, String title, String text, Map<String, String> data) {
+    private void unlockUser(Bundle data, String type, String title, String text) {
+        Log.d(TAG, "(unlockUser)");
         try {
-            JSONObject jobJson = new JSONObject(bundle.get("job").toString());
-            com.sead.demand.Entities.Job job = com.sead.demand.Entities.Job.build(jobJson);
-            JSONObject superiorJson = new JSONObject(bundle.get("superior").toString());
-            User superior = User.build(superiorJson);
-            JSONObject userJson = new JSONObject(bundle.get("user").toString());
-            User user = User.build(job, superior, userJson);
+            User user = generateUser(data);
             CommonUtils.storeUserDB(user,type,this);
-            generateNotification(title, text, data);
+            generateNotification(title, text, null, null, data);
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
+    private User generateUser(Bundle data) throws JSONException {
+        com.sead.demand.Entities.Job job = null;
+        if (data.containsKey("job")) {
+             JSONObject jobJson = new JSONObject(data.get("job").toString());
+            job = com.sead.demand.Entities.Job.build(jobJson);
+            Log.e(TAG, "(generateUser) job: " + job.toString());
+        } else {
+            Log.e(TAG, "(generateUser) job is null");
+        }
+
+        User superior = null;
+        if (data.containsKey("superior")) {
+            JSONObject superiorJson = new JSONObject(data.get("superior").toString());
+            superior = User.build(superiorJson);
+            Log.e(TAG, "(generateUser) superior: " + superior.toString());
+        } else {
+            Log.e(TAG, "(generateUser) superior is null");
+        }
+
+        JSONObject userJson = new JSONObject(data.get("user").toString());
+        return User.build(job, superior, userJson);
+    }
+
     private void handleDeadlineAlarm(Demand demand) {
+        Log.d(TAG, "(handleDeadlineAlarm)");
         long demandDueTimeInMillis = demand.getDueTimeInMillis();
         int warnDueTimeInDays = Constants.DUE_TIME_PREVIOUS_WARNING;
         long warnDueTimeInMillis = warnDueTimeInDays * 24 * 3600 * 1000;
-        Log.d(TAG, "Warn Time in Millis: " + warnDueTimeInMillis);
+        //Log.d(TAG, "Warn Time in Millis: " + warnDueTimeInMillis);
         long warnDemandTimeInMillis = demandDueTimeInMillis - warnDueTimeInMillis;
-        Log.d(TAG, "Warn Demand in Millis: " + warnDemandTimeInMillis);
+        //Log.d(TAG, "Warn Demand in Millis: " + warnDemandTimeInMillis);
 
         // first, set the due time WARNING alarm.
         CommonUtils.setAlarm(
@@ -322,62 +361,80 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         );
     }
 
-    private void generateNotification(String title, String text, Map<String, String> data) {
-        Log.d(TAG, "generate notification!");
-
-        Intent intent;
-        int notificationId;
-        int icon;
-        NotificationCompat.BigTextStyle bigTextStyle = null;
-        PendingIntent resultPendingIntent;
-
-        switch (data.get("type")) {
-            case Constants.UNLOCK_USER:
-                icon = R.drawable.ic_account_box_white_24dp;
-                break;
-            default:
-                icon = R.drawable.ic_business_center_black_24dp;
-        }
+    private void generateNotification(String title, String text, String bigTextTitle,
+                                      String bigText, Bundle data) throws JSONException {
+        Log.d(TAG, "(generateNotification)");
+        int notificationId = -1;
 
         if (data != null) {
-            String dataType = data.get("type");
-            if (dataType.equals(Constants.UNLOCK_USER)){
-                intent = new Intent(this, RequestActivity.class);
-                User user = getUser(data);
-                if (user != null) {
-                    notificationId = user.getId();
-                    intent.putExtra(Constants.INTENT_USER, user);
-                } else {
-                    notificationId = -1;
-                }
-            } else {
-                title = "Demanda " + title;
-                intent = new Intent(this, ViewDemandActivity.class);
-                Demand demand = getDemand(data);
-                if (demand != null) {
-                    notificationId = demand.getId();
-                    intent.putExtra(Constants.INTENT_DEMAND, demand);
-                    bigTextStyle = new NotificationCompat.BigTextStyle();
-                    bigTextStyle.setBigContentTitle(demand.getSubject() + " " + title);
-                    bigTextStyle.bigText(demand.getSubject() + "\n\n" + demand.getDescription());
-                    bigTextStyle.setSummaryText(CommonUtils.formatDate(demand.getCreatedAt()));
-                } else {
-                    notificationId = -1;
-                }
+            String dataType = data.getString("type");
 
-                intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
-                intent.putExtra(Constants.INTENT_PAGE, Integer.parseInt(data.get("page")));
-                intent.putExtra(Constants.INTENT_MENU, Integer.parseInt(data.get("menu")));
-
+            switch (dataType) {
+                case Constants.UNLOCK_USER:
+                    setUserNotification(
+                            data,
+                            notificationId,
+                            title,
+                            text
+                    );
+                    break;
+                default:
+                    setDemandNotification(
+                            data,
+                            title,
+                            text,
+                            bigTextTitle,
+                            bigText
+                    );
             }
+        } else {
+           Log.e(TAG, "(generateNotification) data is null!");
+        }
+    }
 
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
+    private void setDemandNotification(Bundle data, String title, String text,
+                                       String bigTextTitle, String bigText) throws JSONException {
+        int icon = R.drawable.ic_business_center_black_24dp;
+        title = "Demanda " + title;
+        NotificationCompat.BigTextStyle bigTextStyle = null;
+        Intent intent = new Intent(this, ViewDemandActivity.class);
+        Demand demand = generateDemand(data);
+        int notificationId;
+        if (demand != null) {
+            notificationId = demand.getId();
+            intent.putExtra(Constants.INTENT_DEMAND, demand);
+            bigTextStyle = new NotificationCompat.BigTextStyle();
+            bigTextStyle.setBigContentTitle(bigTextTitle);
+            bigTextStyle.bigText(bigText);
+            bigTextStyle.setSummaryText(CommonUtils.formatDate(demand.getCreatedAt()));
         } else {
             notificationId = -1;
-            intent = null;
         }
 
+        intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
+        intent.putExtra(Constants.INTENT_PAGE, data.getString("page"));
+        intent.putExtra(Constants.INTENT_MENU, data.getString("menu"));
+
+        startNotification(intent, icon, notificationId, title, text, bigTextStyle);
+    }
+
+    private void setUserNotification(Bundle data, int notificationId,
+                                     String title, String text) throws JSONException {
+        int icon = R.drawable.ic_account_box_white_24dp;
+        Intent intent = new Intent(this, RequestActivity.class);
+        User user = generateUser(data);
+        if (user != null) {
+            notificationId = user.getId();
+            intent.putExtra(Constants.INTENT_USER, user);
+        }
+        startNotification(intent, icon, notificationId, title, text, null);
+    }
+
+    private void startNotification(Intent intent, int icon, int notificationId, String title,
+                                   String text, NotificationCompat.BigTextStyle bigTextStyle) {
+        PendingIntent resultPendingIntent;
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addNextIntentWithParentStack((new Intent(this, MainActivity.class)));
         stackBuilder.addNextIntent(intent);
@@ -406,11 +463,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     /**
      * Create and show a simple notification containing the received FCM message.
-     *
      * @param notification FCM notification received.
      * @param data
      */
-    private void sendNotification(RemoteMessage.Notification notification, Map<String, String> data) {
+    private void sendNotification(RemoteMessage.Notification notification, Bundle data) throws JSONException {
         // TODO: set notifications' tag field on server and handle it here (TAG: demand or user?).
 
         Log.d(TAG, "send notification data:" + data.toString());
@@ -438,11 +494,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         */
 
         if (data != null) {
-            String dataType = data.get("type");
+            String dataType = data.getString("type");
             if (dataType.equals(Constants.UNLOCK_USER)){
                 title = notification.getTitle();
                 intent = new Intent(this, RequestActivity.class);
-                User user = getUser(data);
+                User user = generateUser(data);
                 if (user != null) {
                     notificationId = user.getId();
                     intent.putExtra(Constants.INTENT_USER, user);
@@ -452,7 +508,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             } else {
                 title = "Demanda " + data.get("type") + " - " + notification.getTitle();
                 intent = new Intent(this, ViewDemandActivity.class);
-                Demand demand = getDemand(data);
+                Demand demand = generateDemand(data);
                 if (demand != null) {
                     notificationId = demand.getId();
                     intent.putExtra(Constants.INTENT_DEMAND, demand);
@@ -465,8 +521,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 }
 
                 intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
-                intent.putExtra(Constants.INTENT_PAGE, Integer.parseInt(data.get("page")));
-                intent.putExtra(Constants.INTENT_MENU, Integer.parseInt(data.get("menu")));
+                intent.putExtra(Constants.INTENT_PAGE, data.getInt("page"));
+                intent.putExtra(Constants.INTENT_MENU, data.getInt("menu"));
 
             }
 
@@ -502,68 +558,5 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
-    }
-
-    private Demand getDemand(Map<String, String> data) {
-        JSONObject senderJson;
-        JSONObject receiverJson;
-        JSONObject reasonJson;
-        JSONObject demandTypeJson;
-        JSONObject demandJson;
-        User sender;
-        User receiver;
-        DemandType demandType;
-        PredefinedReason reason;
-        Demand demand;
-
-        try {
-            // Check if there is a reason attached to this demand.
-            if(data.get("reason") != null) {
-                reasonJson = new JSONObject(data.get("reason"));
-                reason = PredefinedReason.build(reasonJson);
-            } else {
-                reason = null;
-            }
-
-            if(data.get("reason") != null) {
-                demandTypeJson = new JSONObject(data.get("demand_type"));
-                demandType = DemandType.build(demandTypeJson);
-            } else {
-                demandType = null;
-            }
-
-            senderJson = new JSONObject(data.get("sender"));
-            receiverJson = new JSONObject(data.get("receiver"));
-            demandJson = new JSONObject(data.get("demand"));
-            sender = User.build(senderJson);
-            receiver = User.build(receiverJson);
-            demand = Demand.build(sender,receiver,reason,demandType,demandJson);
-            Log.e(TAG, "Json (Notification):"
-                    + demand.toString()
-                    + " sender:" + sender.toString()
-                    + " receiver:" + receiver.toString()
-            );
-        } catch (JSONException e) {
-            e.printStackTrace();
-            demand = null;
-        }
-
-        return demand;
-    }
-
-    private User getUser( Map<String, String> data) {
-        JSONObject userJson;
-        User user;
-
-        try {
-            userJson = new JSONObject(data.get("user"));
-            user = User.build(userJson);
-            Log.e(TAG, "Json (Notification):" + user.toString());
-        } catch (JSONException e) {
-            user = null;
-            e.printStackTrace();
-        }
-
-        return user;
     }
 }

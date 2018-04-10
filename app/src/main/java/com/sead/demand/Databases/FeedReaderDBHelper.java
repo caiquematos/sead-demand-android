@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 
 public class FeedReaderDBHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 5;
+    public static final int DATABASE_VERSION = 8;
     public static final String DATABASE_NAME = "sead.db";
 
     // Table demands queries.
@@ -25,8 +25,9 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
                     FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS + " CHAR(2)," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN + " CHAR(2)," +
-                    FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " BOOLEAN DEFAULT false," +
+                    FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " BOOLEAN DEFAULT 0," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED + " INTEGER DEFAULT 0," +
+                    FeedReaderContract.DemandEntry.COLUMN_NAME_LATE + " BOOLEAN DEFAULT 0," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT + " TIMESTAMP," +
                     FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT + " TIMESTAMP)";
 
@@ -70,8 +71,8 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
             "CREATE TABLE " + FeedReaderContract.AuthorityEntry.TABLE_NAME + " (" +
                     FeedReaderContract.AuthorityEntry._ID + " INTEGER PRIMARY KEY," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_ID + " INTEGER UNIQUE," +
-                    FeedReaderContract.AuthorityEntry.COLUMN_NAME_SUPERIOR + " INTEGER NULL," +
-                    FeedReaderContract.AuthorityEntry.COLUMN_NAME_DEMAND + " INTEGER NULL," +
+                    FeedReaderContract.AuthorityEntry.COLUMN_NAME_SUPERIOR + " INTEGER," +
+                    FeedReaderContract.AuthorityEntry.COLUMN_NAME_DEMAND + " INTEGER," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_USER + " INTEGER," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_LEVEL + " INTEGER," +
                     FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_CREATED_AT + " TIMESTAMP," +

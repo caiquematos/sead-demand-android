@@ -93,7 +93,7 @@ public class SentFragment extends DemandFragment {
 
         String[] args = {
                 "" + senderId,
-                "" + false
+                "" + 0
         };
 
         MyDBManager myDBManager = new MyDBManager(getContext());

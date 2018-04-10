@@ -34,14 +34,14 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.e(TAG, "On AlarmReceiver");
         int type = Integer.parseInt(intent.getType());
-        Log.e(TAG, "Alarm Type:" + type);
         Demand demand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
-        Log.e(TAG, "Demand intent is null:" + demand == null ? "yes" : "no");
-        Log.e(TAG, "Demand intent:" + demand.toString());
         String title = "";
         int drawable = -1;
+        Log.d(TAG, "(onRreceive)");
+        Log.d(TAG, "Alarm Type:" + type);
+        if (demand != null) Log.d(TAG, "(onReceive) demand:" + demand.toString());
+        else Log.e(TAG, "(onReceive) demand is null");
 
         switch (type) {
             case Constants.WARN_DUE_TIME_ALARM_TAG:
@@ -49,11 +49,11 @@ public class AlarmReceiver extends BroadcastReceiver {
                         + Constants.DUE_TIME_PREVIOUS_WARNING
                         + (Constants.DUE_TIME_PREVIOUS_WARNING > 1 ? " dias" : " dia");
                 drawable = R.drawable.ic_alarm_black_24dp;
+                // run lateWarningTask();
                 break;
             case Constants.DUE_TIME_ALARM_TAG:
-                title = "Prazo expirou!!!";
+                title = "Prazo expirou!";
                 drawable = R.drawable.ic_alarm_off_black_24dp;
-                demand.setStatus(Constants.LATE_STATUS);
                 attemptToChangeStatus(demand, context);
                 break;
             case Constants.REMIND_ME_ALARM_TAG:
@@ -99,8 +99,8 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         // Mark locally.
         CommonUtils.updateColumnDB(
-                FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
-                demand.getStatus(),
+                FeedReaderContract.DemandEntry.COLUMN_NAME_LATE,
+                (demand.isLate() ? "1" : "0"),
                 demand,
                 Constants.UPDATE_STATUS,
                 context
@@ -162,6 +162,26 @@ public class AlarmReceiver extends BroadcastReceiver {
             } else {
                 Log.e(TAG, "Server problem!");
             }
+        }
+    }
+
+    public class DueTimeTask extends AsyncTask<String, Void, String> {
+        private Demand demand;
+
+        public DueTimeTask(Demand demand) {
+            this.demand = demand;
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            ContentValues values = new ContentValues();
+            switch (strings[0]) {
+                case "late-warning":
+                    break;
+                case "mark-as-late":
+                    break;
+            }
+            return CommonUtils.POST("/demand/send/", values);
         }
     }
 

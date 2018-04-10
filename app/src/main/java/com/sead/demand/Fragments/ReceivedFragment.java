@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -21,9 +20,12 @@ import com.sead.demand.Adapters.DemandAdapter;
 import com.sead.demand.Databases.FeedReaderContract;
 import com.sead.demand.Databases.MyDBManager;
 import com.sead.demand.Entities.Demand;
+import com.sead.demand.Entities.User;
 import com.sead.demand.R;
 import com.sead.demand.Tools.CommonUtils;
 import com.sead.demand.Tools.Constants;
+
+import java.util.List;
 
 /**
  * Created by caiqu on 09/03/2017.
@@ -32,9 +34,8 @@ import com.sead.demand.Tools.Constants;
 public class ReceivedFragment extends DemandFragment{
     public static final String ARG_PAGE = "RECEIVED_DEMAND";
     private RecyclerView.LayoutManager mLayoutManager;
-    private SharedPreferences mPrefs;
     private SwipeRefreshLayout mSwipeRefresh;
-    private int mUserId;
+    private User mCurrentUser;
 
     public static ReceivedFragment newInstance(int page){
         Bundle args = new Bundle();
@@ -54,8 +55,8 @@ public class ReceivedFragment extends DemandFragment{
     public void onResume() {
         super.onResume();
         getActivity().registerReceiver(broadcastReceiver, new IntentFilter(Constants.BROADCAST_RECEIVER_FRAG));
-        if (mUserId != -1) loadReceiverList(mUserId);
-        else Log.e(TAG, "Logged User id not found!");
+        if (mCurrentUser != null) loadReceiverList(mCurrentUser.getId());
+        else Log.e(ARG_PAGE, "(onResume) current user not found!");
     }
 
     @Override
@@ -70,21 +71,14 @@ public class ReceivedFragment extends DemandFragment{
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_all_demand, container, false);
-
-        mPrefs = getActivity().getSharedPreferences(getContext().getPackageName(), Context.MODE_PRIVATE);
-        mUserId = mPrefs.getInt(Constants.LOGGED_USER_ID,-1);
-
         mRecyclerView = (RecyclerView) view.findViewById(R.id.all_demand_recycler);
         mLayoutManager = new LinearLayoutManager(getContext());
-
-        if (mUserId != -1) loadReceiverList(mUserId);
-        else Log.e(TAG, "Logged User id not found!");
-
+        mCurrentUser = CommonUtils.getCurrentUserPreference(getContext());
+        if (mCurrentUser != null) loadReceiverList(mCurrentUser.getId());
+        else Log.e(ARG_PAGE, "(onCreateView) current user not found!");
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.demand_swiperefresh);
         mSwipeRefresh.setEnabled(false);
-
         implementRecyclerViewClickListener();
-
         return view;
     }
 
@@ -117,16 +111,25 @@ public class ReceivedFragment extends DemandFragment{
                 Constants.CANCEL_REQUESTED_STATUS,
                 Constants.FINISH_STATUS,
                 Constants.UNFINISH_STATUS,
-                "" + false
+                "" + 0
         };
 
         MyDBManager myDBManager = new MyDBManager(getContext());
         mDemandSet = myDBManager.searchDemands(selection,args);
-
+        //CommonUtils.listAllDemandsDB(getContext());
+        printDemandSet(mDemandSet);
         mRecyclerView.setLayoutManager(mLayoutManager);
-
         mAdapter = new DemandAdapter(mDemandSet,getActivity(), mPage);
         mRecyclerView.setAdapter(mAdapter);
+    }
+
+    private void printDemandSet(List<Demand> mDemandSet) {
+        if(!mDemandSet.isEmpty()) {
+            for (Demand demand: mDemandSet) {
+                Log.d(ARG_PAGE, "(ReceiverDemandSet) demand: " + demand.toString());
+            }
+        } else Log.e(ARG_PAGE, "(ReceiverDemandSet) demandSet is empty");
+
     }
 
     private BroadcastReceiver  broadcastReceiver = new BroadcastReceiver() {
@@ -136,7 +139,7 @@ public class ReceivedFragment extends DemandFragment{
             String storageType = intent.getExtras().getString(Constants.INTENT_STORAGE_TYPE);
             int position = CommonUtils.getIndexByDemandId(mDemandSet,demand.getId());
 
-            Log.e(TAG, "on broadcast receiver. Type:" +storageType+ " position: " + position+ " demand:" + demand.toString());
+            Log.e(ARG_PAGE, "on broadcast receiver. Type:" +storageType+ " position: " + position+ " demand:" + demand.toString());
 
             switch (storageType) {
                 case Constants.INSERT_DEMAND_RECEIVED:

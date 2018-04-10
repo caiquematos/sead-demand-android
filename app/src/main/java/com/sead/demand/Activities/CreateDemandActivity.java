@@ -282,6 +282,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                 Constants.UNDEFINE_STATUS,
                 Constants.NO,
                 0,
+                false,
                 null,
                 null);
 

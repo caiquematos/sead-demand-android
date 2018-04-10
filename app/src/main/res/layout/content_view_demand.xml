@@ -35,8 +35,8 @@
                 android:id="@+id/view_demand_type"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/primary_text"
-                android:text="Aqui é mostrado o tipo da demanda" />
+                android:text="Aqui é mostrado o tipo da demanda"
+                android:textColor="@color/primary_text" />
 
             <TextView
                 android:id="@+id/view_demand_status"
@@ -46,40 +46,107 @@
                 android:layout_marginTop="2dp"
                 android:drawablePadding="5dp"
                 android:drawableRight="@drawable/ic_fiber_manual_record_black_24dp"
+                android:drawableTint="@color/icons"
                 android:gravity="center"
-                android:text="Essa demanda foi cancelada"/>
+                android:text="CANCELADA" />
 
-            <TextView
-                android:id="@+id/view_demand_reason"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="left"
-                android:layout_marginTop="16dp"
-                android:gravity="left"
-                android:text="Motivo: A demanda não corresponde a esse setor. Caso o texto seja maior, preencher o espaço abaixo."
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/view_demand_prior"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_weight="50"
-                android:drawableLeft="@drawable/ic_error_black_24dp"
-                android:drawablePadding="4dp"
-                android:gravity="start"
-                android:layout_gravity="center_vertical"
-                android:text="Indefinido (4 - 8 dias)" />
+                android:layout_marginTop="@dimen/text_margin"
+                android:orientation="horizontal"
+                android:weightSum="100">
 
-            <TextView
-                android:id="@+id/view_demand_due_time"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="50"
-                android:gravity="end"
-                android:text="13/02/2018 14:25"
-                android:textColor="@color/accent"
-                android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="65"
+                    android:gravity="start|bottom">
+
+                    <TextView
+                        android:id="@+id/view_demand_complexity"
+                        android:layout_width="@dimen/tag_side"
+                        android:layout_height="@dimen/tag_side"
+                        android:background="@color/tag"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:padding="@dimen/tag_padding"
+                        android:text="4"
+                        android:textSize="@dimen/tag_text_size" />
+
+                    <TextView
+                        android:id="@+id/view_demand_prior"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/tag_side"
+                        android:layout_marginLeft="@dimen/tag_margin_start"
+                        android:background="@color/tag"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:textSize="@dimen/tag_text_size"
+                        android:padding="@dimen/tag_padding"
+                        android:text="MUITO LONGO" />
+
+                    <TextView
+                        android:id="@+id/view_demand_reason"
+                        android:layout_width="@dimen/tag_side"
+                        android:layout_height="@dimen/tag_side"
+                        android:layout_marginLeft="@dimen/tag_margin_start"
+                        android:background="@color/tag"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:padding="@dimen/tag_padding"
+                        android:text="M"
+                        android:textSize="@dimen/tag_text_size"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/view_demand_late"
+                        android:layout_width="@dimen/tag_side"
+                        android:layout_height="@dimen/tag_side"
+                        android:layout_marginLeft="@dimen/tag_margin_start"
+                        android:background="@color/red"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:padding="@dimen/tag_padding"
+                        android:text="!"
+                        android:textColor="@color/white"
+                        android:textSize="@dimen/tag_text_size"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="end"
+                    android:layout_weight="35"
+                    android:gravity="end"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="end|bottom"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/view_demand_due_time"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:text="13/02/2018 14:25"
+                            android:textColor="@color/colorPrimary"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
     </LinearLayout>
@@ -129,7 +196,8 @@
                 android:layout_marginTop="25dp"
                 android:text="Aqui é o local reservado para o corpo de uma demanda, onde devem estar definidas todas as tarefas que a mesma envolve.\n\nEspaçamento\n\noutro espaçamento e fim da mensagem."
                 android:textColor="@color/primary_text"
-                android:textIsSelectable="true" />
+                android:textIsSelectable="true"
+                android:paddingBottom="@dimen/description_padding_bottom"/>
 
         </LinearLayout>
 

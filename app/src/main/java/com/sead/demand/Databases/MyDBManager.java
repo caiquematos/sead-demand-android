@@ -12,6 +12,7 @@ import com.sead.demand.Entities.DemandType;
 import com.sead.demand.Entities.Job;
 import com.sead.demand.Entities.PredefinedReason;
 import com.sead.demand.Entities.User;
+import com.sead.demand.Tools.CommonUtils;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -23,37 +24,41 @@ import java.util.List;
 
 public class MyDBManager {
     private String TAG = getClass().getSimpleName();
-
     private FeedReaderDBHelper mMyDbHelper;
     private SQLiteDatabase mDB;
+    private Context mContext;
 
     public MyDBManager(Context context){
         mMyDbHelper = new FeedReaderDBHelper(context);
+        this.mContext = context;
     }
 
     // If demand already exists, update it.
     public long addDemand(Demand demand){
+        Log.d(TAG, "(addDemand) demand to be added: " + demand.toString());
         // Fist: Add sender and receiver if they don't exist.
-        if(addUser(demand.getSender()) < 0) Log.e(TAG, "Sender not added! Prob it exists already.");
-        if(addUser(demand.getReceiver()) < 0) Log.e(TAG, "Receiver not added! Prob it exists already.");
+        if(addUser(demand.getSender()) < 0) Log.d(TAG, "(addDemand) Sender not added! Prob it exists already");
+        else Log.d(TAG, "(addDemand) new sender added");
+        if(addUser(demand.getReceiver()) < 0) Log.d(TAG, "(addDemand) Receiver not added! Prob it exists already");
+        else Log.d(TAG, "(addDemand) new receiver added");
 
         ContentValues values = new ContentValues();
 
         // If there is a reason, add it.
         PredefinedReason reason = demand.getReason();
         if(reason != null){
-            if(addReason(reason) < 0) Log.e(TAG, "Reason not added! Prob it exists already.");
-            else Log.e(TAG, "Reason added successfully!");
+            if(addReason(reason) < 0) Log.d(TAG, "Reason not added! Prob it exists already.");
+            else Log.e(TAG, "(addDemand) Reason added successfully!");
             values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID, demand.getReason().getServerId());
-        }
+        } else Log.e(TAG, "(addDemand) reason is null");
 
         // If there is a type, add it.
         DemandType type = demand.getType();
         if(type != null){
-            if(addType(demand.getType()) < 0) Log.e(TAG, "Type not added! Prob it exists already.");
-            else Log.e(TAG, "Type added successfully!");
+            if(addType(demand.getType()) < 0) Log.d(TAG, "(addDemand) Type not added! Prob it exists already.");
+            else Log.d(TAG, "(addDemand) type added successfully!");
             values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID, demand.getType().getId());
-        }
+        } else Log.e(TAG, "(addDemand) type is null");
 
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID, demand.getId());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID, demand.getSender().getId());
@@ -63,6 +68,7 @@ public class MyDBManager {
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS, demand.getStatus());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN, demand.getSeen());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED, demand.getPostponed());
+        values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_LATE, demand.isLate());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
                 new Timestamp(demand.getCreatedAt().getTime()).toString());
         values.put(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT,
@@ -71,11 +77,11 @@ public class MyDBManager {
         if(findDemandByServerId(demand.getId()) == null) {
             mDB = mMyDbHelper.getWritableDatabase();
             long newRowId = mDB.insert(FeedReaderContract.DemandEntry.TABLE_NAME, null, values);
-
             mDB.close();
-
+            Log.d(TAG, "(addDemand) new demand added: " + newRowId);
             return newRowId;
         } else {
+            Log.d(TAG, "(addDemand) demand already exists. Updating!");
             mDB.close();
             return updateDemand(demand.getId(),values);
         }
@@ -87,31 +93,24 @@ public class MyDBManager {
         ContentValues values = new ContentValues();
 
         // Fist: Add Job and Superior if they're not null and don't exist in db.
-        // Must check if job is not null, usually, a superior user won't have a job object defined.
         if (user.getJob() != null) {
-            Log.d(TAG, "job:" + user.getJob().toString());
-            if (addJob(user.getJob()) < 0)
-                Log.e(TAG, "Job not added! Prob it exists already.");
-            else Log.e(TAG, "Job added successfully:" + user.getJob().getId());
+            if (addJob(user.getJob()) < 0) Log.e(TAG, "(addUser) Job not added! Prob it exists already.");
+            else Log.e(TAG, "(addUser) Job added successfully:" + user.getJob().toString());
             values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJob().getId());
         } else if (user.getJobId() > 0){
-            Log.d(TAG, "addUser: user is null, but job id: " + user.getJobId());
+            Log.d(TAG, "(addUser) job is null, but job_id: " + user.getJobId());
             values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB, user.getJobId());
         }
 
         // As done right before, must check if Superior is defined.
         if (user.getSuperior() != null) {
-            Log.d(TAG, "(addUser) superior:" + user.getSuperior().toString());
-            if (addUser(user.getSuperior()) < 0)
-                Log.e(TAG, "Superior not added! Prob it exists already.");
-            else Log.e(TAG, "Superior added successfully:" + user.getSuperior().getId());
+            if (addUser(user.getSuperior()) < 0) Log.e(TAG, "(addUser) superior not added! Prob it exists already.");
+            else Log.e(TAG, "(addUser) superior added successfully:" + user.getSuperior().toString());
             values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperior().getId());
         } else if (user.getSuperiorId() > 0){
             values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR, user.getSuperiorId());
-            Log.d(TAG, "addUser: superior is null, but superior id: " + user.getSuperiorId());
+            Log.d(TAG, "(addUser) superior is null, but superior_id: " + user.getSuperiorId());
         }
-
-        Log.e(TAG, "User position:" + user.getPosition());
 
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID, user.getId());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_NAME, user.getName());
@@ -127,14 +126,12 @@ public class MyDBManager {
         if(findUserByServerId(user.getId()) == null) {
             mDB = mMyDbHelper.getWritableDatabase();
             long newRowId = mDB.insert(FeedReaderContract.UserEntry.TABLE_NAME, null, values);
-
             mDB.close();
-
-            Log.d(TAG, "addUser: new user!");
+            Log.d(TAG, "(addUser) new user added: " + newRowId);
             return newRowId;
         }else{
             mDB.close();
-            Log.d(TAG, "addUser: update user!");
+            Log.d(TAG, "(addUser) already exists, update user!");
             return updateUser(user.getId(),values);
         }
     }
@@ -197,7 +194,7 @@ public class MyDBManager {
         }
     }
 
-    // If job already exists, then update it.
+    // If type already exists, then update it.
     public long addType(DemandType type){
 
         ContentValues values = new ContentValues();
@@ -216,9 +213,7 @@ public class MyDBManager {
         if(findDemandTypeByServerId((int) type.getId()) == null) {
             mDB = mMyDbHelper.getWritableDatabase();
             long newRowId = mDB.insert(FeedReaderContract.DemandTypeEntry.TABLE_NAME, null, values);
-
             mDB.close();
-
             return newRowId;
         }else{
             mDB.close();
@@ -526,6 +521,8 @@ public class MyDBManager {
     }
 
     public List<Demand> searchDemands(String selection, String[] selectionArgs){
+        if (selection != null) Log.d(TAG, "(searchDemands) selection: " + selection);
+        if (selectionArgs != null) for (String arg : selectionArgs) Log.d(TAG, "(searchDemands) arg: " + arg);
 
         String[] projection = {
                 FeedReaderContract.DemandEntry._ID,
@@ -538,7 +535,9 @@ public class MyDBManager {
                 FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
+                FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED,
+                FeedReaderContract.DemandEntry.COLUMN_NAME_LATE,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
                 FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT
         };
@@ -560,6 +559,8 @@ public class MyDBManager {
 
         List<Demand> demands = new ArrayList<>();
 
+        Log.d(TAG, "(searchDemands) cursor: " + cursor.getCount());
+
         while(cursor.moveToNext()) {
             long itemId = cursor.getLong(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry._ID));
             int demandId = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID));
@@ -572,19 +573,20 @@ public class MyDBManager {
             String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS));
             String seen = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN));
             int postponed = cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED));
+            boolean late = (cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_LATE)) == 1);
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT));
+
+            Log.d(TAG, "(searchDemands) late cursor 1: "
+                    + cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_LATE));
+            Log.d(TAG, "(searchDemands) late cursor 2: "
+                    + (cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_LATE)) == 1));
 
             // Search for local instances of users
             User sender = findUserByServerId(senderId);
             User receiver = findUserByServerId(receiverId);
             DemandType type = findDemandTypeByServerId(demandTypeId);
             PredefinedReason reason = findReasonByServerId(reasonId);
-
-            if (type != null) Log.d(TAG, "demand type:" + type.getTitle());
-            else Log.d(TAG, "type is null");
-            if (reason != null) Log.d(TAG, "demand reason:" + reason.getTitle());
-            else Log.d(TAG, "reason is null");
 
             if(sender != null && receiver != null){
                 Demand demand = new Demand(
@@ -599,20 +601,27 @@ public class MyDBManager {
                         status,
                         seen,
                         postponed,
+                        late,
                         created_at,
                         updated_at
                 );
-
                 demands.add(demand);
+                Log.d(TAG,"(searchDemands) demand add to list: " + demand.toString());
             }
-
         }
-
         cursor.close();
-
         mDB.close();
-
+        printDemands(demands);
         return demands;
+    }
+
+    private void printDemands(List<Demand> mDemandSet) {
+        if(!mDemandSet.isEmpty()) {
+            for (Demand demand: mDemandSet) {
+                Log.d(TAG, "(searchDemands) demand: " + demand.toString());
+            }
+        } else Log.e(TAG, "(searchDemands) demandSet is empty");
+
     }
 
     public List<User> searchUsers(String selection, String[] selectionArgs){
@@ -674,8 +683,8 @@ public class MyDBManager {
                     status,
                     position,
                     fcm,
-                    null,
-                    null,
+                    job,
+                    CommonUtils.getCurrentUserPreference(mContext),
                     created_at,
                     updated_at
             );
@@ -985,4 +994,25 @@ public class MyDBManager {
         List<Demand> demands = this.searchDemands(null, null);
         return demands;
     }
+
+    public List<Authority> getAllAuthorities() {
+        List<Authority> authorities = this.searchAuthorities(null, null);
+        return authorities;
+    }
+
+    public List<Job> getAllJobs() {
+        List<Job> jobs = this.searchJobs(null, null);
+        return jobs;
+    }
+
+    public List<DemandType> getAllDemandTypes() {
+        List<DemandType> demandTypes = this.searchTypes(null, null);
+        return demandTypes;
+    }
+
+    public List<PredefinedReason> getAllReasons() {
+        List<PredefinedReason> predefinedReasons = this.searchReasons(null, null);
+        return predefinedReasons;
+    }
+
 }

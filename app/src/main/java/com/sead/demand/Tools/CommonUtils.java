@@ -215,7 +215,7 @@ public class CommonUtils {
         MyDBManager myDBManager = new MyDBManager(context);
         List<Demand> demands = myDBManager.getAllDemands();
         for (int index = 0; index < demands.size(); index++)
-            Log.d(TAG, "listAllDemand Demanda: " + demands.get(index).toString());
+            Log.d(TAG, "(listAllDemand) demanda: " + demands.get(index).toString());
     }
 
     // Only for test purposes.
@@ -223,33 +223,39 @@ public class CommonUtils {
         MyDBManager myDBManager = new MyDBManager(context);
         List<User> users = myDBManager.getAllUsers();
         for (int index = 0; index < users.size(); index++)
-            Log.d(TAG, "listAllUsers User: " + users.get(index).toString());
+            Log.d(TAG, "(listAllUsers) User: " + users.get(index).toString());
     }
 
     // Only for test purposes.
     public static void listAllAuthsDB(Context context){
         MyDBManager myDBManager = new MyDBManager(context);
-        List<Authority> authorities;
-
-        String selection = FeedReaderContract.AuthorityEntry.COLUMN_NAME_AUTH_ID + " = ?";
-        String[] args = {"1"};
-        authorities = myDBManager.searchAuthorities(selection,args);
-
+        List<Authority> authorities = myDBManager.getAllAuthorities();
         for (int index = 0; index < authorities.size(); index++)
-            Log.e(TAG, "User " + index + ":" + authorities.get(index).toString() + "\n");
+            Log.e(TAG, "(listAllAuthorities) Auth: " + authorities.get(index).toString());
     }
 
     // Only for test purposes.
     public static void listAllReasonsDB(Context context){
         MyDBManager myDBManager = new MyDBManager(context);
-        List<PredefinedReason> reasons;
-
-        String selection = FeedReaderContract.ReasonEntry.COLUMN_NAME_REASON_ID + " = ?";
-        String[] args = {"1"};
-        reasons = myDBManager.searchReasons(selection,args);
-
+        List<PredefinedReason> reasons = myDBManager.getAllReasons();
         for (int index = 0; index < reasons.size(); index++)
-            Log.e(TAG, "Reason " + index + ":" + reasons.get(index).toString() + "\n");
+            Log.e(TAG, "(listAllReasons) Reason: " + reasons.get(index).toString());
+    }
+
+    // Only for test purposes.
+    public static void listAllJobsDB(Context context){
+        MyDBManager myDBManager = new MyDBManager(context);
+        List<com.sead.demand.Entities.Job> jobs = myDBManager.getAllJobs();
+        for (int index = 0; index < jobs.size(); index++)
+            Log.e(TAG, "(listAllJobs) Job: " + jobs.get(index).toString());
+    }
+
+    // Only for test purposes.
+    public static void listAllDemandTypesDB(Context context){
+        MyDBManager myDBManager = new MyDBManager(context);
+        List<DemandType> demandTypes = myDBManager.getAllDemandTypes();
+        for (int index = 0; index < demandTypes.size(); index++)
+            Log.e(TAG, "(listAllDemandTypes) DemandType: " + demandTypes.get(index).toString());
     }
 
     public static void notifyDemandListView(Demand demand, String fragmentTag, String type, Context context){
@@ -271,12 +277,9 @@ public class CommonUtils {
     }
 
     public static void storeDemandDB(Demand demand, String type, Context context){
-        // listAllDemandsDB(context);
-        // listAllUsersDB(context);
-
         MyDBManager myDBManager = new MyDBManager(context);
         long newRow = myDBManager.addDemand(demand);
-        Log.e(TAG, "New row inserted:" + newRow);
+        Log.d(TAG, "(storeDemandDB) new row inserted:" + newRow);
         listAllDemandsDB(context);
         listAllReasonsDB(context);
 
@@ -536,7 +539,7 @@ public class CommonUtils {
                 postponeTime = Constants.DUE_TIME[3];
                 break;
             default:
-                postponeTime = Constants.DUE_TIME[0];
+                postponeTime = Constants.DUE_TIME[3];
         }
         return postponeTime;
     }
@@ -680,7 +683,7 @@ public class CommonUtils {
     }
 
     public static String getPriorName(String priorTag, Context context){
-        String priorName = "Prioridade ";
+        String priorName = "";
         String[] priorArray = context.getResources().getStringArray(R.array.array_status);
         Log.e(TAG, "Prior Array:" + priorArray.toString());
         switch (priorTag){

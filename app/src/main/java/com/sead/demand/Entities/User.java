@@ -48,7 +48,6 @@ public class User implements Serializable{
         setGcm(gcm);
         setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updatedAt));
-        Log.e(TAG, "job position:" + position);
     }
 
     public User(long localId, int id, String email, String name, String status, String position,
@@ -65,7 +64,6 @@ public class User implements Serializable{
         setSuperior(superior);
         setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updatedAt));
-        Log.e(TAG, "job position:" + position);
     }
 
     // Internal User

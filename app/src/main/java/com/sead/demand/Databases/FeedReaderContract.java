@@ -23,6 +23,7 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_SEEN = "seen";
         public static final String COLUMN_NAME_ARCHIVE = "archive";
         public static final String COLUMN_NAME_POSTPONED = "postponed";
+        public static final String COLUMN_NAME_LATE = "late";
         public static final String COLUMN_NAME_CREATED_AT = "created_at";
         public static final String COLUMN_NAME_UPDATED_AT = "updated_a";
     }

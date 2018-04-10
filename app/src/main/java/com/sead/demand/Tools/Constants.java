@@ -136,6 +136,7 @@ public class Constants {
 	public static final String UPDATE_READ = "update_read";
 	public static final String UNLOCK_USER = "unlock-user-request";
 	public static final String AUTH = "AUTH";
+	public static final String LATE_WARNING = "late_warning";
 	public static final String ACKNOWLEDGE = "acknowledge";
 
     // Broadcast parameters.

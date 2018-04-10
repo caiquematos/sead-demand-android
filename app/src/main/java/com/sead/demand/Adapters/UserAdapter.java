@@ -40,10 +40,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder>{
     private String TAG = getClass().getSimpleName();
     private StatusTask mStatusTask;
     private ProgressDialog mProgressDialogUser;
-
     private List<User> mUserList;
     private Context mContext;
-
     private  User mCurrentUser;
 
     public UserAdapter(List<User> userList, Context context) {
@@ -136,8 +134,14 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder>{
     public void onBindViewHolder(final UserAdapter.ViewHolder holder, final int position) {
         final User user = mUserList.get(position);
 
-        Log.e(TAG, "Job position:" + user.getPosition());
-        Log.e(TAG, "Date:" + CommonUtils.formatDate(user.getCreatedAt()));
+        if (user.getJob() != null) Log.d(TAG, "(onBindViewHolder) job: " + user.getJob().toString());
+        else Log.e(TAG, "(onBindViewHolder) job is null");
+
+        if (user.getSuperior() != null) Log.d(TAG, "(onBindViewHolder) superior: " + user.getSuperior().toString());
+        else Log.e(TAG, "(onBindViewHolder) superior is null");
+
+        Log.e(TAG, "(onBindViewHolder) job position:" + user.getPosition());
+        Log.e(TAG, "(onBindViewHolder) date:" + CommonUtils.formatDate(user.getCreatedAt()));
         holder.setUserName(user.getName());
         holder.setUserJobPosition(user.getPosition());
         holder.setRequestDate(CommonUtils.formatDate(user.getCreatedAt()));

@@ -3,6 +3,7 @@ package com.sead.demand.Entities;
 import android.util.Log;
 
 import com.sead.demand.Tools.CommonUtils;
+import com.sead.demand.Tools.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,6 +25,7 @@ public class Demand implements Serializable {
     private String status;
     private String seen;
     private int postponed;
+    private boolean late;
     private boolean archive;
     private Date createdAt;
     private Date updatedAt;
@@ -42,6 +44,7 @@ public class Demand implements Serializable {
                 json.getString("status"),
                 json.getString("seen"),
                 json.getInt("postponed"),
+                (json.getInt("late") == 0 ? false : true),
                 json.getString("created_at"),
                 json.getString("updated_at")
         );
@@ -59,6 +62,7 @@ public class Demand implements Serializable {
             String status,
             String seen,
             int postponed,
+            boolean late,
             String created_at,
             String updated_at) {
 
@@ -73,6 +77,7 @@ public class Demand implements Serializable {
         setType(type);
         setSeen(seen);
         setPostponed(postponed);
+        setLate(late);
         setCreatedAt(CommonUtils.convertTimestampToDate(created_at));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updated_at));
     }
@@ -150,8 +155,9 @@ public class Demand implements Serializable {
         return "Sender:" + sender.getId()
                 + " " + sender.getName()
                 + " " + sender.getEmail()
-                + " Receiver" + receiver.getEmail()
+                + " Receiver:" + receiver.getEmail()
                 + " " + receiver.getId()
+                + " " + receiver.getName()
                 + " Demand:" + getLocalId()
                 + " " + getId()
                 + " " + getStatus()
@@ -159,6 +165,7 @@ public class Demand implements Serializable {
                 + " " + getSubject()
                 + " " + getDescription()
                 + " " + getPostponed()
+                + " " + isLate()
                 + " " + getCreatedAt()
                 + " " + getUpdatedAt()
                 + " reason: " + (this.getReason() != null ? getReason().getTitle() : "null")
@@ -210,6 +217,14 @@ public class Demand implements Serializable {
         this.postponed = postponed;
     }
 
+    public boolean isLate() {
+        return late;
+    }
+
+    public void setLate(boolean late) {
+        this.late = late;
+    }
+
     public long getDueTimeInMillis() {
         long time;
         Calendar c = Calendar.getInstance();
@@ -218,7 +233,7 @@ public class Demand implements Serializable {
         Log.d(TAG, "created_at: " + getCreatedAt().toString());
         Log.d(TAG, "c (created): " + c.getTimeInMillis());
         if (getType() != null) time = CommonUtils.getPriorityTime(getType().getPriority());
-        else time = 3;
+        else time = Constants.DUE_TIME[3];
         Log.d(TAG, "time to be added bf postpone method: "  + time);
         c.add(Calendar.DAY_OF_YEAR, (int) time);
         Log.d(TAG,  "c with added time 1: " + c.getTimeInMillis());

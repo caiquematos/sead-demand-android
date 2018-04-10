@@ -40,6 +40,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
 
@@ -56,6 +57,8 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private TextView mDueTimeTV;
     private TextView mReasonTV;
     private TextView mTypeTV;
+    private TextView mComplexityTV;
+    private TextView mLateTV;
     private View mScrollView;
     private StatusTask mStatusTask;
     private static ProgressDialog mPDDemand;
@@ -85,7 +88,8 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private boolean mTurned;
     private SendDemandTask mDemandTask;
     private Demand mDemand;
-    private AlertDialog.Builder mAlert;
+    private AlertDialog.Builder mMenuAlert;
+    private AlertDialog.Builder mInfoAlert;
     private String mAlertType;
     private PriorTask mPriorTask;
     private AlertDialog.Builder mPriorDialog;
@@ -148,24 +152,11 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mDescriptionTV = (TextView) findViewById(R.id.view_demand_description);
         mReasonTV = (TextView) findViewById(R.id.view_demand_reason);
         mTypeTV = (TextView) findViewById(R.id.view_demand_type);
+        mComplexityTV = (TextView) findViewById(R.id.view_demand_complexity);
+        mLateTV = (TextView) findViewById(R.id.view_demand_late);
         mPDDemand = new ProgressDialog(mActivity);
 
         /* Finally set changes */
-        if (mDemand.getType() != null) {
-            mTypeTV.setText(mDemand.getType().getTitle());
-            showDemandPrior(mDemand.getType().getPriority());
-        }else {
-            mTypeTV.setVisibility(View.GONE);
-        }
-
-        mPriorTV.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // todo: show a box info.
-            }
-        });
-        mPriorTV.setClickable(true);
-
         if (mPage == Constants.CREATE_PAGE)
             Snackbar.make(mSubjectTV, R.string.send_demand_success, Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show();
@@ -174,13 +165,256 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mSenderTV.setText("De: " + mDemand.getSender().getName());
         mReceiverTV.setText("Para: " + mDemand.getReceiver().getName());
         mTimeTV.setText(CommonUtils.formatDate(mDemand.getCreatedAt()));
-        mDescriptionTV.setText(mDemand.getDescription()+ "\n\n\n\n");
+        mDescriptionTV.setText(mDemand.getDescription());
 
-        Log.d(TAG, "Demand status: " + mDemand.getStatus());
+        setMenuAlert();
+        setInfoAlert();
         showDemandStatus(mDemand.getStatus());
+        handleDemandType(mDemand);
+        handleDemandLate(mDemand);
+        showDueTime();
+        setInfoClickListeners();
+        setMenuOptions();
 
-        mAlert = new AlertDialog.Builder(this);
-        mAlert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+        mFabMenu = (FloatingActionButton) findViewById(R.id.fab_menu);
+        mFabMenu.setOnClickListener(this);
+        handleMenu(mMenuType, mDemand.getStatus());
+
+        mScrollView = findViewById(R.id.view_demand_scroll_view);
+        mScrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                int scrollY = mScrollView.getScrollY();
+                hideMenuOnScroll( scrollY);
+            }
+        });
+    }
+
+    private void setInfoClickListeners() {
+        mPriorTV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String title = "TEMPO DE EXECUÇÃO";
+                String message = "MUITO LONGO: 1 a 3 dias\n\n" +
+                        "LONGO: 4 a 8 dias\n\n" +
+                        "MÉDIO: 9 a 15 dias\n\n" +
+                        "CURTO: mais de 15 dias";
+                showInfoAlert(title, message);
+            }
+        });
+
+        mDueTimeTV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String title = "DUE TIME: " + mDemand.getDueDate() + " " + mDemand.getDueTime();
+                String message = "TODAY: " + getToday() + "\n\n" + getDaysLeft();;
+                showInfoAlert(title, message);
+            }
+        });
+
+        mComplexityTV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String title = "COMPLEXIDADE";
+                String message = "" + mDemand.getType().getComplexity();
+                showInfoAlert(title, message);
+            }
+        });
+
+        mLateTV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String title = "DEMANDA ATRASADA";
+                String message = "DUE TIME: " + mDemand.getDueDate() + " " + mDemand.getDueTime()
+                        + "\n\n TODAY: " + getToday()
+                        + "\n\n" + getDaysLeft();
+                showInfoAlert(title, message);
+            }
+        });
+
+        mReasonTV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mDemand.getReason() != null) {
+                    String title = mDemand.getReason().getTitle();
+                    String message = "Referência " + mDemand.getReason().getServerId() + "\n\n"
+                            + mDemand.getReason().getDescription();
+                    showInfoAlert(title, message);
+                }
+            }
+        });
+    }
+
+    private void showInfoAlert(String title, String message) {
+        mInfoAlert.setTitle(title);
+        mInfoAlert.setMessage(message);
+        mInfoAlert.create();
+        mInfoAlert.show();
+    }
+
+    private void setMenuOptions() {
+        mTransferTV = (TextView) findViewById(R.id.tv_transfer);
+        mFabTransfer = (FloatingActionButton) findViewById(R.id.fab_transfer);
+        mMenuTitlesList.add(mTransferTV);
+        mMenuButtonsList.add(mFabTransfer);
+        mFabTransfer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMenuAlert.setTitle("Repassar a demanda?");
+                mAlertType = Constants.TRANSFER_STATUS;
+                mMenuAlert.show();
+            }
+        }); // Transfer
+
+        mDeadlineTV = (TextView) findViewById(R.id.tv_deadline);
+        mFabDeadline = (FloatingActionButton) findViewById(R.id.fab_deadline);
+        mMenuTitlesList.add(mDeadlineTV);
+        mMenuButtonsList.add(mFabDeadline);
+        mFabDeadline.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG, "Postponed: " + mDemand.getPostponed());
+                if (mDemand.getPostponed() < 3) {
+                    mMenuAlert.setTitle("Solicitar aumento de prazo?");
+                    mAlertType = Constants.DEADLINE_REQUESTED_STATUS;
+                    mMenuAlert.show();
+                } else {
+                    Snackbar.make(mFabMenu, "Você já atingiu o limite de 3 solicitações!", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+            }
+        }); // Deadline
+
+        mFinishTV = (TextView) findViewById(R.id.tv_finish);
+        mFabFinish = (FloatingActionButton) findViewById(R.id.fab_finish);
+        mMenuTitlesList.add(mFinishTV);
+        mMenuButtonsList.add(mFabFinish);
+        mFabFinish.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                buildSenderFinishMenu();
+            }
+        }); // Finish
+
+        mYesTV = (TextView) findViewById(R.id.tv_yes);
+        mFabYes = (FloatingActionButton) findViewById(R.id.fab_yes);
+        mMenuTitlesList.add(mYesTV);
+        mMenuButtonsList.add(mFabYes);
+        mFabYes.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMenuAlert.setTitle("Deferir a demanda?");
+                mAlertType = Constants.ACCEPT_STATUS;
+                mMenuAlert.show();
+            }
+        }); //Accepted
+
+        mLaterTV = (TextView) findViewById(R.id.tv_later);
+        mFabLater = (FloatingActionButton) findViewById(R.id.fab_later);
+        mMenuTitlesList.add(mLaterTV);
+        mMenuButtonsList.add(mFabLater);
+        mFabLater.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mPostponeDialog = new AlertDialog.Builder(mActivity);
+                mPostponeDialog.setTitle("Me lembre em:");
+                String[] postponeOptions = {
+                        Constants.POSTPONE_OPTIONS[0] + " dia",
+                        Constants.POSTPONE_OPTIONS[1] + " dias",
+                        Constants.POSTPONE_OPTIONS[2] + " dias",
+                        Constants.POSTPONE_OPTIONS[3] + " dias"
+                };
+                mPostponeDialog.setItems(postponeOptions, new DialogInterface.OnClickListener(){
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        setReminder(mDemand, Constants.POSTPONE_OPTIONS[which]);
+                    }
+                });
+                mPostponeDialog.create();
+                mPostponeDialog.show();
+            }
+        }); //Postponed
+
+        mNoTV = (TextView) findViewById(R.id.tv_no);
+        mFabNo = (FloatingActionButton) findViewById(R.id.fab_no);
+        mMenuTitlesList.add(mNoTV);
+        mMenuButtonsList.add(mFabNo);
+        mFabNo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMenuAlert.setTitle("Cancelar a demanda?");
+                mAlertType = Constants.CANCEL_ACCEPTED_STATUS;
+                mMenuAlert.show();
+            }
+        }); //Cancelled
+
+        mReopenTV = (TextView) findViewById(R.id.tv_repopen);
+        mFabReopen = (FloatingActionButton) findViewById(R.id.fab_reopen);
+        mMenuTitlesList.add(mReopenTV);
+        mMenuButtonsList.add(mFabReopen);
+        mFabReopen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMenuAlert.setTitle("Reabrir a demanda?");
+                mMenuAlert.setMessage("Quando uma demanda é reaberta, ela é movida novamente para a aba Admin e seu status é configurado de volta para indefinido.");
+                mAlertType = Constants.REOPEN_STATUS;
+                mMenuAlert.show();
+            }
+        }); //Reopen
+
+        mRejectTV = (TextView) findViewById(R.id.tv_reject);
+        mFabReject = (FloatingActionButton) findViewById(R.id.fab_reject);
+        mMenuTitlesList.add(mRejectTV);
+        mMenuButtonsList.add(mFabReject);
+        mFabReject.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(mActivity, RejectDialogActivity.class);
+                intent.putExtra("title", "Indeferir demanda?");
+                intent.putExtra("message", "Escolha um motivo para o indeferimento.");
+                startActivityForResult(intent,Constants.REJECT_DEMAND);
+            }
+        }); //Reject
+
+        mResendTV = (TextView) findViewById(R.id.tv_resend);
+        mFabResend = (FloatingActionButton) findViewById(R.id.fab_resend);
+        mMenuTitlesList.add(mResendTV);
+        mMenuButtonsList.add(mFabResend);
+        mFabResend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMenuAlert.setTitle("Reenviar a demanda?");
+                mAlertType = Constants.RESEND_STATUS;
+                mMenuAlert.show();
+            }
+        }); //Resend
+
+        mDoneTV = (TextView) findViewById(R.id.tv_done);
+        mFabDone = (FloatingActionButton) findViewById(R.id.fab_done);
+        mMenuTitlesList.add(mDoneTV);
+        mMenuButtonsList.add(mFabDone);
+        mFabDone.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMenuAlert.setTitle("Concluir demanda?");
+                mAlertType = Constants.DONE_STATUS;
+                mMenuAlert.show();
+            }
+        }); // Done.
+    }
+
+    private void setInfoAlert() {
+        mInfoAlert = new AlertDialog.Builder(this);
+        mInfoAlert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+    }
+
+    private void setMenuAlert() {
+        mMenuAlert = new AlertDialog.Builder(this);
+        mMenuAlert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 switch (mAlertType) {
@@ -218,177 +452,11 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 }
             }
         });
-        mAlert.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+        mMenuAlert.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
             }
         });
-
-        mTransferTV = (TextView) findViewById(R.id.tv_transfer);
-        mFabTransfer = (FloatingActionButton) findViewById(R.id.fab_transfer);
-        mMenuTitlesList.add(mTransferTV);
-        mMenuButtonsList.add(mFabTransfer);
-        mFabTransfer.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mAlert.setTitle("Repassar a demanda?");
-                mAlertType = Constants.TRANSFER_STATUS;
-                mAlert.show();
-            }
-        }); // Transfer
-
-        mDeadlineTV = (TextView) findViewById(R.id.tv_deadline);
-        mFabDeadline = (FloatingActionButton) findViewById(R.id.fab_deadline);
-        mMenuTitlesList.add(mDeadlineTV);
-        mMenuButtonsList.add(mFabDeadline);
-        mFabDeadline.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.d(TAG, "Postponed: " + mDemand.getPostponed());
-                if (mDemand.getPostponed() < 3) {
-                    mAlert.setTitle("Solicitar aumento de prazo?");
-                    mAlertType = Constants.DEADLINE_REQUESTED_STATUS;
-                    mAlert.show();
-                } else {
-                    Snackbar.make(mFabMenu, "Você já atingiu o limite de 3 solicitações!", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-            }
-        }); // Deadline
-
-        mFinishTV = (TextView) findViewById(R.id.tv_finish);
-        mFabFinish = (FloatingActionButton) findViewById(R.id.fab_finish);
-        mMenuTitlesList.add(mFinishTV);
-        mMenuButtonsList.add(mFabFinish);
-        mFabFinish.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                buildSenderFinishMenu();
-            }
-        }); // Finish
-
-        mYesTV = (TextView) findViewById(R.id.tv_yes);
-        mFabYes = (FloatingActionButton) findViewById(R.id.fab_yes);
-        mMenuTitlesList.add(mYesTV);
-        mMenuButtonsList.add(mFabYes);
-        mFabYes.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mAlert.setTitle("Deferir a demanda?");
-                mAlertType = Constants.ACCEPT_STATUS;
-                mAlert.show();
-            }
-        }); //Accepted
-
-        mLaterTV = (TextView) findViewById(R.id.tv_later);
-        mFabLater = (FloatingActionButton) findViewById(R.id.fab_later);
-        mMenuTitlesList.add(mLaterTV);
-        mMenuButtonsList.add(mFabLater);
-        mFabLater.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mPostponeDialog = new AlertDialog.Builder(mActivity);
-                mPostponeDialog.setTitle("Me lembre em:");
-                String[] postponeOptions = {
-                        Constants.POSTPONE_OPTIONS[0] + " dia",
-                        Constants.POSTPONE_OPTIONS[1] + " dias",
-                        Constants.POSTPONE_OPTIONS[2] + " dias",
-                        Constants.POSTPONE_OPTIONS[3] + " dias"
-                };
-                mPostponeDialog.setItems(postponeOptions, new DialogInterface.OnClickListener(){
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        setReminder(mDemand, Constants.POSTPONE_OPTIONS[which]);
-                    }
-                });
-                mPostponeDialog.create();
-                mPostponeDialog.show();
-            }
-        }); //Postponed
-
-        mNoTV = (TextView) findViewById(R.id.tv_no);
-        mFabNo = (FloatingActionButton) findViewById(R.id.fab_no);
-        mMenuTitlesList.add(mNoTV);
-        mMenuButtonsList.add(mFabNo);
-        mFabNo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mAlert.setTitle("Cancelar a demanda?");
-                mAlertType = Constants.CANCEL_ACCEPTED_STATUS;
-                mAlert.show();
-            }
-        }); //Cancelled
-
-        mReopenTV = (TextView) findViewById(R.id.tv_repopen);
-        mFabReopen = (FloatingActionButton) findViewById(R.id.fab_reopen);
-        mMenuTitlesList.add(mReopenTV);
-        mMenuButtonsList.add(mFabReopen);
-        mFabReopen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mAlert.setTitle("Reabrir a demanda?");
-                mAlert.setMessage("Quando uma demanda é reaberta, ela é movida novamente para a aba Admin e seu status é configurado de volta para indefinido.");
-                mAlertType = Constants.REOPEN_STATUS;
-                mAlert.show();
-            }
-        }); //Reopen
-
-        mRejectTV = (TextView) findViewById(R.id.tv_reject);
-        mFabReject = (FloatingActionButton) findViewById(R.id.fab_reject);
-        mMenuTitlesList.add(mRejectTV);
-        mMenuButtonsList.add(mFabReject);
-        mFabReject.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(mActivity, RejectDialogActivity.class);
-                intent.putExtra("title", "Indeferir demanda?");
-                intent.putExtra("message", "Escolha um motivo para o indeferimento.");
-                startActivityForResult(intent,Constants.REJECT_DEMAND);
-            }
-        }); //Reject
-
-        mResendTV = (TextView) findViewById(R.id.tv_resend);
-        mFabResend = (FloatingActionButton) findViewById(R.id.fab_resend);
-        mMenuTitlesList.add(mResendTV);
-        mMenuButtonsList.add(mFabResend);
-        mFabResend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mAlert.setTitle("Reenviar a demanda?");
-                mAlertType = Constants.RESEND_STATUS;
-                mAlert.show();
-            }
-        }); //Resend
-
-        mDoneTV = (TextView) findViewById(R.id.tv_done);
-        mFabDone = (FloatingActionButton) findViewById(R.id.fab_done);
-        mMenuTitlesList.add(mDoneTV);
-        mMenuButtonsList.add(mFabDone);
-        mFabDone.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mAlert.setTitle("Concluir demanda?");
-                mAlertType = Constants.DONE_STATUS;
-                mAlert.show();
-            }
-        }); // Done.
-
-        mFabMenu = (FloatingActionButton) findViewById(R.id.fab_menu);
-        mFabMenu.setOnClickListener(this);
-        handleMenu(mMenuType, mDemand.getStatus());
-
-        showDueTime();
-
-        mScrollView = findViewById(R.id.view_demand_scroll_view);
-        mScrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
-            @Override
-            public void onScrollChanged() {
-                int scrollY = mScrollView.getScrollY();
-                hideMenuOnScroll( scrollY);
-            }
-        });
-
-        Log.d(TAG, "Due Date | Time: " + mDemand.getDueDate() + " | " + mDemand.getDueTime());
     }
 
     private void buildSenderFinishMenu() {
@@ -418,6 +486,13 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void showDueTime() {
+        if (mDemand.getStatus().equals(Constants.FINISH_STATUS)) {
+            int color = ContextCompat.getColor(this,R.color.secondary_text);
+            mDueTimeTV.setTextColor(color);
+        } else if (mDemand.isLate()) {
+            int color = ContextCompat.getColor(this,R.color.red);
+            mDueTimeTV.setTextColor(color);
+        }
         mDueTimeTV.setText(mDemand.getDueDate() + " " + mDemand.getDueTime());
     }
 
@@ -966,10 +1041,34 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void showDemandPrior(String prior) {
-        Log.e(TAG, "Prior tag:" + prior);
-        Log.e(TAG, "Prior name:" + CommonUtils.getPriorName(prior, this));
+        //Log.e(TAG, "Prior name:" + CommonUtils.getPriorName(prior, this));
         mPriorTV.setText(CommonUtils.getPriorName(prior, this));
-        setPriorColor(prior);
+        mPriorTV.setVisibility(View.VISIBLE);
+    }
+
+    private void handleDemandType(Demand demand) {
+        if (demand.getType() != null) {
+            mTypeTV.setText(demand.getType().getTitle());
+            showDemandPrior(demand.getType().getPriority());
+            showDemandComplexity(demand.getType().getComplexity());
+        }else {
+            mTypeTV.setVisibility(View.GONE);
+            mPriorTV.setVisibility(View.GONE);
+            mComplexityTV.setVisibility(View.GONE);
+        }
+    }
+
+    private void handleDemandLate(Demand demand) {
+        if (demand.isLate()) {
+            mLateTV.setVisibility(View.VISIBLE);
+        } else {
+            mLateTV.setVisibility(View.GONE);
+        }
+    }
+
+    private void showDemandComplexity(int complexity) {
+        mComplexityTV.setText("" + complexity);
+        mComplexityTV.setVisibility(View.VISIBLE);
     }
 
     private void attemptRejectDemand(int demandId, PredefinedReason predefinedReason){
@@ -1080,6 +1179,8 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 color = ContextCompat.getColor(this,R.color.gray);
         }
 
+        color = ContextCompat.getColor(this, R.color.icons);
+
         Drawable objDrawable;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             objDrawable = getDrawable(drawable);
@@ -1102,28 +1203,16 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void showDemandReason(Demand demand) {
-        // TODO: show only a clickable title. When clicked show complete reason.
-        PredefinedReason reason = demand.getReason();
-        String reasonString;
-        if (reason != null) {
-            Log.d(TAG, "Reason: " + reason.getTitle());
-            reasonString = "Ref.: "
-                    + reason.getServerId()
-                    + " - ("
-                    + reason.getTitle()
-                    + ") "
-                    + reason.getDescription();
-            mReasonTV.setText(reasonString);
+        if (demand.getReason() != null) {
             mReasonTV.setVisibility(View.VISIBLE);
         } else {
-            Log.d(TAG, "Reason null");
+            //Log.d(TAG, "Reason null");
             mReasonTV.setVisibility(View.GONE);
         }
     }
 
-    private void hideDemandReason(Demand demand) {
+    private void hideDemandReason() {
             mReasonTV.setVisibility(View.GONE);
-            Log.d(TAG, "in hide reason");
     }
 
     private void setDemandStatus(String status){
@@ -1134,14 +1223,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             Snackbar.make(mFabMenu, R.string.internet_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
         }
-    }
-
-    private void setPriorColor(String prior) {
-        int color = ContextCompat.getColor(this,R.color.dGreen);
-        if (prior.equals(Constants.VERY_HIGH_PRIOR_TAG)) color = ContextCompat.getColor(this,R.color.darkred);
-        if (prior.equals(Constants.HIGH_PRIOR_TAG)) color = ContextCompat.getColor(this,R.color.Red);
-        if (prior.equals(Constants.MEDIUM_PRIOR_TAG)) color = ContextCompat.getColor(this,R.color.dyellow);
-        mPriorTV.getCompoundDrawables()[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
     public void setReminder(Demand demand, int postponeTime) {
@@ -1365,6 +1446,33 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 activityTitle = "Demanda";
         }
         return activityTitle;
+    }
+
+    public String getToday() {
+        Calendar c = Calendar.getInstance();
+        return CommonUtils.convertMillisToDate(c.getTimeInMillis())
+                + " "
+                + CommonUtils.convertMillisToTime(c.getTimeInMillis());
+    }
+
+    public String getDaysLeft() {
+        Calendar calendar = Calendar.getInstance();
+        long dueTime = mDemand.getDueTimeInMillis();
+        long result;
+        float days;
+        String string;
+
+        if ( dueTime > calendar.getTimeInMillis()) {
+            result = dueTime - calendar.getTimeInMillis();
+            days = TimeUnit.DAYS.convert(result, TimeUnit.MILLISECONDS);
+            string = "FALTAM " + (int) days + 1 + " DIAS";
+        } else {
+            result = calendar.getTimeInMillis() - dueTime;
+            days = TimeUnit.DAYS.convert(result, TimeUnit.MILLISECONDS);
+            string = "PASSARAM " + (int) days + 1 + " DIAS";
+        }
+
+        return string;
     }
 
     private class SendDemandTask extends  AsyncTask<Void, Void, String>{
@@ -1621,6 +1729,8 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                         case Constants.FINISH_STATUS:
                             handleMenu(mMenuType,demandResponse.getStatus());
                             message = "Demanda Finalizada com Sucesso.";
+                            int color = ContextCompat.getColor(mActivity,R.color.secondary_text);
+                            mDueTimeTV.setTextColor(color);
                             mShouldCancelAlarm = true;
                             break;
                         default:
@@ -2139,7 +2249,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                             handleMenu(mMenuType,Constants.UNDEFINE_STATUS);
                             Log.d(TAG, "(transfer) new receiver: " + demandResponse.getReceiver().toString());
                             mReceiverTV.setText("Para: " + demandResponse.getReceiver().getName());
-                            hideDemandReason(mDemand);
+                            hideDemandReason();
                             break;
                         default:
                             message = "A demanda não pôde ser transferida.";

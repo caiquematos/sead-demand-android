@@ -11,8 +11,10 @@
     <color name="accent">#448AFF</color>
     <color name="primary_text">#212121</color>
     <color name="secondary_text">#757575</color>
-    <color name="icons">#FFFFFF</color>
+
+    <color name="icons">#757575</color>
     <color name="divider">#7FBDBDBD</color>
+    <color name="tag">#2FBDBDBD</color>
 
     <color name="black_overlay">#66000000</color>
 

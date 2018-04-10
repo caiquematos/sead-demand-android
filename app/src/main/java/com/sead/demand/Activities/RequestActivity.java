@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -25,8 +24,6 @@ import java.util.List;
 
 public class RequestActivity extends AppCompatActivity {
     private String TAG = getClass().getSimpleName();
-    private SharedPreferences mPrefs;
-    private int mUserId;
     private RecyclerView mRecyclerView;
     private LinearLayoutManager mLayoutManager;
     private List<User> mUsers;
@@ -38,9 +35,7 @@ public class RequestActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_request);
 
-        mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         mCurrentUser = CommonUtils.getCurrentUserPreference(this);
-
         mRecyclerView = (RecyclerView) findViewById(R.id.demand_recycler);
         mLayoutManager = new LinearLayoutManager(getApplicationContext());
 
@@ -50,7 +45,7 @@ public class RequestActivity extends AppCompatActivity {
         Intent intent = getIntent();
         User user = (User) intent.getSerializableExtra(Constants.INTENT_USER);
         if (user != null) {
-            Log.e(TAG, "User not null:" + user.toString());
+            Log.d(TAG, "(onCreate) user:" + user.toString());
             int position = CommonUtils.getIndexByUserId(mUsers,user.getId());
             mAdapter.notifyItemInserted(position);
         }
@@ -96,7 +91,7 @@ public class RequestActivity extends AppCompatActivity {
         argsArray.add("" + userId);
 
         if (authorities != null) {
-            Log.d(TAG, "Authorities different from null");
+            Log.d(TAG, "(loadRequest) Authorities different from null");
             for(int i = 0; i < authorities.size(); i++){
                 selection = selection.concat(" OR ");
                 selection = selection.concat(FeedReaderContract.UserEntry.COLUMN_NAME_USER_ID + " = ?");
@@ -106,7 +101,7 @@ public class RequestActivity extends AppCompatActivity {
 
         String[] args = new String[argsArray.size()];
         for (int j = 0; j < args.length; j++) args[j] = argsArray.get(j);
-        Log.e(TAG, "args fetch user:" + argsArray.toString());
+        Log.e(TAG, "(loadRequest) args fetch user:" + argsArray.toString());
 
         MyDBManager myDBManager = new MyDBManager(this);
         mUsers = myDBManager.searchUsers(selection,args);

@@ -245,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Intent intent;
 
         if (id == R.id.nav_settings) {
-            // Do settings here
+            // do something.
         } else if (id == R.id.nav_logout) {
             logout();
         } else if (id == R.id.nav_archived) {

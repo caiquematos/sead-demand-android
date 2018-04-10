@@ -167,7 +167,6 @@ public class SuperiorFragment extends DemandFragment {
     }
 
     private void loadAdminList(List<User> usersUnderMySupervision){
-
         String selection = "";
         ArrayList<String> argsArray = new ArrayList<>();
 
@@ -202,13 +201,10 @@ public class SuperiorFragment extends DemandFragment {
         selection = selection.concat(" AND ");
         selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE + " = ?");
 
-        Log.e(TAG, "selection:" + selection.toString());
-
-        argsArray.add("" + false);
+        argsArray.add("" + 0);
 
         String[] args = new String[argsArray.size()];
         for (int j = 0; j < args.length; j++) args[j] = argsArray.get(j);
-        Log.e(TAG, "args:" + argsArray.toString());
 
         MyDBManager myDBManager = new MyDBManager(getContext());
         mDemandSet = myDBManager.searchDemands(selection,args);

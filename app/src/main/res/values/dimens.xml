@@ -17,4 +17,11 @@
     <dimen name="med_subtitle_size">10sp</dimen>
     <dimen name="min_title_size">8sp</dimen>
     <dimen name="min_subtitle_size">6sp</dimen>
+
+    <dimen name="tag_padding">4dp</dimen>
+    <dimen name="tag_side">28sp</dimen>
+    <dimen name="tag_text_size">14sp</dimen>
+    <dimen name="tag_margin_start">4dp</dimen>
+
+    <dimen name="description_padding_bottom">45dp</dimen>
 </resources>

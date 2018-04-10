@@ -7,10 +7,10 @@
         "Entre com as informações referentes ao destinatário e à demanda."
     </string>
     <string-array name="array_status">
-        <item>muito alta (1 - 3 dias)</item>
-        <item>alta (4 - 8 dias)</item>
-        <item>média (9 - 15 dias)</item>
-        <item>baixa (> 15 dias)</item>
+        <item>MUITO LONGO</item>
+        <item>LONGO</item>
+        <item>MÉDIO</item>
+        <item>CURTO</item>
     </string-array>
 
     <!-- Strings related to login -->
@@ -82,21 +82,21 @@
     <string name="position_field_title">Posição</string>
 
     <!-- Demand Status Info-->
-    <string name="late_demand_info">Essa demanda está atrasada</string>
-    <string name="done_demand_info">Essa demanda foi concluída</string>
-    <string name="accepted_demand_info">Essa demanda foi deferida</string>
-    <string name="rejected_demand_info">Essa demanda foi indeferida</string>
-    <string name="cancel_accepted_demand_info">Essa demanda foi cancelada</string>
-    <string name="cancel_requested_demand_info">Solicitação de cancelamento pendente</string>
-    <string name="postponed_demand_info">Essa demanda foi adiada</string>
-    <string name="reopen_demand_info">Essa demanda foi reaberta</string>
-    <string name="undefined_demand_info">Essa demanda ainda está indefinida</string>
-    <string name="resent_demand_info">Essa demanda foi reenviada</string>
-    <string name="transferred_demand_info">Essa demanda foi repassada</string>
-    <string name="deadline_requested_demand_info">Solicitação de aumento de prazo pendente</string>
-    <string name="deadline_accepted_demand_info">Essa demanda foi adiada</string>
-    <string name="unfinished_demand_info">Essa demanda foi marcada como não finalizada</string>
-    <string name="finished_demand_info">Essa demanda foi finalizada</string>
+    <string name="late_demand_info">ATRASADA</string>
+    <string name="done_demand_info">CONCLUÍDA</string>
+    <string name="accepted_demand_info">DEFERIDA</string>
+    <string name="rejected_demand_info">INDEFERIDA</string>
+    <string name="cancel_accepted_demand_info">CANCELADA</string>
+    <string name="cancel_requested_demand_info">SOLICITADO O CANCELAMENTO</string>
+    <string name="postponed_demand_info">ADIADA</string>
+    <string name="reopen_demand_info">REABERTA</string>
+    <string name="undefined_demand_info">NÃO DEFINIDO</string>
+    <string name="resent_demand_info">REENVIADA</string>
+    <string name="transferred_demand_info">REPASSADA</string>
+    <string name="deadline_requested_demand_info">SOLICITADO O AUMENTO DE PRAZO</string>
+    <string name="deadline_accepted_demand_info">ADIADA</string>
+    <string name="unfinished_demand_info">NÃO FINALIZADA</string>
+    <string name="finished_demand_info">FINALIZADA</string>
 
     <!-- Reject Dialog -->
     <string-array name="array_reject_dialog_reasons">
@@ -178,5 +178,5 @@
     <string name="transfer_activity_transfer_fab_description">Transferir</string>
     <string name="view_activity_transfer_reason_description">Quando a demanda não pode ser atendida, ela é repassada ao seu superior. Por favor, escolha um motivo.</string>
     <string name="finished_demands">Finalizadas</string>
-
+    <string name="title_activity_settings">Settings</string>
 </resources>
