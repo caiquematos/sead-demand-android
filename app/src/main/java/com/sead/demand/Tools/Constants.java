@@ -112,6 +112,7 @@ public class Constants {
     public static final int DUE_TIME_PREVIOUS_WARNING = 1; // Warn user 1 day before due time.
 
     // Intent Tags.
+    public static final String INTENT_BUNDLE = "intent-bundle";
     public static final String INTENT_DEMAND = "intent-demand";
     public static final String INTENT_USER = "intent-user";
     public static final String INTENT_DEMAND_SERVER_ID = "intent-demand-server-id";

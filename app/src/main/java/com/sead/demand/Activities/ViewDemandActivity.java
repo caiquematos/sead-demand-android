@@ -86,7 +86,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private int mPage; // Identifies which activity called this one.
     private int mMenuType; // Identifies which type of menu to be shown.
     private boolean mTurned;
-    private SendDemandTask mDemandTask;
     private Demand mDemand;
     private AlertDialog.Builder mMenuAlert;
     private AlertDialog.Builder mInfoAlert;
@@ -206,8 +205,9 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mDueTimeTV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String title = "DUE TIME: " + mDemand.getDueDate() + " " + mDemand.getDueTime();
-                String message = "TODAY: " + getToday() + "\n\n" + getDaysLeft();;
+                String title = "PRAZO: " + mDemand.getDueDate() + " " + mDemand.getDueTime();
+                String message = "HOJE: " + getToday();
+                        //+ "\n\n" + getDaysLeft();;
                 showInfoAlert(title, message);
             }
         });
@@ -225,9 +225,9 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             @Override
             public void onClick(View v) {
                 String title = "DEMANDA ATRASADA";
-                String message = "DUE TIME: " + mDemand.getDueDate() + " " + mDemand.getDueTime()
-                        + "\n\n TODAY: " + getToday()
-                        + "\n\n" + getDaysLeft();
+                String message = "PRAZO: " + mDemand.getDueDate() + " " + mDemand.getDueTime()
+                        + "\n\n HOJE: " + getToday();
+                        //+ "\n\n" + getDaysLeft();
                 showInfoAlert(title, message);
             }
         });
@@ -418,9 +418,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 switch (mAlertType) {
-                    case Constants.RESEND_STATUS:
-                        attemptSendDemand();
-                        break;
                     case Constants.TRANSFER_STATUS:
                         handleTransfer(mPage);
                         break;
@@ -496,6 +493,10 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         mDueTimeTV.setText(mDemand.getDueDate() + " " + mDemand.getDueTime());
     }
 
+    private void hideDueTime() {
+        mDueTimeTV.setVisibility(View.INVISIBLE);
+    }
+
     private void startTransferActivity(int type) {
         Intent intent = new Intent(mActivity, TransferActivity.class);
         startActivityForResult(intent,type);
@@ -547,6 +548,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void handleSenderMenu(String status) {
+        hideDueTime();
         switch (status) {
             case Constants.UNDEFINE_STATUS:
                 senderUndefinedMenu();
@@ -1086,16 +1088,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         }
     }
 
-    private void attemptSendDemand(){
-        if (mDemandTask == null && CommonUtils.isOnline(mActivity)){
-            mDemandTask = new SendDemandTask(mDemand);
-            mDemandTask.execute();
-        } else {
-            Snackbar.make(mFabResend, R.string.internet_error, Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-        }
-    }
-
     private void showDemandStatus(String status) {
         int drawable;
         int description;
@@ -1473,84 +1465,6 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         }
 
         return string;
-    }
-
-    private class SendDemandTask extends  AsyncTask<Void, Void, String>{
-        private final Demand demand;
-
-        public SendDemandTask(Demand demand) {
-            this.demand = demand;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mPDDemand.setMessage("Por favor aguarde.");
-            mPDDemand.setCancelable(false);
-            mPDDemand.show();
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-            ContentValues values = new ContentValues();
-            values.put("id", demand.getId());
-            return CommonUtils.POST("/demand/resend", values);
-        }
-
-        @Override
-        protected void onPostExecute(String jsonResponse) {
-            super.onPostExecute(jsonResponse);
-            mDemandTask = null;
-
-            try {
-                JSONObject jsonObject;
-                JSONObject senderJson;
-                JSONObject receiverJson;
-                JSONObject demandJson;
-                JSONObject demandTypeJson;
-                Demand demandResponse = null;
-                boolean success = false;
-
-                jsonObject = new JSONObject(jsonResponse);
-                success = jsonObject.getBoolean("success");
-                senderJson = jsonObject.getJSONObject("sender");
-                receiverJson = jsonObject.getJSONObject("receiver");
-                demandTypeJson = jsonObject.getJSONObject("demand_type");
-                demandJson = jsonObject.getJSONObject("demand");
-
-                User sender = User.build(senderJson);
-                User receiver = User.build(receiverJson);
-                DemandType demandType = DemandType.build(demandTypeJson);
-                demandResponse = Demand.build(sender, receiver, null, demandType, demandJson);
-
-                Log.e(TAG,
-                        "Json Resend Response:" + demandResponse.toString()
-                                + " sender:" + sender.toString()
-                                + " receiver:" + receiver.toString()
-                                + " demandType:" + demandType.toString()
-                );
-
-                if (success) {
-                    Intent intent = new Intent(mActivity, ViewDemandActivity.class);
-                    intent.putExtra(Constants.INTENT_ACTIVITY, mActivity.getClass().getSimpleName());
-                    intent.putExtra(Constants.INTENT_PAGE, mPage);
-                    intent.putExtra(Constants.INTENT_DEMAND, demandResponse);
-                    finish();
-                    mActivity.startActivity(intent);
-                } else {
-                    throw new JSONException("success hit false");
-                }
-            } catch (JSONException e) {
-                Snackbar.make(mFabResend, R.string.send_demand_error, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                e.printStackTrace();
-            }
-
-            if (mPDDemand.isShowing()){
-                mPDDemand.dismiss();
-            }
-
-        }
     }
 
     private class PriorTask extends AsyncTask<Void, Void, String>{

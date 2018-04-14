@@ -33,6 +33,7 @@ import com.sead.demand.Tools.Constants;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Calendar;
 import java.util.Map;
 
 /**
@@ -182,7 +183,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         try {
             Demand demand = generateDemand(data);
             String bigTextTitle = demand.getSubject();
-            String bigText = "De: " + demand.getSender().getName() + "\n\n" + demand.getDescription();
+            String bigText =  title + "\nDe: " + demand.getSender().getName() + "\n\n" + demand.getDescription();
 
             Log.d(TAG, "(handleDemand) demand:" + demand.toString()
                     + "\nsender:" + demand.getSender().toString()
@@ -341,10 +342,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         long warnDemandTimeInMillis = demandDueTimeInMillis - warnDueTimeInMillis;
         //Log.d(TAG, "Warn Demand in Millis: " + warnDemandTimeInMillis);
 
+        /* only for test purpose */
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.MINUTE, 1);
+        Log.d(TAG, "due time (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
+                + " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
+        /* only for test purpose */
+
         // first, set the due time WARNING alarm.
         CommonUtils.setAlarm(
                 this,
-                warnDemandTimeInMillis,
+                c.getTimeInMillis(), //warnDemandTimeInMillis
                 demand,
                 Constants.WARN_DUE_TIME_ALARM_TAG,
                 Constants.RECEIVED_PAGE,
@@ -353,7 +361,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // finally, set the DUE TIME alarm.
         CommonUtils.setAlarm(
                 this,
-                demandDueTimeInMillis,
+                c.getTimeInMillis(), //demandDueTimeInMillis
                 demand,
                 Constants.DUE_TIME_ALARM_TAG,
                 Constants.RECEIVED_PAGE,

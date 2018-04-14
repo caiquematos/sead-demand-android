@@ -9,9 +9,12 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.sead.demand.Handlers.AlarmReceiver;
+
 import org.json.JSONArray;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -23,23 +26,49 @@ public class MyAlarmManager {
     private static final String sTagAlarms = ":alarms";
 
     public static void addAlarm(Context context, Intent intent, int notificationId, int type, long timeInMillis){
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, generateAlarmId(notificationId, type), intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        int alarmId = generateAlarmId(notificationId, type);
 
-        Log.d(TAG, "alarms now: " + getAlarmIds(context));
-        if (hasAlarm(context, intent, generateAlarmId(notificationId, type), type)) cancelAlarm(context, intent, notificationId, type);
-        Log.d(TAG, "alarms then: " + getAlarmIds(context));
+
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, alarmId , intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        if (hasAlarm(context, intent, alarmId, type)) cancelAlarm(context, intent, notificationId, type);
+
+        /* teste */
+        Intent intentToFire = intent;
+        intentToFire.putExtra("test", "teste sim");
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(context, 0, intentToFire,0);
+        /* teste */
+
+        /* only for test purpose */
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.MINUTE, 1);
+        Log.d(TAG, "due time (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
+                + " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
+        /* only for test purpose */
+
+        timeInMillis = c.getTimeInMillis();
+        pendingIntent = alarmIntent;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Log.d(TAG, "(addAlarm) > version M");
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            Log.d(TAG, "(addAlarm) > version K");
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
         } else {
+            Log.d(TAG, "(addAlarm) other version < K");
             alarmManager.set(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
         }
 
-        saveAlarmId(context, generateAlarmId(notificationId, type));
-        Log.d(TAG, "alarms later: " + getAlarmIds(context));
+        saveAlarmId(context, alarmId);
+
+        //CHECKING IF PENDING INTENT IS ALREADY RUNNING
+        Intent checkIntent = new Intent(context, AlarmReceiver.class);
+        Boolean alarmUp = (PendingIntent.getBroadcast(context, 0, checkIntent, PendingIntent.FLAG_NO_CREATE) != null);
+        if (alarmUp) Log.d(TAG, "(addAlarm) alarm set!");
+        else Log.e(TAG, "(addAlarm) alarm NOT set!");
     }
 
     public static void cancelAlarm(Context context, Intent intent, int notificationId, int type){

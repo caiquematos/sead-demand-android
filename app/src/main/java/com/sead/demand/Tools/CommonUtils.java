@@ -561,33 +561,15 @@ public class CommonUtils {
 
     public static void setAlarm(Context context, long dueTime, Demand demand, int type, int page, int menu) {
         Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra(Constants.INTENT_DEMAND, demand);
-        intent.setType("" + type);
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(Constants.INTENT_DEMAND, demand);
+        intent.putExtra(Constants.INTENT_BUNDLE, bundle);
+        intent.putExtra("type", type);
         intent.putExtra(Constants.INTENT_PAGE, page);
         intent.putExtra(Constants.INTENT_MENU, menu);
         MyAlarmManager.addAlarm(context, intent, demand.getId(), type, dueTime);
         Log.d(TAG, "Due Time (milli): " + dueTime
                 + " Due Date|Time: " + demand.getDueDate() + "|" + demand.getDueTime());
-    }
-
-    // Set an alarm from now to plus (previous waring constant) days.
-    public static void setDueTime(Demand demand, Context context){
-        Intent receiverIntent = new Intent(context, AlarmReceiver.class);
-        int type = Constants.DUE_TIME_ALARM_TAG;
-        receiverIntent.setType("" + type);
-        receiverIntent.putExtra(Constants.INTENT_DEMAND, demand);
-        receiverIntent.putExtra(Constants.INTENT_PAGE, Constants.RECEIVED_PAGE);
-        receiverIntent.putExtra(Constants.INTENT_MENU, Constants.SHOW_DONE_MENU);
-        Log.e(TAG, "Alarm Key Type:" + receiverIntent.getType());
-
-        Calendar c = Calendar.getInstance();
-        Log.e(TAG, "(Due time) Now:" + c.getTime().toString());
-        c.add(Calendar.DAY_OF_YEAR, Constants.DUE_TIME_PREVIOUS_WARNING);
-        Log.e(TAG, "Due time:" + c.getTime().toString());
-        long timeInMillis = c.getTimeInMillis();
-        Log.e(TAG, "Time in millis:" + timeInMillis);
-
-        MyAlarmManager.addAlarm(context, receiverIntent, demand.getId(), type, timeInMillis);
     }
 
     public static void cancelAllAlarms(Demand demand, Context context) {

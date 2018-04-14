@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -31,17 +32,20 @@ import org.json.JSONObject;
 public class AlarmReceiver extends BroadcastReceiver {
     String TAG = getClass().getSimpleName();
     private StatusTask mStatusTask;
+    private DueTimeTask mDueTimeTask;
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        int type = Integer.parseInt(intent.getType());
-        Demand demand = (Demand) intent.getSerializableExtra(Constants.INTENT_DEMAND);
+        Bundle bundle = intent.getBundleExtra(Constants.INTENT_BUNDLE);
+        Log.e(TAG, "(onReceive) string: " + intent.getExtras().getString("test"));
+        int type = intent.getExtras().getInt("type");
+        Demand demand = (Demand) bundle.getSerializable(Constants.INTENT_DEMAND);
         String title = "";
+        String text = demand.getSubject();
         int drawable = -1;
-        Log.d(TAG, "(onRreceive)");
-        Log.d(TAG, "Alarm Type:" + type);
-        if (demand != null) Log.d(TAG, "(onReceive) demand:" + demand.toString());
-        else Log.e(TAG, "(onReceive) demand is null");
+
+        Log.d(TAG, "(onReceive) alarm type:" + type);
+        Log.d(TAG, "(onReceive) demand:" + demand.toString());
 
         switch (type) {
             case Constants.WARN_DUE_TIME_ALARM_TAG:
@@ -49,12 +53,12 @@ public class AlarmReceiver extends BroadcastReceiver {
                         + Constants.DUE_TIME_PREVIOUS_WARNING
                         + (Constants.DUE_TIME_PREVIOUS_WARNING > 1 ? " dias" : " dia");
                 drawable = R.drawable.ic_alarm_black_24dp;
-                // run lateWarningTask();
+                attemptToSendLateWarning(demand, context);
                 break;
             case Constants.DUE_TIME_ALARM_TAG:
                 title = "Prazo expirou!";
                 drawable = R.drawable.ic_alarm_off_black_24dp;
-                attemptToChangeStatus(demand, context);
+                attemptToMarkDemandAsLate(demand, context);
                 break;
             case Constants.REMIND_ME_ALARM_TAG:
                 title = "Lembrete!";
@@ -63,6 +67,11 @@ public class AlarmReceiver extends BroadcastReceiver {
                 break;
         }
 
+       generateNotification(demand, context, intent, drawable, title, text);
+    }
+
+    private void generateNotification(Demand demand, Context context, Intent intent,
+                                      int drawable, String title, String text) {
         Intent targetIntent = new Intent(context, ViewDemandActivity.class);
         targetIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         targetIntent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
@@ -85,13 +94,35 @@ public class AlarmReceiver extends BroadcastReceiver {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context)
                 .setSmallIcon(drawable)
                 .setContentTitle(title)
-                .setContentText(demand.getSubject())
+                .setContentText(text)
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(resultPendingIntent);
 
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(context.NOTIFICATION_SERVICE);
         notificationManager.notify(notificationId, notificationBuilder.build());
+    }
+
+    private void attemptToSendLateWarning(Demand demand, Context context) {
+        if(CommonUtils.isOnline(context)) {
+            if (mDueTimeTask == null){
+                mDueTimeTask = new DueTimeTask(demand);
+                mDueTimeTask.execute("late-warning");
+            }
+        } else {
+            CommonUtils.handleLater(demand,Constants.UPDATE_JOB_TAG, context);
+        }
+    }
+
+    private void attemptToMarkDemandAsLate(Demand demand, Context context) {
+        if(CommonUtils.isOnline(context)) {
+            if (mDueTimeTask == null){
+                mDueTimeTask = new DueTimeTask(demand);
+                mDueTimeTask.execute("mark-as-late");
+            }
+        } else {
+            CommonUtils.handleLater(demand,Constants.UPDATE_JOB_TAG, context);
+        }
     }
 
     private void attemptToChangeStatus(Demand demand, Context context){
@@ -165,6 +196,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
     }
 
+    // TODO: Criar um Job services pra isso!
     public class DueTimeTask extends AsyncTask<String, Void, String> {
         private Demand demand;
 
@@ -175,13 +207,25 @@ public class AlarmReceiver extends BroadcastReceiver {
         @Override
         protected String doInBackground(String... strings) {
             ContentValues values = new ContentValues();
+            values.put("demand_id", demand.getId());
+            String url = "";
             switch (strings[0]) {
                 case "late-warning":
+                    url = "late-warning";
                     break;
                 case "mark-as-late":
+                    url = "late";
                     break;
+                default:
             }
-            return CommonUtils.POST("/demand/send/", values);
+            return CommonUtils.POST("/demand/send/" + url, values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mDueTimeTask = null;
+            Log.d(TAG, "(DueTimeTask) response: " + s);
         }
     }
 
