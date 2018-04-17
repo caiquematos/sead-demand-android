@@ -30,6 +30,7 @@ import com.sead.demand.Databases.MyDBManager;
 import com.sead.demand.Entities.Demand;
 import com.sead.demand.Entities.DemandType;
 import com.sead.demand.Entities.Department;
+import com.sead.demand.Entities.PredefinedReason;
 import com.sead.demand.Entities.User;
 import com.sead.demand.R;
 import com.sead.demand.Tools.CommonUtils;
@@ -350,6 +351,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             JSONObject receiverJson;
             JSONObject demandJson;
             JSONObject demandTypeJson;
+            JSONObject reasonJson;
             Demand demandResponse = null;
             boolean success = false;
 
@@ -357,14 +359,23 @@ public class CreateDemandActivity extends AppCompatActivity{
 
             try {
                 DemandType demandType = null;
+                PredefinedReason reason = null;
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 senderJson = jsonObject.getJSONObject("sender");
                 receiverJson = jsonObject.getJSONObject("receiver");
+
+                if(jsonObject.has("reason")){
+                    reasonJson = jsonObject.getJSONObject("reason");
+                    reason = PredefinedReason.build(reasonJson);
+                    Log.e(TAG, " reason:" + reason.toString());
+                }
+
                 if (!jsonObject.isNull("demand_type")){
                     demandTypeJson = jsonObject.getJSONObject("demand_type");
                     demandType = DemandType.build(demandTypeJson);
                 }
+
                 demandJson = jsonObject.getJSONObject("demand");
 
                 User sender = User.build(senderJson);
@@ -372,13 +383,13 @@ public class CreateDemandActivity extends AppCompatActivity{
                 demandResponse = Demand.build(
                         sender,
                         receiver,
-                        null,
+                        reason,
                         demandType,
                         demandJson
                 );
 
-                Log.e(TAG,
-                        "Json:" + demandResponse.toString()
+                Log.d(TAG,
+                        "(SendDemandTask) demand:" + demandResponse.toString()
                         + " sender:" + sender.toString()
                         + " receiver:" + receiver.toString()
                 );
@@ -393,20 +404,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
 
             if (success && demandResponse != null) {
-                MyDBManager myDBManager = new MyDBManager(mActivity);
-                long wasDemandStored = myDBManager.addDemand(demandResponse);
-
-                if(wasDemandStored >= 0) {
-                    CommonUtils.notifyDemandListView(
-                            demandResponse,
-                            Constants.BROADCAST_SENT_FRAG,
-                            Constants.INSERT_DEMAND_SENT,
-                            mActivity
-                    );
-                    Log.e(TAG, "Demand was stored.");
-                }
-                else Log.e(TAG, "Demand could not be stored!");
-
+                CommonUtils.storeDemandDB(demandResponse, Constants.INSERT_DEMAND_SENT, mActivity);
                 Intent intent = new Intent(mActivity, ViewDemandActivity.class);
                 intent.putExtra(Constants.INTENT_ACTIVITY, mActivity.getClass().getSimpleName());
                 intent.putExtra(Constants.INTENT_PAGE, mPage);

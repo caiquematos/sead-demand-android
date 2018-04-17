@@ -88,10 +88,10 @@ public class ArchiveActivity extends AppCompatActivity {
                     public void onClick(View view, int position) {
                         if(mMenuEnabled){
                             onListItemSelect(position, view);
-                            Log.e(TAG, "On click action mode NOT null");
+                            Log.d(TAG, "(implementRecyclerViewClickListener) (On click) action mode NOT null");
                         } else {
                             mDemandAdapter.showDemand(view, position);
-                            Log.e(TAG, "On click action mode null");
+                            Log.d(TAG, "(implementRecyclerViewClickListener) (On click) action mode null");
                         }
                     }
 

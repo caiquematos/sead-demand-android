@@ -67,6 +67,23 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         else showDemandPrior(null, holder);
 
         /** Handle users' name **/
+        handleUsersName(demand, holder);
+        /** Handle users' name **/
+
+        /** Handle seen demands **/
+        handleSeenDemand(demand, holder);
+        /** Handle seen demands **/
+
+        holder.subject.setText(demand.getSubject());
+        holder.description.setText(demand.getDescription());
+        holder.time.setText(CommonUtils.formatTime(demand.getCreatedAt()));
+        holder.date.setText(CommonUtils.formatDate(demand.getCreatedAt()));
+
+        if (mSelectedItemsIds.get(position)) markDemandSelected(holder);
+        else unmarkDemandSelected(holder);
+    }
+
+    private void handleUsersName(Demand demand, final DemandAdapter.ViewHolder holder) {
         String sender = "mim";
         String receiver = "mim";
         if (mPage == Constants.SENT_PAGE) {
@@ -82,9 +99,9 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         }
         holder.user_sender.setText(sender);
         holder.user_receiver.setText(receiver);
-        /** Handle users' name **/
+    }
 
-        /** Handle seen demands **/
+    private void handleSeenDemand(Demand demand, final DemandAdapter.ViewHolder holder) {
         int color;
         int drawable;
         // int visibility; (TODO) will be used for acknowledge messages. do not show any icon if message not received/acknowledge.
@@ -106,21 +123,12 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         holder.seenIcon.setImageDrawable(objDrawable);
         holder.seenIcon.setVisibility(View.VISIBLE);
         if (mCurrentUser.getName().equals(demand.getSender().getName())) {
-            // No highlighted text on tab "sent".
+            // No highlighted text if current user is the one who sent it.
             color = ContextCompat.getColor(mContext, R.color.common_google_signin_btn_text_light);
         }
         holder.user_sender.setTextColor(color);
         holder.user_receiver.setTextColor(color);
         holder.subject.setTextColor(color);
-        /** Handle seen demands **/
-
-        holder.subject.setText(demand.getSubject());
-        holder.description.setText(demand.getDescription());
-        holder.time.setText(CommonUtils.formatTime(demand.getCreatedAt()));
-        holder.date.setText(CommonUtils.formatDate(demand.getCreatedAt()));
-
-        if (mSelectedItemsIds.get(position)) markDemandSelected(holder);
-        else unmarkDemandSelected(holder);
     }
 
     private void setTransferIntent(Intent intent, Demand demand) {
@@ -163,13 +171,13 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
             int color = ContextCompat.getColor(mContext,R.color.common_google_signin_btn_text_light);
             int drawable = R.drawable.ic_visibility_black_24dp;
             //v.setBackgroundColor(ContextCompat.getColor(mContext,R.color.transsilver));
-            TextView subject = (TextView) v.findViewById(R.id.demand_title);
+            TextView subject = v.findViewById(R.id.demand_title);
             subject.setTextColor(color);
-            TextView sender = (TextView) v.findViewById(R.id.demand_user_sender);
+            TextView sender = v.findViewById(R.id.demand_user_sender);
             sender.setTextColor(color);
-            TextView receiver = (TextView) v.findViewById(R.id.demand_user_receiver);
+            TextView receiver =  v.findViewById(R.id.demand_user_receiver);
             receiver.setTextColor(color);
-            ImageView visibilityIcon = (ImageView) v.findViewById(R.id.demand_seen_icon);
+            ImageView visibilityIcon = v.findViewById(R.id.demand_seen_icon);
             Drawable objDrawable;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
                 objDrawable = mContext.getDrawable(drawable);
@@ -186,10 +194,6 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
 
     public void showDemand(View v, int position){
         Demand demand = mDemandList.get(position);
-        if (demand.getType() != null) Log.d(TAG, "demand type: " + demand.getType().getTitle());
-        else Log.d(TAG, "demand type null");
-        if (demand.getReason() != null) Log.d(TAG, "demand type: " + demand.getReason().getTitle());
-        else Log.d(TAG, "demand reason null");
         //change color in order to indicate seen status
         setSeenStatus(v, demand, position);
         Intent intent = new Intent(mContext, ViewDemandActivity.class);

@@ -420,8 +420,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
-        intent.putExtra(Constants.INTENT_PAGE, data.getString("page"));
-        intent.putExtra(Constants.INTENT_MENU, data.getString("menu"));
+        intent.putExtra(Constants.INTENT_PAGE, Integer.valueOf(data.getString("page")));
+        intent.putExtra(Constants.INTENT_MENU, Integer.valueOf(data.getString("menu")));
 
         startNotification(intent, icon, notificationId, title, text, bigTextStyle);
     }
@@ -529,8 +529,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 }
 
                 intent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
-                intent.putExtra(Constants.INTENT_PAGE, data.getInt("page"));
-                intent.putExtra(Constants.INTENT_MENU, data.getInt("menu"));
+                intent.putExtra(Constants.INTENT_PAGE, Integer.valueOf(data.getInt("page")));
+                intent.putExtra(Constants.INTENT_MENU, Integer.valueOf(data.getInt("menu")));
 
             }
 

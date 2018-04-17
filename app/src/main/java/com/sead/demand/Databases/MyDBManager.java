@@ -521,45 +521,43 @@ public class MyDBManager {
     }
 
     public List<Demand> searchDemands(String selection, String[] selectionArgs){
-        if (selection != null) Log.d(TAG, "(searchDemands) selection: " + selection);
+        if (selection != null) Log.d(TAG, "(searchDemands) selection:" + selection);
         if (selectionArgs != null) for (String arg : selectionArgs) Log.d(TAG, "(searchDemands) arg: " + arg);
 
         String[] projection = {
-                FeedReaderContract.DemandEntry._ID,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_LATE,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
-                FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT
+            FeedReaderContract.DemandEntry._ID,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_DEMAND_ID,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_TYPE_ID,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_REASON_ID,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_SUBJECT,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_DESCRIPTION,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_STATUS,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_SEEN,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_ARCHIVE,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_POSTPONED,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_LATE,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT,
+            FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT
         };
 
-        String sortOrder =
-                FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT + " DESC";
+        String sortOrder = FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT + " DESC";
 
         mDB = mMyDbHelper.getReadableDatabase();
 
-        Cursor cursor = mDB.query(
-                FeedReaderContract.DemandEntry.TABLE_NAME,
-                projection,
-                selection,
-                selectionArgs,
-                null,
-                null,
-                sortOrder
+       Cursor cursor = mDB.query(
+            FeedReaderContract.DemandEntry.TABLE_NAME,
+            projection,
+            selection,
+            selectionArgs,
+            null,
+            null,
+            sortOrder
         );
 
         List<Demand> demands = new ArrayList<>();
-
-        Log.d(TAG, "(searchDemands) cursor: " + cursor.getCount());
+        //Log.d(TAG, "(searchDemands) cursor: " + cursor.getCount());
 
         while(cursor.moveToNext()) {
             long itemId = cursor.getLong(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry._ID));
@@ -577,10 +575,12 @@ public class MyDBManager {
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_UPDATED_AT));
 
+            /*
             Log.d(TAG, "(searchDemands) late cursor 1: "
                     + cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_LATE));
             Log.d(TAG, "(searchDemands) late cursor 2: "
                     + (cursor.getInt(cursor.getColumnIndexOrThrow(FeedReaderContract.DemandEntry.COLUMN_NAME_LATE)) == 1));
+            */
 
             // Search for local instances of users
             User sender = findUserByServerId(senderId);
@@ -606,12 +606,12 @@ public class MyDBManager {
                         updated_at
                 );
                 demands.add(demand);
-                Log.d(TAG,"(searchDemands) demand add to list: " + demand.toString());
+                //Log.d(TAG,"(searchDemands) demand add to list: " + demand.toString());
             }
         }
         cursor.close();
         mDB.close();
-        printDemands(demands);
+        //printDemands(demands);
         return demands;
     }
 

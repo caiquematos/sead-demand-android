@@ -280,8 +280,8 @@ public class CommonUtils {
         MyDBManager myDBManager = new MyDBManager(context);
         long newRow = myDBManager.addDemand(demand);
         Log.d(TAG, "(storeDemandDB) new row inserted:" + newRow);
-        listAllDemandsDB(context);
-        listAllReasonsDB(context);
+        //listAllDemandsDB(context);
+        //listAllReasonsDB(context);
 
         if(newRow > 0) {
             String fragTag = "";
@@ -298,12 +298,6 @@ public class CommonUtils {
             }
             notifyDemandListView(demand,fragTag,type,context);
         }
-
-        if (type == Constants.INSERT_DEMAND_RECEIVED) {
-            Log.e(TAG, "Starting Insert setWarnDueTime");
-            setWarnDueTime(demand,context);
-        }
-
     }
 
     public static void updateDemandDB(String type, Demand demand, Context context) {

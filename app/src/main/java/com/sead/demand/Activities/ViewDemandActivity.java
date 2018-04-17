@@ -2060,6 +2060,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                         case Constants.DEADLINE_ACCEPTED_STATUS:
                             message = "Solicitação aceita com sucesso.";
                             handleMenu(mMenuType,demandResponse.getStatus());
+                            CommonUtils.updateDemandDB(Constants.UPDATE_STATUS, demandResponse, mActivity);
                             break;
                         default:
                             handleMenu(mMenuType, demandResponse.getStatus());
