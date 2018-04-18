@@ -760,7 +760,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
 
         MyDBManager myDBManager = new MyDBManager(this);
         List<Authority> authorities = myDBManager.searchAuthorities(selection,args);
-
+        CommonUtils.listAllAuthsDB(this);
         Log.d(TAG, "check authority:" + authorities.toString());
 
         return !authorities.isEmpty();
@@ -1864,6 +1864,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                     switch(demandResponse.getStatus()){
                         case Constants.TRANSFER_STATUS:
                             message = "Demanda transferida com Sucesso.";
+                            CommonUtils.updateDemandDB(Constants.UPDATE_STATUS, demandResponse, mActivity);
                             CommonUtils.cancelAllAlarms(demandResponse, mActivity);
                             showDemandReason(demandResponse);
                             handleMenu(mMenuType,Constants.TRANSFER_STATUS);
@@ -2271,9 +2272,10 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                             handleMenu(mMenuType,demandResponse.getStatus());
                     }
 
-                    Snackbar.make(mFabMenu, message, Snackbar.LENGTH_LONG).show();
+                    CommonUtils.updateDemandDB(Constants.UPDATE_STATUS, demandResponse, mActivity);
                     showDemandStatus(demandResponse.getStatus());
                     showDemandReason(demandResponse);
+                    Snackbar.make(mFabMenu, message, Snackbar.LENGTH_LONG).show();
                     Log.e(TAG, "demand reason: " + demandResponse.getReason().getTitle());
                 } else {
                     throw new JSONException("success hit false!");
