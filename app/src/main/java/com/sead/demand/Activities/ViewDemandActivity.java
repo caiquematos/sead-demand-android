@@ -1655,11 +1655,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                     if(mShouldCancelAlarm){
                         CommonUtils.cancelAllAlarms(demandResponse, mActivity);
                         mShouldCancelAlarm = false;
-                        Log.e(TAG, "should cancel alarm was true!");
+                        Log.d(TAG, "(StatusTask) should cancel alarm was true!");
                     }
 
-                    Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG).show();
+                    CommonUtils.updateDemandDB(Constants.UPDATE_STATUS, demandResponse, mActivity);
                     showDemandStatus(demandResponse.getStatus());
+                    Snackbar.make(mFabYes, message, Snackbar.LENGTH_LONG).show();
                 } else {
                     throw new JSONException("success hit false!");
                 }

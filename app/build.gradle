@@ -3,9 +3,9 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         config {
-            keyAlias 'SeadDemandKey'
+            keyAlias 'SeadKey'
             keyPassword 'sead1515'
-            storeFile file('C:/Users/kaykl/StudioProjects/key Store/android-keys.jks')
+            storeFile file('C:/Users/Larissa/StudioProjects/keystore.jks')
             storePassword 'kraPniknil79'
         }
     }
