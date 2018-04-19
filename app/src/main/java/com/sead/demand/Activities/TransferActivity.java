@@ -73,6 +73,8 @@ public class TransferActivity extends AppCompatActivity {
             if (mDemand == null) return;
         } else return;
 
+        Log.d(TAG, "(onCreate) demand: " + mDemand.toString());
+
         mTransferFab = findViewById(R.id.transfer_fab_transfer_activity);
         mTransferFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -353,7 +355,11 @@ public class TransferActivity extends AppCompatActivity {
             this.demandType = mDemandTypesArray.get(position);
             this.demand = demand;
             Log.d(TAG, "Demand Type:" + this.demandType.toString());
+            Log.d(TAG, "Demand:" + this.demand.toString());
         }
+
+        // mavenCentral()
+        //compile 'me.grantland:autofittextview:0.2.+'
 
         @Override
         protected String doInBackground(Void... voids) {
