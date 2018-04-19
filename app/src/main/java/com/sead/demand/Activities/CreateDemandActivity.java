@@ -120,7 +120,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                 mDemandTypeSelected = mDemandTypesArray.get(position);
                 mReceiver = null;
                 mReceiverView.setText("");
-                fetchUsers(position);
+                fetchUsers(position, mUser);
             }
 
             @Override
@@ -173,10 +173,10 @@ public class CreateDemandActivity extends AppCompatActivity{
         }
     }
 
-    private void fetchUsers(int position) {
+    private void fetchUsers(int position, User user) {
         if (CommonUtils.isOnline(this)) {
             if (mFetchUsersTask == null) {
-                mFetchUsersTask = new FetchUsersTask(position);
+                mFetchUsersTask = new FetchUsersTask(position, user);
                 mFetchUsersTask.execute();
             }
         } else {
@@ -473,9 +473,11 @@ public class CreateDemandActivity extends AppCompatActivity{
 
     private class FetchUsersTask extends AsyncTask<Void, Void, String> {
         private DemandType demandType;
+        private User user;
 
-        public FetchUsersTask(int position) {
+        public FetchUsersTask(int position, User user) {
             this.demandType = mDemandTypesArray.get(position);
+            this.user = user;
             Log.d(TAG, "Demand Type:" + this.demandType.toString());
         }
 
@@ -483,6 +485,7 @@ public class CreateDemandActivity extends AppCompatActivity{
         protected String doInBackground(Void... voids) {
             ContentValues values = new ContentValues();
             values.put("demand_type_id", demandType.getId());
+            values.put("sender_id", user.getId());
             return CommonUtils.POST("/user/get-by-demand-type", values);
         }
 
