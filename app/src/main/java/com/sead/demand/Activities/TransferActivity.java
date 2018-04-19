@@ -19,6 +19,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
 
+import com.sead.demand.Entities.Demand;
 import com.sead.demand.Entities.DemandType;
 import com.sead.demand.Entities.Department;
 import com.sead.demand.Entities.User;
@@ -52,6 +53,7 @@ public class TransferActivity extends AppCompatActivity {
     private DemandType mDemandTypeSelected;
     private FetchUsersTask mFetchUsersTask;
     private FetchAllUsersTask mFetchAllUsersTask;
+    private Demand mDemand;
 
     public TransferActivity() {
         mActivity = this;
@@ -61,10 +63,17 @@ public class TransferActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_transfer);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mTransferFab = (FloatingActionButton) findViewById(R.id.transfer_fab_transfer_activity);
+        Intent intent = getIntent();
+        Bundle bundle = intent.getBundleExtra(Constants.INTENT_BUNDLE);
+        if (bundle != null) {
+            mDemand = (Demand) bundle.getSerializable(Constants.INTENT_DEMAND);
+            if (mDemand == null) return;
+        } else return;
+
+        mTransferFab = findViewById(R.id.transfer_fab_transfer_activity);
         mTransferFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -76,11 +85,11 @@ public class TransferActivity extends AppCompatActivity {
         mPDDemand = new ProgressDialog(this);
         mPDDepartment = new ProgressDialog(this);
 
-        mReceiverCB = (CheckBox) findViewById(R.id.transfer_receiver_check_box);
-        mDepartmentS = (Spinner) findViewById(R.id.transfer_department_spinner);
-        mDemandTypeS = (Spinner) findViewById(R.id.transfer_type_spinner);
-        mReceiverAC = (AutoCompleteTextView) findViewById(R.id.transfer_receiver_ac);
-        mReceiverCB = (CheckBox) findViewById(R.id.transfer_receiver_check_box);
+        mReceiverCB = findViewById(R.id.transfer_receiver_check_box);
+        mDepartmentS = findViewById(R.id.transfer_department_spinner);
+        mDemandTypeS = findViewById(R.id.transfer_type_spinner);
+        mReceiverAC = findViewById(R.id.transfer_receiver_ac);
+        mReceiverCB = findViewById(R.id.transfer_receiver_check_box);
 
         mDepartmentS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -132,7 +141,7 @@ public class TransferActivity extends AppCompatActivity {
     private void fetchAllUsers() {
         if (CommonUtils.isOnline(this)) {
             if (mFetchAllUsersTask == null) {
-                mFetchAllUsersTask = new FetchAllUsersTask();
+                mFetchAllUsersTask = new FetchAllUsersTask(mDemand);
                 mFetchAllUsersTask.execute();
             }
         } else {
@@ -391,6 +400,11 @@ public class TransferActivity extends AppCompatActivity {
     }
 
     private class FetchAllUsersTask extends AsyncTask<Void, Void, String> {
+        private Demand demand;
+
+        public FetchAllUsersTask(Demand demand) {
+            this.demand = demand;
+        }
 
         @Override
         protected void onPreExecute() {
@@ -403,7 +417,8 @@ public class TransferActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(Void... voids) {
             ContentValues values = new ContentValues();
-            return CommonUtils.POST("/user/all-internal", values);
+            values.put("sender_id", "" + this.demand.getSender());
+            return CommonUtils.POST("/user/transfer-all-internal", values);
         }
 
         @Override

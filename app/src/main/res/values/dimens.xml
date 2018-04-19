@@ -1,5 +1,9 @@
 <resources>
-    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="fab_margin">12dp</dimen>
+    <dimen name="fab_margin_mini">8dp</dimen>
+    <dimen name="fab_margin_mini_right">11dp</dimen>
+    <dimen name="menu_text_size">14sp</dimen>
+    <dimen name="margin_fab_label">10dp</dimen>
     <dimen name="divider_margin">8dp</dimen>
     <dimen name="app_bar_height">180dp</dimen>
     <dimen name="text_margin">16dp</dimen>
@@ -24,4 +28,7 @@
     <dimen name="tag_margin_start">4dp</dimen>
 
     <dimen name="description_padding_bottom">45dp</dimen>
+    <dimen name="layout_fab_padding">16dp</dimen>
+    <dimen name="layout_fab_padding_item_bottom">12dp</dimen>
+    <dimen name="layout_fab_padding_item_end">16dp</dimen>
 </resources>

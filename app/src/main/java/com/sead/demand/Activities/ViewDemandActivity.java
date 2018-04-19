@@ -499,6 +499,9 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
 
     private void startTransferActivity(int type) {
         Intent intent = new Intent(mActivity, TransferActivity.class);
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(Constants.INTENT_DEMAND, mDemand);
+        intent.putExtra(Constants.INTENT_BUNDLE, bundle);
         startActivityForResult(intent,type);
     }
 
