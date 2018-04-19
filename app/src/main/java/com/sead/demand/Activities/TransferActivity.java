@@ -109,7 +109,7 @@ public class TransferActivity extends AppCompatActivity {
                 mDemandTypeSelected = mDemandTypesArray.get(position);
                 mReceiver = null;
                 mReceiverAC.setText("");
-                fetchUsers(position);
+                fetchUsers(mDemand, position);
             }
 
             @Override
@@ -150,10 +150,10 @@ public class TransferActivity extends AppCompatActivity {
         }
     }
 
-    private void fetchUsers(int position) {
+    private void fetchUsers(Demand demand, int position) {
         if (CommonUtils.isOnline(this)) {
             if (mFetchUsersTask == null) {
-                mFetchUsersTask = new FetchUsersTask(position);
+                mFetchUsersTask = new FetchUsersTask(position, demand);
                 mFetchUsersTask.execute();
             }
         } else {
@@ -347,9 +347,11 @@ public class TransferActivity extends AppCompatActivity {
 
     private class FetchUsersTask extends AsyncTask<Void, Void, String> {
         private DemandType demandType;
+        private Demand demand;
 
-        public FetchUsersTask(int position) {
+        public FetchUsersTask(int position, Demand demand) {
             this.demandType = mDemandTypesArray.get(position);
+            this.demand = demand;
             Log.d(TAG, "Demand Type:" + this.demandType.toString());
         }
 
@@ -357,6 +359,7 @@ public class TransferActivity extends AppCompatActivity {
         protected String doInBackground(Void... voids) {
             ContentValues values = new ContentValues();
             values.put("demand_type_id", demandType.getId());
+            values.put("sender_id", demand.getSender().getId());
             return CommonUtils.POST("/user/get-by-demand-type", values);
         }
 
@@ -417,7 +420,7 @@ public class TransferActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(Void... voids) {
             ContentValues values = new ContentValues();
-            values.put("sender_id", "" + this.demand.getSender());
+            values.put("sender_id", demand.getSender().getId());
             return CommonUtils.POST("/user/transfer-all-internal", values);
         }
 
