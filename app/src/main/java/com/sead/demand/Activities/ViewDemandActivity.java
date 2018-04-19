@@ -14,10 +14,12 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPropertyAnimatorListener;
+import android.support.v4.widget.TextViewCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.OvershootInterpolator;
@@ -483,6 +485,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void showDueTime() {
+        TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(mDueTimeTV,8, 18, 2, TypedValue.COMPLEX_UNIT_SP);
         if (mDemand.getStatus().equals(Constants.FINISH_STATUS)) {
             int color = ContextCompat.getColor(this,R.color.secondary_text);
             mDueTimeTV.setTextColor(color);

@@ -31,4 +31,5 @@
     <dimen name="layout_fab_padding">16dp</dimen>
     <dimen name="layout_fab_padding_item_bottom">12dp</dimen>
     <dimen name="layout_fab_padding_item_end">16dp</dimen>
+    <dimen name="due_time_autosizemax">18sp</dimen>
 </resources>
