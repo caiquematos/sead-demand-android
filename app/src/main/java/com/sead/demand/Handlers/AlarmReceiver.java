@@ -42,6 +42,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         Demand demand = (Demand) bundle.getSerializable(Constants.INTENT_DEMAND);
         String title = "";
         String text = demand.getSubject();
+        String bigTextTitle = "";
+        String bigText = "";
         int drawable = -1;
 
         Log.d(TAG, "(onReceive) alarm type:" + type);
@@ -52,26 +54,31 @@ public class AlarmReceiver extends BroadcastReceiver {
                 title = "Expira em "
                         + Constants.DUE_TIME_PREVIOUS_WARNING
                         + (Constants.DUE_TIME_PREVIOUS_WARNING > 1 ? " dias" : " dia");
+                bigTextTitle = title;
+                bigText = context.getString(R.string.big_text_due_time_warning);
                 drawable = R.drawable.ic_alarm_black_24dp;
                 attemptToSendLateWarning(demand, context);
                 break;
             case Constants.DUE_TIME_ALARM_TAG:
                 title = "Prazo expirou!";
+                bigTextTitle = title;
+                bigText = context.getString(R.string.big_text_due_time);
                 drawable = R.drawable.ic_alarm_off_black_24dp;
                 attemptToMarkDemandAsLate(demand, context);
                 break;
             case Constants.REMIND_ME_ALARM_TAG:
                 title = "Lembrete!";
-                // Todo: change icon.
+                bigTextTitle = title;
+                bigText = context.getString(R.string.big_text_remeind_me);
                 drawable = R.drawable.ic_alarm_black_24dp;
                 break;
         }
 
-       generateNotification(demand, context, intent, drawable, title, text);
+       generateNotification(demand, context, intent, drawable, title, text, bigTextTitle, bigText);
     }
 
     private void generateNotification(Demand demand, Context context, Intent intent,
-                                      int drawable, String title, String text) {
+                                      int drawable, String title, String text, String bigTextTitle, String bigText) {
         Intent targetIntent = new Intent(context, ViewDemandActivity.class);
         targetIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         targetIntent.putExtra(Constants.INTENT_ACTIVITY, getClass().getSimpleName());
@@ -91,13 +98,20 @@ public class AlarmReceiver extends BroadcastReceiver {
         );
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, "channel_alarm")
                 .setSmallIcon(drawable)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(resultPendingIntent);
+
+        NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
+        bigTextStyle.setBigContentTitle(bigTextTitle);
+        bigTextStyle.bigText(bigText);
+        bigTextStyle.setSummaryText(CommonUtils.formatDate(demand.getCreatedAt()));
+
+        if (bigTextStyle != null) notificationBuilder.setStyle(bigTextStyle);
 
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(context.NOTIFICATION_SERVICE);
         notificationManager.notify(notificationId, notificationBuilder.build());
@@ -121,7 +135,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 mDueTimeTask.execute("mark-as-late");
             }
         } else {
-            CommonUtils.handleLater(demand,Constants.UPDATE_JOB_TAG, context);
+            //CommonUtils.handleLater(demand,Constants.UPDATE_JOB_TAG, context);
         }
     }
 
@@ -131,7 +145,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         // Mark locally.
         CommonUtils.updateColumnDB(
                 FeedReaderContract.DemandEntry.COLUMN_NAME_LATE,
-                (demand.isLate() ? "1" : "0"),
+                "" + demand.isLate(),
                 demand,
                 Constants.UPDATE_STATUS,
                 context
@@ -218,7 +232,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                     break;
                 default:
             }
-            return CommonUtils.POST("/demand/send/" + url, values);
+            return CommonUtils.POST("/send/" + url, values);
         }
 
         @Override
@@ -226,6 +240,30 @@ public class AlarmReceiver extends BroadcastReceiver {
             super.onPostExecute(s);
             mDueTimeTask = null;
             Log.d(TAG, "(DueTimeTask) response: " + s);
+
+            try {
+                JSONObject jsonObject = new JSONObject(s);
+                boolean success = jsonObject.getBoolean("success");
+                if (success) {
+                    int type = jsonObject.getInt("type");
+                    switch (type) {
+                        case Constants.WARN_DUE_TIME_ALARM_TAG:
+                            //do something.
+                            Log.d(TAG, "(DueTimeTask) warn due time sent!");
+                            break;
+                        case Constants.DUE_TIME_ALARM_TAG:
+                            Log.d(TAG, "(DueTimeTask) due time sent!");
+                            //do another something;
+                            break;
+                        default:
+                            Log.e(TAG, "(DueTimeTask) post type unexpected!!!");
+                    }
+                } else {
+
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 

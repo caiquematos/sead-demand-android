@@ -27,29 +27,26 @@ public class MyAlarmManager {
 
     public static void addAlarm(Context context, Intent intent, int notificationId, int type, long timeInMillis){
         int alarmId = generateAlarmId(notificationId, type);
-
-
-
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, alarmId , intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        //PendingIntent pendingIntent = PendingIntent.getBroadcast(context, alarmId , intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         if (hasAlarm(context, intent, alarmId, type)) cancelAlarm(context, intent, notificationId, type);
 
         /* teste */
-        Intent intentToFire = intent;
-        intentToFire.putExtra("test", "teste sim");
-        PendingIntent alarmIntent = PendingIntent.getBroadcast(context, 0, intentToFire,0);
+        //Intent intentToFire = intent;
+        //intentToFire.putExtra("test", "teste sim");
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(context, alarmId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         /* teste */
 
         /* only for test purpose */
-        Calendar c = Calendar.getInstance();
-        c.add(Calendar.MINUTE, 1);
-        Log.d(TAG, "due time (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
-                + " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
+        //Calendar c = Calendar.getInstance();
+        //c.add(Calendar.MINUTE, 1);
+        Log.d(TAG, "(addAlarm) due time (test): " + CommonUtils.convertMillisToDate(timeInMillis)
+                + " " + CommonUtils.convertMillisToTime(timeInMillis));
         /* only for test purpose */
 
-        timeInMillis = c.getTimeInMillis();
-        pendingIntent = alarmIntent;
+        //timeInMillis = c.getTimeInMillis();
+        PendingIntent pendingIntent = alarmIntent;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Log.d(TAG, "(addAlarm) > version M");
@@ -66,7 +63,7 @@ public class MyAlarmManager {
 
         //CHECKING IF PENDING INTENT IS ALREADY RUNNING
         Intent checkIntent = new Intent(context, AlarmReceiver.class);
-        Boolean alarmUp = (PendingIntent.getBroadcast(context, 0, checkIntent, PendingIntent.FLAG_NO_CREATE) != null);
+        Boolean alarmUp = (PendingIntent.getBroadcast(context, alarmId, checkIntent, PendingIntent.FLAG_NO_CREATE) != null);
         if (alarmUp) Log.d(TAG, "(addAlarm) alarm set!");
         else Log.e(TAG, "(addAlarm) alarm NOT set!");
     }

@@ -338,30 +338,34 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         long demandDueTimeInMillis = demand.getDueTimeInMillis();
         int warnDueTimeInDays = Constants.DUE_TIME_PREVIOUS_WARNING;
         long warnDueTimeInMillis = warnDueTimeInDays * 24 * 3600 * 1000;
-        //Log.d(TAG, "Warn Time in Millis: " + warnDueTimeInMillis);
+        Log.d(TAG, "(handleDeadlineAlarm) Warn Time in Millis: " + warnDueTimeInMillis);
         long warnDemandTimeInMillis = demandDueTimeInMillis - warnDueTimeInMillis;
-        //Log.d(TAG, "Warn Demand in Millis: " + warnDemandTimeInMillis);
+        Log.d(TAG, "(handleDeadlineAlarm) Warn Demand in Millis: " + warnDemandTimeInMillis);
 
         /* only for test purpose */
-        Calendar c = Calendar.getInstance();
-        c.add(Calendar.MINUTE, 1);
-        Log.d(TAG, "due time (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
-                + " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
+        //Calendar c = Calendar.getInstance();
+        //c.add(Calendar.MINUTE, 1);
+        //Log.d(TAG, "(handleDeadlineAlarm) due time warn (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
+                //+ " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
         /* only for test purpose */
 
         // first, set the due time WARNING alarm.
         CommonUtils.setAlarm(
                 this,
-                c.getTimeInMillis(), //warnDemandTimeInMillis
+                warnDemandTimeInMillis,
                 demand,
                 Constants.WARN_DUE_TIME_ALARM_TAG,
                 Constants.RECEIVED_PAGE,
                 Constants.RECEIVER_MENU
         );
+
+        //c.add(Calendar.MINUTE, 1);
+        //Log.d(TAG, "(handleDeadlineAlarm) due time (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
+        //        + " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
         // finally, set the DUE TIME alarm.
         CommonUtils.setAlarm(
                 this,
-                c.getTimeInMillis(), //demandDueTimeInMillis
+                demandDueTimeInMillis,
                 demand,
                 Constants.DUE_TIME_ALARM_TAG,
                 Constants.RECEIVED_PAGE,
@@ -453,7 +457,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         );
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "channel_id")
                 .setSmallIcon(icon)
                 .setContentTitle(title)
                 .setContentText(text)

@@ -25,13 +25,12 @@ public class Demand implements Serializable {
     private String status;
     private String seen;
     private int postponed;
-    private boolean late;
+    private int late; // boolean must be int because mysql é tinyint and json doesnt conver
     private boolean archive;
     private Date createdAt;
     private Date updatedAt;
 
     public static Demand build(User sender, User receiver, PredefinedReason reason, DemandType type, JSONObject json) throws JSONException {
-
         return new Demand(
                 -1,
                 json.getInt("id"),
@@ -44,7 +43,7 @@ public class Demand implements Serializable {
                 json.getString("status"),
                 json.getString("seen"),
                 json.getInt("postponed"),
-                (json.getInt("late") == 0 ? false : true),
+                json.getInt("late"),
                 json.getString("created_at"),
                 json.getString("updated_at")
         );
@@ -62,7 +61,7 @@ public class Demand implements Serializable {
             String status,
             String seen,
             int postponed,
-            boolean late,
+            int late,
             String created_at,
             String updated_at) {
 
@@ -217,11 +216,11 @@ public class Demand implements Serializable {
         this.postponed = postponed;
     }
 
-    public boolean isLate() {
+    public int isLate() {
         return late;
     }
 
-    public void setLate(boolean late) {
+    public void setLate(int late) {
         this.late = late;
     }
 

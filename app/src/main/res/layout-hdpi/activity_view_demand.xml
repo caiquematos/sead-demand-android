@@ -2,7 +2,6 @@
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:fab="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
@@ -22,7 +21,10 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/content_view_demand" />
+    <include
+        layout="@layout/content_view_demand"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp" />
 
     <View
         android:id="@+id/view_demand_bg"
@@ -76,6 +78,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/green"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -119,6 +122,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/Gold"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -162,6 +166,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/DarkOrchid"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -205,6 +210,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/red"
+                app:fabSize="mini"
                 app:layout_behavior="com.ajaysinghdewari.floatingactionbuttonmenu.activities.utils.MoveUpwardBehavior"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
@@ -249,6 +255,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/Red"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -292,6 +299,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/Orange"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -335,6 +343,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/blue"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -378,6 +387,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/ForestGreen"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -421,6 +431,7 @@
                 android:tint="@color/white"
                 android:visibility="gone"
                 app:backgroundTint="@color/dGreen"
+                app:fabSize="mini"
                 android:layout_marginLeft="@dimen/menu_text_size" />
 
         </LinearLayout>
@@ -484,6 +495,5 @@
             app:layout_behavior="com.ajaysinghdewari.floatingactionbuttonmenu.activities.utils.MoveUpwardBehavior" />
 
     </LinearLayout>
-
 
 </android.support.design.widget.CoordinatorLayout>

@@ -63,8 +63,11 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         final Demand demand = mDemandList.get(position);
 
         showDemandStatus(demand.getStatus(), holder);
+        showLateStatus(demand, holder);
+        /*
         if(demand.getType() != null) showDemandPrior(demand.getType().getPriority(), holder);
         else showDemandPrior(null, holder);
+        */
 
         /** Handle users' name **/
         handleUsersName(demand, holder);
@@ -266,6 +269,20 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
         ((GradientDrawable)background).setStroke(6, color);
         background.mutate();
     }
+
+    private void showLateStatus(Demand demand, ViewHolder holder) {
+        int color;
+        ImageView profilePic = holder.profileImage;
+        if(demand.isLate() == 1 && !(mCurrentUser.getId() == demand.getSender().getId() && this.mPage == Constants.SENT_PAGE) )
+            color = ContextCompat.getColor(mContext, R.color.Red);
+        else color = ContextCompat.getColor(mContext, R.color.accent);
+
+        LayerDrawable layerDrawable = (LayerDrawable) profilePic.getBackground();
+        Drawable background = layerDrawable.getDrawable(1);
+        ((GradientDrawable)background).setStroke(6, color);
+        background.mutate();
+    }
+
 
     private void showDemandStatus(String status, ViewHolder holder) {
         int color;

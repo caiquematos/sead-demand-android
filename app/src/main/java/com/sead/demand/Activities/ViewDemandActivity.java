@@ -85,6 +85,16 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private TextView mTransferTV;
     private TextView mFinishTV;
     private TextView mDeadlineTV;
+    private View mYesView;
+    private View mNoView;
+    private View mLaterView;
+    private View mReopenView;
+    private View mRejectView;
+    private View mResendView;
+    private View mDoneView;
+    private View mTransferView;
+    private View mFinishView;
+    private View mDeadlineView;
     private int mPage; // Identifies which activity called this one.
     private int mMenuType; // Identifies which type of menu to be shown.
     private boolean mTurned;
@@ -101,6 +111,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     private User mCurrentUser;
     private List<FloatingActionButton> mMenuButtonsList;
     private List<TextView> mMenuTitlesList;
+    private List<View> mMenuViewList;
     private String mMenuTag;
     private TransferTask mTransferTask;
     private DeadlineRequestTask mDeadlineRequestTask;
@@ -117,7 +128,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_demand);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
@@ -142,6 +153,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         // Get object references.
         mMenuButtonsList = new ArrayList<>();
         mMenuTitlesList = new ArrayList<>();
+        mMenuViewList = new ArrayList<>();
 
         mSubjectTV = (TextView) findViewById(R.id.view_demand_subject);
         mPriorTV = (TextView) findViewById(R.id.view_demand_prior);
@@ -177,7 +189,14 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         setInfoClickListeners();
         setMenuOptions();
 
-        mFabMenu = (FloatingActionButton) findViewById(R.id.fab_menu);
+        /*
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+    RelativeLayout.LayoutParams p = (RelativeLayout.LayoutParams) myFab.getLayoutParams();
+    p.setMargins(0, 0, 0, 0); // get rid of margins since shadow area is now the margin
+    myFab.setLayoutParams(p);
+         */
+
+        mFabMenu = findViewById(R.id.fab_menu);
         mFabMenu.setOnClickListener(this);
         handleMenu(mMenuType, mDemand.getStatus());
 
@@ -228,7 +247,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             public void onClick(View v) {
                 String title = "DEMANDA ATRASADA";
                 String message = "PRAZO: " + mDemand.getDueDate() + " " + mDemand.getDueTime()
-                        + "\n\n HOJE: " + getToday();
+                        + "\n\nHOJE: " + getToday();
                         //+ "\n\n" + getDaysLeft();
                 showInfoAlert(title, message);
             }
@@ -255,10 +274,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void setMenuOptions() {
+        mTransferView = findViewById(R.id.view_fab_transfer);
         mTransferTV = (TextView) findViewById(R.id.tv_transfer);
         mFabTransfer = (FloatingActionButton) findViewById(R.id.fab_transfer);
         mMenuTitlesList.add(mTransferTV);
         mMenuButtonsList.add(mFabTransfer);
+        mMenuViewList.add(mTransferView);
         mFabTransfer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -268,10 +289,13 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); // Transfer
 
+
+        mDeadlineView = findViewById(R.id.view_fab_deadline);
         mDeadlineTV = (TextView) findViewById(R.id.tv_deadline);
         mFabDeadline = (FloatingActionButton) findViewById(R.id.fab_deadline);
         mMenuTitlesList.add(mDeadlineTV);
         mMenuButtonsList.add(mFabDeadline);
+        mMenuViewList.add(mDeadlineView);
         mFabDeadline.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -287,10 +311,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); // Deadline
 
+        mFinishView = findViewById(R.id.view_fab_finish);
         mFinishTV = (TextView) findViewById(R.id.tv_finish);
         mFabFinish = (FloatingActionButton) findViewById(R.id.fab_finish);
         mMenuTitlesList.add(mFinishTV);
         mMenuButtonsList.add(mFabFinish);
+        mMenuViewList.add(mFinishView);
         mFabFinish.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -298,10 +324,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); // Finish
 
+        mYesView = findViewById(R.id.view_fab_yes);
         mYesTV = (TextView) findViewById(R.id.tv_yes);
         mFabYes = (FloatingActionButton) findViewById(R.id.fab_yes);
         mMenuTitlesList.add(mYesTV);
         mMenuButtonsList.add(mFabYes);
+        mMenuViewList.add(mYesView);
         mFabYes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -311,10 +339,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); //Accepted
 
+        mLaterView = findViewById(R.id.view_fab_later);
         mLaterTV = (TextView) findViewById(R.id.tv_later);
         mFabLater = (FloatingActionButton) findViewById(R.id.fab_later);
         mMenuTitlesList.add(mLaterTV);
         mMenuButtonsList.add(mFabLater);
+        mMenuViewList.add(mLaterView);
         mFabLater.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -337,10 +367,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); //Postponed
 
+        mNoView = findViewById(R.id.view_fab_no);
         mNoTV = (TextView) findViewById(R.id.tv_no);
         mFabNo = (FloatingActionButton) findViewById(R.id.fab_no);
         mMenuTitlesList.add(mNoTV);
         mMenuButtonsList.add(mFabNo);
+        mMenuViewList.add(mNoView);
         mFabNo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -350,10 +382,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); //Cancelled
 
+        mReopenView = findViewById(R.id.view_fab_reopen);
         mReopenTV = (TextView) findViewById(R.id.tv_repopen);
         mFabReopen = (FloatingActionButton) findViewById(R.id.fab_reopen);
         mMenuTitlesList.add(mReopenTV);
         mMenuButtonsList.add(mFabReopen);
+        mMenuViewList.add(mReopenView);
         mFabReopen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -364,10 +398,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); //Reopen
 
+        mRejectView = findViewById(R.id.view_fab_reject);
         mRejectTV = (TextView) findViewById(R.id.tv_reject);
         mFabReject = (FloatingActionButton) findViewById(R.id.fab_reject);
         mMenuTitlesList.add(mRejectTV);
         mMenuButtonsList.add(mFabReject);
+        mMenuViewList.add(mRejectView);
         mFabReject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -378,10 +414,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); //Reject
 
+        mResendView = findViewById(R.id.view_fab_resend);
         mResendTV = (TextView) findViewById(R.id.tv_resend);
         mFabResend = (FloatingActionButton) findViewById(R.id.fab_resend);
         mMenuTitlesList.add(mResendTV);
         mMenuButtonsList.add(mFabResend);
+        mMenuViewList.add(mResendView);
         mFabResend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -391,10 +429,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             }
         }); //Resend
 
+        mDoneView = findViewById(R.id.view_fab_done);
         mDoneTV = (TextView) findViewById(R.id.tv_done);
         mFabDone = (FloatingActionButton) findViewById(R.id.fab_done);
         mMenuTitlesList.add(mDoneTV);
         mMenuButtonsList.add(mFabDone);
+        mMenuViewList.add(mDoneView);
         mFabDone.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -489,7 +529,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         if (mDemand.getStatus().equals(Constants.FINISH_STATUS)) {
             int color = ContextCompat.getColor(this,R.color.secondary_text);
             mDueTimeTV.setTextColor(color);
-        } else if (mDemand.isLate()) {
+        } else if (mDemand.isLate() == 1) {
             int color = ContextCompat.getColor(this,R.color.red);
             mDueTimeTV.setTextColor(color);
         }
@@ -861,9 +901,12 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             title.setVisibility(View.GONE);
         }
         for (FloatingActionButton button : mMenuButtonsList) {
-            Log.d(TAG, "all buttons:" + button.getId());
             button.hide();
             button.setVisibility(View.GONE);
+        }
+        for (View view : mMenuViewList) {
+            Log.d(TAG, "all views:" + view.getId());
+            view.setVisibility(View.GONE);
         }
         mFabMenu.hide();
         mFabMenu.setVisibility(View.GONE);
@@ -876,14 +919,17 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             for (int j = 0; j < mMenuButtonsList.size(); j ++) {
                 FloatingActionButton btn = mMenuButtonsList.get(j);
                 TextView title = mMenuTitlesList.get(j);
+                View view = mMenuViewList.get(j);
                 if (btn.getId() == button.getId()) {
                     Log.d(TAG, "chosen buttons:" + btn.getId());
                     if(btn.isShown()) {
                         Log.d(TAG, "was showing...");
                         btn.hide();
                         title.setVisibility(View.GONE);
+                        view.setVisibility(View.GONE);
                     } else {
                         Log.d(TAG, "wasn't showing...");
+                        view.setVisibility(View.VISIBLE);
                         btn.show();
                         title.setVisibility(View.VISIBLE);
                     }
@@ -1067,7 +1113,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void handleDemandLate(Demand demand) {
-        if (demand.isLate()) {
+        if (demand.isLate() == 1 && !(mCurrentUser.getId() == demand.getSender().getId() && mPage == Constants.SENT_PAGE)) {
             mLateTV.setVisibility(View.VISIBLE);
         } else {
             mLateTV.setVisibility(View.GONE);

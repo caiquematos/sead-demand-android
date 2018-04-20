@@ -179,4 +179,7 @@
     <string name="view_activity_transfer_reason_description">Quando a demanda não pode ser atendida, ela é repassada ao seu superior. Por favor, escolha um motivo.</string>
     <string name="finished_demands">Finalizadas</string>
     <string name="title_activity_settings">Settings</string>
+    <string name="big_text_due_time_warning">Olá, só queremos te lembrar que esta demanda está próxima do prazo de conclusão. Clique nesta notificação para visualizá-la.</string>
+    <string name="big_text_due_time">Olá, o prazo desta demanda chegou ao fim! Você pode solicitar aumento de prazo a seu superior. Clique nesta notificação para visualizá-la.</string>
+    <string name="big_text_remeind_me">Olá, você pediu pra gente te lembrar desta demanda. Clique nesta notificação para visualizá-la.</string>
 </resources>
