@@ -445,7 +445,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private void startNotification(Intent intent, int icon, int notificationId, String title,
                                    String text, NotificationCompat.BigTextStyle bigTextStyle) {
         PendingIntent resultPendingIntent;
-
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addNextIntentWithParentStack((new Intent(this, MainActivity.class)));

@@ -23,7 +23,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
         <service android:name=".FCM.MyFirebaseInstanceIDService">
             <intent-filter>
                 <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
@@ -199,6 +198,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.sead.demand.Activities.ViewDemandActivity" />
         </activity>
+        <activity android:name=".Activities.PrivacyPolicyActivity"></activity>
     </application>
 
 </manifest>

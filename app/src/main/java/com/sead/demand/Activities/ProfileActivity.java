@@ -73,7 +73,7 @@ public class ProfileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -82,8 +82,8 @@ public class ProfileActivity extends AppCompatActivity {
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         me = CommonUtils.getCurrentUserPreference(this);
 
-        mLockIV = (ImageView) findViewById(R.id.profile_lock);
-        mAddActivityIV = (ImageView) findViewById(R.id.profile_add_demand_types);
+        mLockIV = findViewById(R.id.profile_lock);
+        mAddActivityIV = findViewById(R.id.profile_add_demand_types);
 
         final User referenceUser;
 
@@ -111,26 +111,26 @@ public class ProfileActivity extends AppCompatActivity {
 
         this.setTitle(referenceUser.getName());
 
-        TextView email = (TextView) findViewById(R.id.profile_email);
+        TextView email = findViewById(R.id.profile_email);
         email.setText(referenceUser.getEmail());
 
-        TextView position = (TextView) findViewById(R.id.profile_position);
+        TextView position = findViewById(R.id.profile_position);
         position.setText(referenceUser.getJob().getPosition());
 
-        TextView superior = (TextView) findViewById(R.id.profile_superior);
+        TextView superior = findViewById(R.id.profile_superior);
         superior.setText(referenceUser.getSuperior().getName());
 
-        mProfileIV = (ImageView) findViewById(R.id.profile_image);
+        mProfileIV = findViewById(R.id.profile_image);
 
-        mJobTV = (TextView) findViewById(R.id.profile_job);
+        mJobTV = findViewById(R.id.profile_job);
         mJobTV.setText(referenceUser.getJob().getTitle());
 
-        mActivitiesTV = (TextView) findViewById(R.id.profile_demand_type);
+        mActivitiesTV = findViewById(R.id.profile_demand_type);
 
         mProfileIV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               buildDialog();
+               //buildDialog();
             }
         });
 

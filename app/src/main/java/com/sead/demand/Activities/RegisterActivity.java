@@ -450,7 +450,9 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
                 superiorEmail = "";
             }else if( mSuperiorsEmails.isEmpty()){
                 superiorEmail = "";
-                ((TextView)mSuperiorView.getChildAt(0)).setError("This field is required");
+                Snackbar.make(mSuperiorView, "Escolha um Superior válido!", Snackbar.LENGTH_LONG).show();
+                focusView = mSuperiorView;
+                cancel = true;
             } else {
                 superiorEmail = mSuperiorsEmails.get(mSuperiorView.getSelectedItemPosition());
             }
@@ -477,11 +479,19 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             cancel = true;
         }
 
-        if (!confirmPasswordMatch(user.getPassword(),mConfirmPasswordView.getText().toString())) {
-            mConfirmPasswordView.setError("Password doesn't match");
-            focusView = mConfirmPasswordView;
+        String confirmPassword = mConfirmPasswordView.getText().toString();
+        if(isPasswordValid(confirmPassword)) {
+            if (!confirmPasswordMatch(user.getPassword(),confirmPassword)) {
+                mConfirmPasswordView.setError("As senhas não combinam");
+                focusView = mConfirmPasswordView;
+                cancel = true;
+            }
+        } else {
+            mConfirmPasswordView.setError(getString(R.string.error_invalid_password));
+            focusView = mPasswordView;
             cancel = true;
         }
+
 
         // Check for a valid email address.
         if (TextUtils.isEmpty(user.getEmail())) {
