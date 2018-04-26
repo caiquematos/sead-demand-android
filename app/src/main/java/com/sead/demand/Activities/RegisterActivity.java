@@ -633,28 +633,23 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         protected void onPostExecute(String jsonResponse) {
             mAuthTask = null;
             JSONObject jsonObject;
-            boolean success = false;
+            boolean success;
 
-            Log.e("ON POST EXECUTE REG", jsonResponse);
+            Log.e(TAG, "(RegistrationTask) jsonResponse: " + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
                 if (success) {
-                    if (mPDRegister.isShowing()){
-                        mPDRegister.dismiss();
-                    }
-                    Snackbar.make(mEmailSignInButton, "Registro realizado com sucesso", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
                     Intent intent = new Intent(getApplication(), LoginActivity.class);
+                    intent.putExtra("isRegistered", true);
                     startActivity(intent);
                     finish();
                 } else {
-                    mPasswordView.setError(getString(R.string.error_incorrect_password));
-                    mPasswordView.requestFocus();
+                    throw new JSONException("success hit false");
                 }
             } catch (JSONException e) {
-                Snackbar.make(mPositionView, "Server Problem", Snackbar.LENGTH_LONG)
+                Snackbar.make(mPositionView, R.string.server_error, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }

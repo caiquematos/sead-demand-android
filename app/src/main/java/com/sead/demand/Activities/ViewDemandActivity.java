@@ -133,6 +133,8 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         mCurrentUser = CommonUtils.getCurrentUserPreference(this);
+        mMenuTag =  "no_menu_tag";
+        mTurned = false;
 
         // Before any change, get intent data.
         Intent intent = getIntent();
@@ -579,6 +581,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
     }
 
     private void handleMenu(int menuType, String status) {
+        Log.d(TAG, "(handleMenu) page: " + mPage + " menu: " + mMenuType);
         noMenu(); // hide all menu options.
         switch (menuType) {
             case Constants.RECEIVER_MENU:
@@ -590,6 +593,11 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
             case Constants.SENDER_MENU:
                 handleSenderMenu(status);
                 break;
+            case Constants.NO_MENU:
+                noMenu();
+                break;
+            default:
+                noMenu();
         }
     }
 
@@ -897,6 +905,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
 
     private void noMenu() {
         // first, set all buttons and titles to GONE.
+        Log.d(TAG, "(noMenu) Im in no menu");
         for (TextView title : mMenuTitlesList) {
             title.setVisibility(View.GONE);
         }
@@ -910,6 +919,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
         }
         mFabMenu.hide();
         mFabMenu.setVisibility(View.GONE);
+
     }
 
     private void showItems(List<FloatingActionButton> floatingActionButtons) {
@@ -1356,6 +1366,7 @@ public class ViewDemandActivity extends AppCompatActivity implements View.OnClic
                 /* --- superior section */
 
                 case "no_menu":
+                case "no_menu_tag":
                     noMenu();
                     break;
 

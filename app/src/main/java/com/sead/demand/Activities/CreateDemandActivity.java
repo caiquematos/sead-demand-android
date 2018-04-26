@@ -83,7 +83,7 @@ public class CreateDemandActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.send_demand);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -96,10 +96,10 @@ public class CreateDemandActivity extends AppCompatActivity{
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         mUser = CommonUtils.getCurrentUserPreference(this);
 
-        mSubjectView = (EditText) findViewById(R.id.demand_subject_et);
-        mDescriptionView = (EditText) findViewById(R.id.demand_description_et);
+        mSubjectView = findViewById(R.id.demand_subject_et);
+        mDescriptionView = findViewById(R.id.demand_description_et);
 
-        mDepartmentSpinner = (Spinner) findViewById(R.id.demand_department_spinner);
+        mDepartmentSpinner = findViewById(R.id.demand_department_spinner);
         mDepartmentSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -113,7 +113,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         });
 
-        mDemandTypesSpinner = (Spinner) findViewById(R.id.demand_type_spinner);
+        mDemandTypesSpinner = findViewById(R.id.demand_type_spinner);
         mDemandTypesSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -129,7 +129,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         });
 
-        mReceiverView = (AutoCompleteTextView) findViewById(R.id.demand_receiver_act);
+        mReceiverView = findViewById(R.id.demand_receiver_act);
         mReceiverView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -139,7 +139,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
         });
 
-        mCheckBox = (CheckBox) findViewById(R.id.demand_check_box);
+        mCheckBox = findViewById(R.id.demand_check_box);
         mCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -150,7 +150,7 @@ public class CreateDemandActivity extends AppCompatActivity{
         });
 
         // TODO: Create a job service for each attempt to queue it.
-        mFab = (FloatingActionButton) findViewById(R.id.fab);
+        mFab = findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -261,7 +261,6 @@ public class CreateDemandActivity extends AppCompatActivity{
                 cancel = true;
             } else {
                 Log.d(TAG, "Receiver Email:" + mReceiver.getEmail());
-
                 if (!mReceiver.getName().equals(mReceiverView.getText().toString())){
                     // in case user type a letter or erase it.
                     mReceiverView.setError(getString(R.string.error_send_demand_receiver));
@@ -287,8 +286,6 @@ public class CreateDemandActivity extends AppCompatActivity{
                 null,
                 null);
 
-        Log.d(TAG, "Demand Created:" + demand.toString());
-
         if (demand.getSubject().isEmpty()){
             mSubjectView.setError(getString(R.string.error_field_required));
             focusView = mSubjectView;
@@ -302,6 +299,7 @@ public class CreateDemandActivity extends AppCompatActivity{
         } else {
             // Show a progress spinner, and kick off a background task to
             // perform the send demand attempt.
+            Log.d(TAG, "Demand Created:" + demand.toString());
             mDemandTask = new SendDemandTask(mCheckBox.isChecked(),demand);
             mDemandTask.execute((Void) null);
         }
@@ -404,6 +402,7 @@ public class CreateDemandActivity extends AppCompatActivity{
             }
 
             if (success && demandResponse != null) {
+                Log.d(TAG, "page: " + mPage + " menu: " + mMenuType);
                 CommonUtils.storeDemandDB(demandResponse, Constants.INSERT_DEMAND_SENT, mActivity);
                 Intent intent = new Intent(mActivity, ViewDemandActivity.class);
                 intent.putExtra(Constants.INTENT_ACTIVITY, mActivity.getClass().getSimpleName());
@@ -453,8 +452,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                     }
 
                     if (!demandTypesTitles.isEmpty()) {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, android.R.layout.simple_spinner_item, demandTypesTitles);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity,R.layout.autocomplete_custom_item, R.id.autocomplete_item, demandTypesTitles);
                         mDemandTypesSpinner.setAdapter(adapter);
                         if (!mDemandTypesSpinner.isEnabled()) mDemandTypesSpinner.setEnabled(true);
                     } else {
@@ -565,8 +563,7 @@ public class CreateDemandActivity extends AppCompatActivity{
                     }
 
                     if (!departmentsTitles.isEmpty()) {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, android.R.layout.simple_spinner_item, departmentsTitles);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, R.layout.autocomplete_custom_item, R.id.autocomplete_item, departmentsTitles);
                         mDepartmentSpinner.setAdapter(adapter);
                         if (!mDepartmentSpinner.isEnabled()) mDepartmentSpinner.setEnabled(true);
                     } else {

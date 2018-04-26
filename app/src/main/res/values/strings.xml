@@ -218,4 +218,5 @@
     <string name="privacy_policy_section_text_11">Se você tiver alguma dúvida sobre privacidade enquanto estiver usando o aplicativo ou tiver dúvidas sobre nossas práticas, entre em contato conosco por e-mail em sead@univasf.edu.br.</string>
     <string name="privacy_policy_accept_text">Aceito os termos da Política de Privacidade</string>
     <string name="privacy_policy_pre_title">Antes de continuar, leia atentamente a nossa Política de Privacidade:</string>
+    <string name="login_locked_message">Seu login pode estar bloqueado! Por favor, verifique com o seu superior.</string>
 </resources>

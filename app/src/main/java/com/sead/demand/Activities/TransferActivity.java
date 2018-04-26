@@ -271,8 +271,7 @@ public class TransferActivity extends AppCompatActivity {
                     }
 
                     if (!departmentsTitles.isEmpty()) {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, android.R.layout.simple_spinner_item, departmentsTitles);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, R.layout.autocomplete_custom_item, R.id.autocomplete_item, departmentsTitles);
                         mDepartmentS.setAdapter(adapter);
                         if (!mDepartmentS.isEnabled()) mDepartmentS.setEnabled(true);
                     } else {
@@ -329,8 +328,7 @@ public class TransferActivity extends AppCompatActivity {
                     }
 
                     if (!demandTypesTitles.isEmpty()) {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, android.R.layout.simple_spinner_item, demandTypesTitles);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, R.layout.autocomplete_custom_item, R.id.autocomplete_item, demandTypesTitles);
                         mDemandTypeS.setAdapter(adapter);
                         if (!mDemandTypeS.isEnabled()) mDemandTypeS.setEnabled(true);
                     } else {

@@ -87,8 +87,8 @@ public class DemandAdapter extends RecyclerView.Adapter<DemandAdapter.ViewHolder
     }
 
     private void handleUsersName(Demand demand, final DemandAdapter.ViewHolder holder) {
-        String sender = "mim";
-        String receiver = "mim";
+        String sender = "Eu";
+        String receiver = "Eu";
         if (mPage == Constants.SENT_PAGE) {
             receiver = demand.getReceiver().getName();
         }   else if (mPage == Constants.RECEIVED_PAGE){

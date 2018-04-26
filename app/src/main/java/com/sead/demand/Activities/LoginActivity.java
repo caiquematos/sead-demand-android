@@ -78,11 +78,15 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
 
         // Set up the login form.
         mEmailView = findViewById(R.id.email);
+        Intent intent = getIntent();
+        if (intent.hasExtra("isRegistered"))
+            if (intent.getBooleanExtra("isRegistered", false))
+                Snackbar.make(mEmailView, "Usuário registrado com sucesso!",Snackbar.LENGTH_LONG).show();
+
         populateAutoComplete();
 
         mPasswordView = findViewById(R.id.password);
@@ -202,11 +206,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         // Store values at the time of the login attempt.
         String email = mEmailView.getText().toString();
         String password = mPasswordView.getText().toString();
-
         boolean cancel = false;
         View focusView = null;
 
-        Log.d("ON LOGIN ATTEMPT", "password:" + password + " email:" + email);
+        Log.d(TAG, "(ON LOGIN ATTEMPT) password:" + password + " email:" + email);
 
         // Check for a valid password.
         if (!isPasswordValid(password)) {
@@ -216,7 +219,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
 
         // Check for a valid email address.
-        if (TextUtils.isEmpty(email)) {
+        if (email.isEmpty()) {
             mEmailView.setError(getString(R.string.error_field_required));
             focusView = mEmailView;
             cancel = true;
@@ -224,7 +227,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mEmailView.setError(getString(R.string.error_invalid_email));
             focusView = mEmailView;
             cancel = true;
-        }
+    }
 
         if (cancel) {
             // There was an error; don't attempt login and focus the first
@@ -306,9 +309,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      */
     public class UserLoginTask extends AsyncTask<Void, Void, String> {
 
-        private final String mEmail;
-        private final String mPassword;
-        private final String mFcmToken;
+        private String mEmail = "";
+        private String mPassword = "";
+        private String mFcmToken = "";
 
         UserLoginTask(String email, String password) {
             mEmail = email;
@@ -320,7 +323,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             * mFcmToken = mPrefs.getString(Constants.GCM_TOKEN, "");
             */
             if (mFcmToken.isEmpty()) {
-                Log.d(TAG, "FCM Token empty!!!");
+                mFcmToken = mPrefs.getString(Constants.GCM_TOKEN, "");
+                if (mFcmToken.isEmpty()) Log.e(TAG, "(UserLoginTask) FCM Token empty!!!");
             }
         }
 
@@ -405,7 +409,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 }
 
             } catch (JSONException e) {
-                Snackbar.make(findViewById(R.id.email_sign_in_button), R.string.server_error, Snackbar.LENGTH_LONG)
+                Snackbar.make(findViewById(R.id.email_sign_in_button), R.string.login_locked_message, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 e.printStackTrace();
             }

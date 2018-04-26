@@ -60,8 +60,11 @@ public class ProfileActivity extends AppCompatActivity {
     private StatusTask mStatusTask;
     private User me;
     private User mUser;
+    private User mReferenceUser;
+    private String mReferenceUserStatus;
     private FetchDemandTypesByUserTask mFetchDemandTypesByUserTask;
     private ArrayList<DemandType> mDemandTypesArray;
+    AlertDialog.Builder mAlert;
 
     private ProfileActivity mActivity;
 
@@ -78,6 +81,7 @@ public class ProfileActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+        mAlert = new AlertDialog.Builder(mActivity);
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
         me = CommonUtils.getCurrentUserPreference(this);
@@ -85,45 +89,43 @@ public class ProfileActivity extends AppCompatActivity {
         mLockIV = findViewById(R.id.profile_lock);
         mAddActivityIV = findViewById(R.id.profile_add_demand_types);
 
-        final User referenceUser;
-
         String mode = getIntent().getExtras().getString("mode");
         if (mode == null) finish();
 
         if (mode.equals("ADMIN")) {
             // show this user's profile and enable admin edition.
-            Log.d(TAG, "Profile ADMIN MODE!");
+            Log.d(TAG, "(onCreate) Profile ADMIN MODE!");
             mUser = (User) getIntent().getExtras().get("user");
             if (mUser == null) finish();
-            Log.d(TAG, "User transferred:" + mUser.getEmail());
-            referenceUser = mUser;
+            Log.d(TAG, "(onCreate) User transferred:" + mUser.getEmail());
+            mReferenceUser = mUser;
             mLockIV.setVisibility(View.VISIBLE);
             mAddActivityIV.setVisibility(View.VISIBLE);
         } else {
             // show logged user's profile (me).
-            Log.d(TAG, "Profile ME MODE!");
-            referenceUser = me;
+            Log.d(TAG, "(onCreate) Profile ME MODE!");
+            mReferenceUser = me;
             mLockIV.setVisibility(View.INVISIBLE);
             mAddActivityIV.setVisibility(View.INVISIBLE);
         }
 
         this.mProgressDialogUser = new ProgressDialog(this);
 
-        this.setTitle(referenceUser.getName());
+        this.setTitle(mReferenceUser.getName());
 
         TextView email = findViewById(R.id.profile_email);
-        email.setText(referenceUser.getEmail());
+        email.setText(mReferenceUser.getEmail());
 
         TextView position = findViewById(R.id.profile_position);
-        position.setText(referenceUser.getJob().getPosition());
+        position.setText(mReferenceUser.getJob().getPosition());
 
         TextView superior = findViewById(R.id.profile_superior);
-        superior.setText(referenceUser.getSuperior().getName());
+        superior.setText(mReferenceUser.getSuperior().getName());
 
         mProfileIV = findViewById(R.id.profile_image);
 
         mJobTV = findViewById(R.id.profile_job);
-        mJobTV.setText(referenceUser.getJob().getTitle());
+        mJobTV.setText(mReferenceUser.getJob().getTitle());
 
         mActivitiesTV = findViewById(R.id.profile_demand_type);
 
@@ -137,7 +139,7 @@ public class ProfileActivity extends AppCompatActivity {
         mLockIV.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                changeStatus();
+                buildChangeStatusDialog(mReferenceUser);
             }
         });
 
@@ -146,7 +148,7 @@ public class ProfileActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (CommonUtils.isOnline(mActivity)) {
                     Intent intent = new Intent(getApplicationContext(), DemandTypeActivity.class);
-                    intent.putExtra("user", referenceUser);
+                    intent.putExtra("user", mReferenceUser);
                     startActivityForResult(intent, DESIGNATE_DEMAND_TYPES);
                 } else {
                     Snackbar.make(mAddActivityIV, R.string.internet_error, Snackbar.LENGTH_LONG)
@@ -155,9 +157,10 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        showUserStatus(referenceUser.getStatus());
-        loadImage(referenceUser.getId());
-        loadActivities(referenceUser);
+        Log.d(TAG, "(onCreate) referenceUser Status: " + mReferenceUser.getStatus());
+        showUserStatus(mReferenceUser.getStatus());
+        loadImage(mReferenceUser.getId());
+        loadActivities(mReferenceUser);
     }
 
     @Override
@@ -184,31 +187,31 @@ public class ProfileActivity extends AppCompatActivity {
     private void loadImage(int id) {
     }
 
-    private void changeStatus() {
+    private void buildChangeStatusDialog(User user) {
+        mReferenceUser = user;
         String buttonName;
         String message;
-        final String status;
-        if(me.getStatus().equals(Constants.YES)) {
+        if(mReferenceUser.getStatus().equals(Constants.YES)) {
             buttonName = "Bloquear";
             message = "Bloqueando esse usuário, ele perderá o acesso ao aplicativo";
-            status = Constants.NO;
+            mReferenceUserStatus = Constants.NO;
         } else{
             buttonName = "Desbloquear";
             message = "Desbloqueando esse usuário, ele terá acesso ao aplicativo";
-            status = Constants.YES;
+            mReferenceUserStatus = Constants.YES;
         }
-
-        AlertDialog.Builder alert = new AlertDialog.Builder(mActivity);
-        alert.setPositiveButton(buttonName, new DialogInterface.OnClickListener() {
+        Log.d(TAG, "(buildChangeStatusDialog) mReferenceUserStatus: " + mReferenceUserStatus);
+        Log.d(TAG, "(buildChangeStatusDialog) buttonName: " + buttonName);
+        Log.d(TAG, "(buildChangeStatusDialog) message: " + message);
+        mAlert.setPositiveButton(buttonName, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                attemptToSetUserStatus(me, me, status);
+                attemptToSetUserStatus(me, mReferenceUser, mReferenceUserStatus);
             }
         });
-
-        alert.setTitle(me.getName());
-        alert.setMessage(message);
-        alert.show();
+        mAlert.setTitle(mReferenceUser.getName());
+        mAlert.setMessage(message);
+        mAlert.show();
     }
 
     private void dialogResult(int which) {
@@ -368,6 +371,8 @@ public class ProfileActivity extends AppCompatActivity {
                 drawable = R.drawable.ic_lock_outline_black_24dp;
                 color = ContextCompat.getColor(mActivity,R.color.transred);
                 break;
+            default:
+                mLockIV.setVisibility(View.GONE);
         }
         mLockIV.setImageResource(drawable);
         mLockIV.setColorFilter(color, PorterDuff.Mode.SRC_IN);
@@ -420,18 +425,19 @@ public class ProfileActivity extends AppCompatActivity {
             User user;
             boolean success;
 
-            Log.e(TAG, jsonResponse);
+            Log.e(TAG, "(StatusTask) jsonResponse: " + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
-                jsonUser = jsonObject.getJSONObject("user");
-                user = User.build(jsonUser);
-
                 String message;
 
                 if (success) {
-                    switch(user.getStatus()){
+                    jsonUser = jsonObject.getJSONObject("user");
+                    user = User.build(jsonUser);
+                    mReferenceUser = user;
+
+                    switch(mReferenceUser.getStatus()){
                         case Constants.YES:
                             message = "Usuário desbloqueado com sucesso.";
                             break;
@@ -441,25 +447,23 @@ public class ProfileActivity extends AppCompatActivity {
                         default:
                             message = mActivity.getString(R.string.server_error);
                     }
+
                     Snackbar.make(mLockIV, message, Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
-                    Log.e(TAG, "status after server:" + user.getStatus());
-                    showUserStatus(user.getStatus());
+                    Log.e(TAG, "(StatusTask) status ReferenceUser:" + mReferenceUser.getStatus());
+                    showUserStatus(mReferenceUser.getStatus());
                     // Saving new status in db.
                     CommonUtils.updateColumnUserDB(
                             FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS,
-                            user.getStatus(),
-                            user,
+                            mReferenceUser.getStatus(),
+                            mReferenceUser,
                             mActivity
                     );
                     // (Only for testing) Saving new status in SharedPreferences TODO: Eliminate this.
                     SharedPreferences.Editor editor = mPrefs.edit();
                     editor.putString(Constants.USER_PREFERENCES, jsonUser.toString());
-                    if (editor.commit()){
-                        Log.d(TAG,"User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
-                    } else {
-                        Log.d(TAG,"Could not save prefs!");
-                    }
+                    if (editor.commit()) Log.d(TAG,"(StatusTask) User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
+                    else Log.d(TAG,"(StatusTask) Could not save prefs!");
                 } else {
                     throw new JSONException("success hit false");
                 }

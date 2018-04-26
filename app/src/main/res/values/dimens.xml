@@ -33,4 +33,5 @@
     <dimen name="layout_fab_padding_item_end">16dp</dimen>
     <dimen name="due_time_autosizemax">18sp</dimen>
     <dimen name="between_text_space">8dp</dimen>
+    <dimen name="text_item_size">16sp</dimen>
 </resources>
