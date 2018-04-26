@@ -219,4 +219,5 @@
     <string name="privacy_policy_accept_text">Aceito os termos da Política de Privacidade</string>
     <string name="privacy_policy_pre_title">Antes de continuar, leia atentamente a nossa Política de Privacidade:</string>
     <string name="login_locked_message">Seu login pode estar bloqueado! Por favor, verifique com o seu superior.</string>
+    <string name="please_wait">Por favor aguarde...</string>
 </resources>

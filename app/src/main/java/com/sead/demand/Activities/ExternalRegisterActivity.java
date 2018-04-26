@@ -254,6 +254,7 @@ public class ExternalRegisterActivity extends AppCompatActivity {
                     Snackbar.make(mRegisterBtn, "Registro realizado com sucesso", Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
                     Intent intent = new Intent(getApplication(), LoginActivity.class);
+                    intent.putExtra("isRegistered", true);
                     startActivity(intent);
                     finish();
                 } else {

@@ -18,15 +18,17 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:text="@string/demand_type_text"
-            android:layout_weight="12"
-            android:layout_marginBottom="4dp"
-            />
-
+            android:layout_weight="10"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMaxTextSize="12sp"
+            android:autoSizeStepGranularity="2sp"
+            android:layout_marginBottom="4dp"/>
+        
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:orientation="vertical"
-            android:layout_weight="20"
+            android:layout_weight="18"
             android:layout_marginBottom="4dp">
 
             <TextView
@@ -38,8 +40,7 @@
             <Spinner
                 android:id="@+id/demand_type_department_spinner"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                />
+                android:layout_height="match_parent"></Spinner>
 
         </LinearLayout>
 
@@ -49,7 +50,7 @@
             android:gravity="center"
             android:orientation="vertical"
             android:layout_marginBottom="4dp"
-            android:layout_weight="58">
+            android:layout_weight="65">
 
             <ProgressBar
                 android:id="@+id/demand_type_progress_bar"
@@ -68,19 +69,17 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="10"
+            android:layout_weight="7"
             android:gravity="center">
-
             <Button
                 android:id="@+id/demand_type_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="25dp"
-                android:background="@color/accent"
-                android:gravity="center"
-                android:text="concluir"
                 android:textColor="@color/white"
-                android:textStyle="bold" />
-
+                android:background="@color/accent"
+                android:textStyle="bold"
+                android:text="concluir"
+                android:gravity="center"/>
         </LinearLayout>
 
     </LinearLayout>

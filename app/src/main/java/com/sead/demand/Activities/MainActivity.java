@@ -140,8 +140,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
-        // Make admin's menu hide if user job position is 'ponta'.
-        if( mUserJobPosition.equals(Constants.JOB_POSITIONS[0])) {
+        // Make admin's menu hide if user job position is 'ponta', or user type is univasf ou externo.
+        if( mUserJobPosition.equals(Constants.JOB_POSITIONS[0])
+                || mCurrentUser.getType() == Constants.UNIVASF_USER
+                || mCurrentUser.getType() == Constants.EXTERNAL_USER) {
             menu.setGroupVisible(R.id.main_admin_group,false);
         }
 
@@ -168,7 +170,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setItemsVisibility(Menu menu, boolean visibility) {
-        if( !mUserJobPosition.equals(Constants.JOB_POSITIONS[0]))
+        if(!(mUserJobPosition.equals(Constants.JOB_POSITIONS[0])
+                || mCurrentUser.getType() == Constants.UNIVASF_USER
+                || mCurrentUser.getType() == Constants.EXTERNAL_USER))
             menu.setGroupVisible(R.id.main_admin_group,visibility);
     }
 
@@ -301,7 +305,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         protected void onPreExecute() {
             super.onPreExecute();
             mPDLogout = new ProgressDialog(mActivity);
-            mPDLogout.setMessage("Por favor aguarde...");
+            mPDLogout.setMessage(getString(R.string.please_wait));
             mPDLogout.setCancelable(false);
             mPDLogout.show();
         }

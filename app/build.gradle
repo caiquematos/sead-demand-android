@@ -64,9 +64,6 @@ dependencies {
     compile('com.android.support:cardview-v7:27.1.1') {
         exclude group: 'com.google.android.gms'
     }
-    compile('com.android.support:support-v4:27.1.1') {
-        exclude group: 'com.google.android.gms'
-    }
     compile('com.google.firebase:firebase-messaging:10.2.1') {
         exclude group: 'com.google.android.gms'
     }

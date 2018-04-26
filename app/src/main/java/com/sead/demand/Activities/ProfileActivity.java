@@ -459,11 +459,6 @@ public class ProfileActivity extends AppCompatActivity {
                             mReferenceUser,
                             mActivity
                     );
-                    // (Only for testing) Saving new status in SharedPreferences TODO: Eliminate this.
-                    SharedPreferences.Editor editor = mPrefs.edit();
-                    editor.putString(Constants.USER_PREFERENCES, jsonUser.toString());
-                    if (editor.commit()) Log.d(TAG,"(StatusTask) User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
-                    else Log.d(TAG,"(StatusTask) Could not save prefs!");
                 } else {
                     throw new JSONException("success hit false");
                 }

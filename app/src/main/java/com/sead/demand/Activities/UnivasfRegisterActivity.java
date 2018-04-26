@@ -390,6 +390,7 @@ public class UnivasfRegisterActivity extends AppCompatActivity {
                 if (success) {
                     Snackbar.make(mRegisterBT, "Usuário cadastrado com sucesso.", Snackbar.LENGTH_LONG).show();
                     Intent intent = new Intent(getApplication(), LoginActivity.class);
+                    intent.putExtra("isRegistered", true);
                     startActivity(intent);
                     finish();
                 } else {

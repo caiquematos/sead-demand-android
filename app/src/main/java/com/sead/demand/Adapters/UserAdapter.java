@@ -191,7 +191,6 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder>{
                 attemptToSetUserStatus(user.getId(), status, holder, holderPosition);
             }
         });
-
         alert.setTitle(holder.getUserName());
         alert.setMessage(message);
         alert.show();

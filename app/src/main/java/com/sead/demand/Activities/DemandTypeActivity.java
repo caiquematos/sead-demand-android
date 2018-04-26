@@ -314,8 +314,7 @@ public class DemandTypeActivity extends AppCompatActivity {
                     }
 
                     if (!departmentsTitles.isEmpty()) {
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, android.R.layout.simple_spinner_item, departmentsTitles);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity, R.layout.autocomplete_custom_item, R.id.autocomplete_item, departmentsTitles);
                         mDepartmentSpinner.setAdapter(adapter);
                         if (!mDepartmentSpinner.isEnabled()) mDepartmentSpinner.setEnabled(true);
                     } else {
