@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 
 public class FeedReaderDBHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 8;
+    public static final int DATABASE_VERSION = 9;
     public static final String DATABASE_NAME = "sead.db";
 
     // Table demands queries.
@@ -46,6 +46,7 @@ public class FeedReaderDBHelper extends SQLiteOpenHelper {
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR + " INTEGER," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB + " INTEGER," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM + " TEXT," +
+                    FeedReaderContract.UserEntry.COLUMN_NAME_USER_TYPE + " CHAR(3)," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT + " TIMESTAMP," +
                     FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT + " TIMESTAMP)";
 

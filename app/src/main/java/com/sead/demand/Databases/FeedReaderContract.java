@@ -38,6 +38,7 @@ public class FeedReaderContract {
         public static final String COLUMN_NAME_USER_SUPERIOR = "superior";
         public static final String COLUMN_NAME_USER_JOB = "job";
         public static final String COLUMN_NAME_USER_FCM = "fcm";
+        public static final String COLUMN_NAME_USER_TYPE = "type";
         public static final String COLUMN_NAME_USER_CREATED_AT = "created_at";
         public static final String COLUMN_NAME_USER_UPDATED_AT = "updated_at";
     }

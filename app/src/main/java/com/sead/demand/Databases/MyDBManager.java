@@ -118,6 +118,7 @@ public class MyDBManager {
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION, user.getPosition());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS, user.getStatus());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM, user.getGcm());
+        values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_TYPE, user.getType());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT,
                 new Timestamp(user.getCreatedAt().getTime()).toString());
         values.put(FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT,
@@ -636,6 +637,7 @@ public class MyDBManager {
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_SUPERIOR,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM,
+                FeedReaderContract.UserEntry.COLUMN_NAME_USER_TYPE,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT,
                 FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT
         };
@@ -667,6 +669,7 @@ public class MyDBManager {
             String status = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_STATUS));
             String position = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_JOB_POSITION));
             String fcm = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_FCM));
+            String type = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_TYPE));
             String created_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_CREATED_AT));
             String updated_at = cursor.getString(cursor.getColumnIndexOrThrow(FeedReaderContract.UserEntry.COLUMN_NAME_USER_UPDATED_AT));
 
@@ -683,8 +686,9 @@ public class MyDBManager {
                     status,
                     position,
                     fcm,
+                    type,
                     job,
-                    CommonUtils.getCurrentUserPreference(mContext),
+                    null,
                     created_at,
                     updated_at
             );
@@ -698,6 +702,7 @@ public class MyDBManager {
                     status,
                     position,
                     fcm,
+                    type,
                     job,
                     superior,
                     created_at,

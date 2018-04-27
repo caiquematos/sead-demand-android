@@ -15,8 +15,8 @@ android {
         applicationId 'com.sead.demand'
         minSdkVersion 15
         targetSdkVersion 27
-        versionCode 5
-        versionName '0.2.2'
+        versionCode 6
+        versionName '0.2.1'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true

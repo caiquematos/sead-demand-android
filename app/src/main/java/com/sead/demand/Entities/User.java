@@ -36,7 +36,7 @@ public class User implements Serializable{
     private String institutionType;
 
     public User(long localId, int id, String email, String name, String status, String position,
-                int superiorId, String gcm, String createdAt,
+                int superiorId, String gcm,  String type, String createdAt,
                 String updatedAt) {
         setLocalId(localId);
         setId(id);
@@ -46,12 +46,13 @@ public class User implements Serializable{
         setSuperiorId(superiorId);
         setStatus(status);
         setGcm(gcm);
+        setType(type);
         setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
         setUpdatedAt(CommonUtils.convertTimestampToDate(updatedAt));
     }
 
     public User(long localId, int id, String email, String name, String status, String position,
-                String gcm, Job job, User superior, String createdAt,
+                String gcm, String type, Job job, User superior, String createdAt,
                 String updatedAt) {
         setLocalId(localId);
         setId(id);
@@ -60,6 +61,7 @@ public class User implements Serializable{
         setPosition(position);
         setStatus(status);
         setGcm(gcm);
+        setType(type);
         setJob(job);
         setSuperior(superior);
         setCreatedAt(CommonUtils.convertTimestampToDate(createdAt));
@@ -67,7 +69,8 @@ public class User implements Serializable{
     }
 
     // Internal User
-    public User(String email, String password, String name, String superiorId, String position, String gcm, long jobId, String type) {
+    public User(String email, String password, String name, String superiorId, String position,
+                String gcm, long jobId, String type) {
         this.email = email;
         this.password = password;
         this.name = name;
@@ -116,8 +119,9 @@ public class User implements Serializable{
                 userJson.getString("name"),
                 userJson.getString("status"),
                 userJson.getString("position"),
-                userJson.getInt("superior"),
+                (!userJson.isNull("superior") ? userJson.getInt("superior") : -1),
                 userJson.getString("gcm"),
+                userJson.getString("type"),
                 userJson.getString("created_at"),
                 userJson.getString("updated_at")
         );
@@ -133,6 +137,7 @@ public class User implements Serializable{
                 userJson.getString("status"),
                 userJson.getString("position"),
                 userJson.getString("gcm"),
+                userJson.getString("type"),
                 job,
                 superior,
                 userJson.getString("created_at"),
@@ -322,6 +327,8 @@ public class User implements Serializable{
                 + " name: " + getName()
                 + " email: " + getEmail()
                 + " superior id: " + getSuperiorId()
+                + " type: " + getType()
+                + " job: " + (getJob() == null ? "null" : getJob().getTitle())
                 + " superior: " + (getSuperior() == null ? "null" : "" + getSuperior().getId());
     }
 }

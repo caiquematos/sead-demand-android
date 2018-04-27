@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private FloatingActionButton mFab;
     private FixedTabsPageAdapter mPagerAdapter;
     private SharedPreferences mPrefs;
-    private String mUserJobPosition;
     private Activity mActivity;
     private LogoutTask mLogoutTask;
     private User mCurrentUser;
@@ -66,7 +65,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setSupportActionBar(toolbar);
 
         mPrefs = this.getSharedPreferences(getApplicationContext().getPackageName(), Context.MODE_PRIVATE);
-        User user = CommonUtils.getCurrentUserPreference(this);
+        mCurrentUser = CommonUtils.getCurrentUserPreference(this);
+        Log.d(TAG, "(onCreate) current user: " + mCurrentUser.toString());
 
         /** Set navigation drawer **/
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
@@ -74,9 +74,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         View header = navigationView.getHeaderView(0);
         TextView name = (TextView) header.findViewById(R.id.nav_title);
-        name.setText(user.getName());
+        name.setText(mCurrentUser.getName());
         TextView email = (TextView) header.findViewById(R.id.nav_email);
-        email.setText(user.getEmail());
+        email.setText(mCurrentUser.getEmail());
         ImageView image = (ImageView) header.findViewById(R.id.nav_image);
         image.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -114,21 +114,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tabLayout.getTabAt(1).setIcon(R.drawable.ic_call_made_white_24dp);
         tabLayout.getTabAt(2).setIcon(R.drawable.ic_supervisor_account_white_24dp);
 
-        // If this user belongs to "ponta" job position, hide admin tab.
-        mUserJobPosition = mPrefs.getString(Constants.LOGGED_USER_JOB_POSITION,"");
-        Log.e(TAG, "on create " + mUserJobPosition);
-        if (mUserJobPosition.equals(Constants.JOB_POSITIONS[0])) {
+        if (mCurrentUser.getJob() == null) {
             navigationView.getMenu().findItem(R.id.nav_admin_items).setVisible(false);
             tabLayout.removeTabAt(2);
-        }
-
-        // Fetch info about current user logged
-        try {
-            JSONObject userJson = new JSONObject(mPrefs.getString(Constants.USER_PREFERENCES, ""));
-            mCurrentUser = User.build(userJson);
-        } catch (JSONException e) {
-            e.printStackTrace();
-            Log.e(TAG, "Failed to get user from preferences!!!");
+        } else if (mCurrentUser.getJob().getPosition().equals(Constants.JOB_POSITIONS[0])
+                || mCurrentUser.getType().equals(Constants.EXTERNAL_USER)
+                || mCurrentUser.getType().equals(Constants.UNIVASF_USER)) {
+            navigationView.getMenu().findItem(R.id.nav_admin_items).setVisible(false);
+            tabLayout.removeTabAt(2);
         }
     }
 
@@ -141,9 +134,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
         // Make admin's menu hide if user job position is 'ponta', or user type is univasf ou externo.
-        if( mUserJobPosition.equals(Constants.JOB_POSITIONS[0])
-                || mCurrentUser.getType() == Constants.UNIVASF_USER
-                || mCurrentUser.getType() == Constants.EXTERNAL_USER) {
+        if (mCurrentUser.getJob() == null) {
+            menu.setGroupVisible(R.id.main_admin_group,false);
+        } else if( mCurrentUser.getJob().getPosition().equals(Constants.JOB_POSITIONS[0])
+                || mCurrentUser.getType().equals(Constants.EXTERNAL_USER)
+                || mCurrentUser.getType().equals(Constants.UNIVASF_USER)) {
             menu.setGroupVisible(R.id.main_admin_group,false);
         }
 
@@ -170,10 +165,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setItemsVisibility(Menu menu, boolean visibility) {
-        if(!(mUserJobPosition.equals(Constants.JOB_POSITIONS[0])
-                || mCurrentUser.getType() == Constants.UNIVASF_USER
-                || mCurrentUser.getType() == Constants.EXTERNAL_USER))
+        if (mCurrentUser.getJob() != null) {
+            if(!(mCurrentUser.getJob().getPosition().equals(Constants.JOB_POSITIONS[0])
+                    || mCurrentUser.getType().equals(Constants.EXTERNAL_USER)
+                    || mCurrentUser.getType().equals(Constants.UNIVASF_USER))) {
+                menu.setGroupVisible(R.id.main_admin_group,visibility);
+            }
+        } else if(!(mCurrentUser.getType().equals(Constants.EXTERNAL_USER)
+                || mCurrentUser.getType().equals(Constants.UNIVASF_USER))) {
             menu.setGroupVisible(R.id.main_admin_group,visibility);
+        }
     }
 
     @Override

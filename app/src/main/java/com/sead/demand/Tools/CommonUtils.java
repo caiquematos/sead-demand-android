@@ -699,9 +699,11 @@ public class CommonUtils {
     public static com.sead.demand.Entities.Job getCurrentUserJobPreference(Context context){
         SharedPreferences preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
         try {
-            JSONObject jobJson = new JSONObject(preferences.getString(Constants.JOB_PREFERENCES,""));
-            com.sead.demand.Entities.Job currentUserJob = com.sead.demand.Entities.Job.build(jobJson);
-            return currentUserJob;
+            if (preferences.contains(Constants.JOB_PREFERENCES)) {
+                JSONObject jobJson = new JSONObject(preferences.getString(Constants.JOB_PREFERENCES,""));
+                com.sead.demand.Entities.Job currentUserJob = com.sead.demand.Entities.Job.build(jobJson);
+                return currentUserJob;
+            } else return null;
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
@@ -711,9 +713,11 @@ public class CommonUtils {
     public static User getCurrentUserSuperiorPreference(Context context){
         SharedPreferences preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
         try {
-            JSONObject superiorJson = new JSONObject(preferences.getString(Constants.SUPERIOR_PREFERENCES,""));
-            User currentUserSuperior = User.build(superiorJson);
-            return currentUserSuperior;
+            if (preferences.contains(Constants.SUPERIOR_PREFERENCES)) {
+                JSONObject superiorJson = new JSONObject(preferences.getString(Constants.SUPERIOR_PREFERENCES, ""));
+                User currentUserSuperior = User.build(superiorJson);
+                return currentUserSuperior;
+            } else return null;
         } catch (JSONException e) {
             e.printStackTrace();
             return null;

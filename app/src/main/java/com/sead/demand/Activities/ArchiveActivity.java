@@ -234,18 +234,20 @@ public class ArchiveActivity extends AppCompatActivity {
         selection = selection.concat(" AND ");
         selection = selection.concat("(");
 
-        if (usersUnderMySupervision != null && !usersUnderMySupervision.isEmpty()) {
-            for (int i = 0; i < usersUnderMySupervision.size(); i++) {
-                if (i > 0) selection = selection.concat(" OR ");
-                selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " = ?");
-                argsArray.add("" + usersUnderMySupervision.get(i).getId());
+        if (usersUnderMySupervision != null) {
+            if (!usersUnderMySupervision.isEmpty()) {
+                for (int i = 0; i < usersUnderMySupervision.size(); i++) {
+                    if (i > 0) selection = selection.concat(" OR ");
+                    selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " = ?");
+                    argsArray.add("" + usersUnderMySupervision.get(i).getId());
+                    selection = selection.concat(" OR ");
+                    selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " = ?");
+                    argsArray.add("" + usersUnderMySupervision.get(i).getId());
+                }
                 selection = selection.concat(" OR ");
-                selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_RECEIVER_ID + " = ?");
-                argsArray.add("" + usersUnderMySupervision.get(i).getId());
             }
         }
 
-        selection = selection.concat(" OR ");
         selection = selection.concat(FeedReaderContract.DemandEntry.COLUMN_NAME_SENDER_ID + " = ?");
         argsArray.add("" + currentUserId);
         selection = selection.concat(" OR ");

@@ -20,6 +20,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -322,9 +323,16 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             * so as GCM_TOKEN. TODO: Review its usability then. maybe not necessary.
             * mFcmToken = mPrefs.getString(Constants.GCM_TOKEN, "");
             */
-            if (mFcmToken.isEmpty()) {
+            if (mFcmToken != null) {
+                if (mFcmToken.isEmpty()) {
+                    mFcmToken = mPrefs.getString(Constants.GCM_TOKEN, "");
+                    if (mFcmToken.isEmpty()) Log.e(TAG, "(UserLoginTask) FCM Token empty!!!");
+                }
+            } else {
+                Log.e(TAG, "(UserLoginTask) FCM Token NULL!!!");
                 mFcmToken = mPrefs.getString(Constants.GCM_TOKEN, "");
-                if (mFcmToken.isEmpty()) Log.e(TAG, "(UserLoginTask) FCM Token empty!!!");
+                if (mFcmToken != null)
+                    if (mFcmToken.isEmpty()) Log.e(TAG, "(UserLoginTask) FCM Token empty!!!");
             }
         }
 
@@ -352,59 +360,48 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mAuthTask = null;
             JSONObject jsonObject;
             JSONObject userJson;
-            JSONObject jobJson;
-            JSONObject superiorJson;
+            JSONObject jobJson = null;
+            JSONObject superiorJson = null;
             User user;
+            Job job = null;
+            User superior = null;
             boolean success;
 
-            Log.d(TAG, "string json response: " + jsonResponse);
+            Log.d(TAG, "(UserLoginTask) string json response: " + jsonResponse);
 
             try {
                 jsonObject = new JSONObject(jsonResponse);
                 success = jsonObject.getBoolean("success");
-                userJson = jsonObject.getJSONObject("user");
-                jobJson = jsonObject.getJSONObject("job");
-                superiorJson = jsonObject.getJSONObject("superior");
 
-                Job job = Job.build(jobJson);
-                User superior = User.build(superiorJson);
-                user = User.build(job, superior, userJson);
-                Log.d(TAG, "superior:" + user.getSuperior().toString());
-                Log.d(TAG, "job:" + user.getJob().toString());
-                Log.d(TAG, "user:" + user.toString());
+                if (success) {
+                    userJson = jsonObject.getJSONObject("user");
 
-                if (success && user != null) {
+                    if(!jsonObject.isNull("job")) {
+                        jobJson = jsonObject.getJSONObject("job");
+                        job = Job.build(jobJson);
+                        Log.d(TAG, " job:" + job.toString());
+                    }
+
+                    if (!jsonObject.isNull("superior")) {
+                        superiorJson = jsonObject.getJSONObject("superior");
+                        superior = User.build(superiorJson);
+                        Log.d(TAG, " superior:" + superior.toString());
+                    }
+
+                    user = User.build(job, superior, userJson);
+                    Log.d(TAG, "user:" + user.toString());
+
                     // Try to store user
                     MyDBManager myDBManager = new MyDBManager(mActivity);
                     long isUserStored = myDBManager.addUser(user);
                     if (isUserStored >= 0) Log.e(TAG, "User stored");
 
-                    SharedPreferences.Editor editor = mPrefs.edit();
-                    editor.putString(Constants.USER_PREFERENCES, userJson.toString());
-                    editor.putString(Constants.JOB_PREFERENCES, jobJson.toString());
-                    editor.putString(Constants.SUPERIOR_PREFERENCES, superiorJson.toString());
-                    editor.putBoolean(Constants.IS_LOGGED,true);
-                    editor.putInt(Constants.LOGGED_USER_ID, user.getId());
-                    editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
-                    editor.putString(Constants.LOGGED_USER_JOB_POSITION, user.getPosition());
-                    if (editor.commit()){
-                        Log.d(TAG,"User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
-                        Log.d(TAG,"Job json in prefs:" + mPrefs.getString(Constants.JOB_PREFERENCES, "NOT FOUND"));
-                        Log.d(TAG,"Superior json in prefs:" + mPrefs.getString(Constants.SUPERIOR_PREFERENCES, "NOT FOUND"));
-                        Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
-                        Log.d(TAG,"User email prefs:" + mPrefs.getString(Constants.LOGGED_USER_EMAIL,""));
-                        Log.d(TAG,"User job position prefs:" + mPrefs.getString(Constants.LOGGED_USER_JOB_POSITION,""));
-                        Log.d(TAG,"User id prefs:" + mPrefs.getInt(Constants.LOGGED_USER_ID,-1));
-                    } else {
-                        Log.d(TAG,"Could not save prefs!");
-                    }
+                    saveUserPrefs(userJson, jobJson, superiorJson, user);
 
                     Intent intent = new Intent(getApplication(), MainActivity.class);
                     startActivity(intent);
                     finish();
                 } else {
-                    // mPasswordView.setError(getString(R.string.error_incorrect_password));
-                    // mPasswordView.requestFocus();
                     throw new JSONException("success hit false!");
                 }
 
@@ -425,6 +422,28 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             if (mPDLogin.isShowing()){
                 mPDLogin.dismiss();
             }
+        }
+    }
+
+    private void saveUserPrefs(JSONObject userJson, JSONObject jobJson, JSONObject superiorJson, User user) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putString(Constants.USER_PREFERENCES, userJson.toString());
+        if (jobJson != null) editor.putString(Constants.JOB_PREFERENCES, jobJson.toString());
+        if (superiorJson != null) editor.putString(Constants.SUPERIOR_PREFERENCES, superiorJson.toString());
+        editor.putBoolean(Constants.IS_LOGGED,true);
+        editor.putInt(Constants.LOGGED_USER_ID, user.getId());
+        editor.putString(Constants.LOGGED_USER_EMAIL, user.getEmail());
+        editor.putString(Constants.LOGGED_USER_JOB_POSITION, user.getPosition());
+        if (editor.commit()){
+            Log.d(TAG,"User json in prefs:" + mPrefs.getString(Constants.USER_PREFERENCES, "NOT FOUND"));
+            Log.d(TAG,"Job json in prefs:" + mPrefs.getString(Constants.JOB_PREFERENCES, "NOT FOUND"));
+            Log.d(TAG,"Superior json in prefs:" + mPrefs.getString(Constants.SUPERIOR_PREFERENCES, "NOT FOUND"));
+            Log.d(TAG,"User logged in prefs:" + mPrefs.getBoolean(Constants.IS_LOGGED,false));
+            Log.d(TAG,"User email prefs:" + mPrefs.getString(Constants.LOGGED_USER_EMAIL,""));
+            Log.d(TAG,"User job position prefs:" + mPrefs.getString(Constants.LOGGED_USER_JOB_POSITION,""));
+            Log.d(TAG,"User id prefs:" + mPrefs.getInt(Constants.LOGGED_USER_ID,-1));
+        } else {
+            Log.d(TAG,"Could not save prefs!");
         }
     }
 }
