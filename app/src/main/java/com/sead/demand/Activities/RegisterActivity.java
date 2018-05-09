@@ -345,8 +345,7 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
                     .setAction("Action", null).show();
         } else {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivity,
-                    android.R.layout.simple_spinner_item, spinnerArray);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    R.layout.autocomplete_custom_item, R.id.autocomplete_item, spinnerArray);
             mJobView.setAdapter(adapter);
         }
     }

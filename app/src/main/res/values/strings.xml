@@ -26,7 +26,7 @@
 
     <!-- Activity titles -->
     <string name="title_activity_scrolling">Criar Demanda</string>
-    <string name="fist_title">SEAD\nDEMANDA</string>
+    <string name="fist_title">DEMANDA\nSEAD</string>
     <string name="title_activity_home">SEAD</string>
     <string name="title_activity_login">Entrar</string>
     <string name="title_activity_register">Cadastro Interno</string>
@@ -220,4 +220,10 @@
     <string name="privacy_policy_pre_title">Antes de continuar, leia atentamente a nossa Política de Privacidade:</string>
     <string name="login_locked_message">Seu login pode estar bloqueado! Por favor, verifique com o seu superior.</string>
     <string name="please_wait">Por favor aguarde...</string>
+    <string name="general_channel_id">general_channel_id</string>
+    <string name="general_channel_name">Geral</string>
+    <string name="general_channel_description">Esse canal inclui todos os tipos de notificações</string>
+    <string name="alarm_receiver_channel_id">alarm_receiver_channel_id</string>
+    <string name="alarm_receiver_channel_name">Prazos</string>
+    <string name="alarm_receiver_channel_description">Esse canal inclui as notificações referentes ao prazo das demandas</string>
 </resources>

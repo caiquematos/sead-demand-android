@@ -1,9 +1,11 @@
 package com.sead.demand.FCM;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -199,11 +201,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 case Constants.INSERT_DEMAND_ADMIN:
                     Log.d(TAG, "handleDemand: on " + Constants.INSERT_DEMAND_ADMIN);
                     CommonUtils.storeDemandDB(demand, type, this);
-                    generateNotification(title, text, bigTextTitle, bigText, data);
+                    handleNotificationType(title, text, bigTextTitle, bigText, data);
                     break;
                 case Constants.UPDATE_DEMAND:
                     CommonUtils.updateDemandDB(demand, type, this);
-                    generateNotification(title, text, bigTextTitle, bigText, data);
+                    handleNotificationType(title, text, bigTextTitle, bigText, data);
                     break;
                 case Constants.UPDATE_STATUS:
                     handleUpdateStatus(demand, type, title, text, bigTextTitle, bigText, data);
@@ -220,7 +222,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 case Constants.LATE_WARNING:
                     bigTextTitle = title;
                     bigText = text;
-                    generateNotification(title, text, bigTextTitle, bigText, data);
+                    handleNotificationType(title, text, bigTextTitle, bigText, data);
                     break;
             }
 
@@ -275,7 +277,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 }
         }
         CommonUtils.updateDemandDB(type, demand, this);
-        generateNotification(title, text, bigTextTitle, bigText, data);
+        handleNotificationType(title, text, bigTextTitle, bigText, data);
     }
 
     private void handleAuthority(Bundle bundle, String type) {
@@ -287,7 +289,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (action.equals("add")) {
                 // Try to add authority, but if it already exists, then it'll update it.
                 CommonUtils.storeAuthDB(authority,type,this);
-                //generateNotification(title, text, data);
+                //handleNotificationType(title, text, data);
                 Log.d(TAG, "(handleAuthority) added authority: " + authority.toString());
             } else {
                 MyDBManager myDBManager = new MyDBManager(this);
@@ -304,7 +306,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         try {
             User user = generateUser(data);
             CommonUtils.storeUserDB(user,type,this);
-            generateNotification(title, text, null, null, data);
+            handleNotificationType(title, text, null, null, data);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -346,7 +348,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         //Calendar c = Calendar.getInstance();
         //c.add(Calendar.MINUTE, 1);
         //Log.d(TAG, "(handleDeadlineAlarm) due time warn (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
-                //+ " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
+        //        + " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
         /* only for test purpose */
 
         // first, set the due time WARNING alarm.
@@ -358,10 +360,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 Constants.RECEIVED_PAGE,
                 Constants.RECEIVER_MENU
         );
-
+        /* only for test purpose */
         //c.add(Calendar.MINUTE, 1);
         //Log.d(TAG, "(handleDeadlineAlarm) due time (test): " + CommonUtils.convertMillisToDate(c.getTimeInMillis())
         //        + " " + CommonUtils.convertMillisToTime(c.getTimeInMillis()));
+        /* only for test purpose */
         // finally, set the DUE TIME alarm.
         CommonUtils.setAlarm(
                 this,
@@ -373,9 +376,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         );
     }
 
-    private void generateNotification(String title, String text, String bigTextTitle,
-                                      String bigText, Bundle data) throws JSONException {
-        Log.d(TAG, "(generateNotification)");
+    private void handleNotificationType(String title, String text, String bigTextTitle,
+                                        String bigText, Bundle data) throws JSONException {
+        Log.d(TAG, "(handleNotificationType)");
         int notificationId = -1;
 
         if (data != null) {
@@ -400,7 +403,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     );
             }
         } else {
-           Log.e(TAG, "(generateNotification) data is null!");
+           Log.e(TAG, "(handleNotificationType) data is null!");
         }
     }
 
@@ -455,8 +458,26 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 PendingIntent.FLAG_UPDATE_CURRENT
         );
 
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        String CHANNEL_ID = getString(R.string.general_channel_id);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.general_channel_name);
+            String Description = getString(R.string.general_channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+            mChannel.setDescription(Description);
+            mChannel.enableLights(true);
+            mChannel.setLightColor(Color.BLUE);
+            mChannel.enableVibration(true);
+            mChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
+            mChannel.setShowBadge(false);
+            notificationManager.createNotificationChannel(mChannel);
+        }
+
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "channel_id")
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(icon)
                 .setContentTitle(title)
                 .setContentText(text)
@@ -465,9 +486,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentIntent(resultPendingIntent);
 
         if (bigTextStyle != null) notificationBuilder.setStyle(bigTextStyle);
-
-        NotificationManager notificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
     }
@@ -554,8 +572,27 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 PendingIntent.FLAG_UPDATE_CURRENT
         );
 
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        String CHANNEL_ID = getString(R.string.general_channel_id);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.general_channel_name);
+            String Description = getString(R.string.general_channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+            mChannel.setDescription(Description);
+            mChannel.enableLights(true);
+            mChannel.setLightColor(Color.BLUE);
+            mChannel.enableVibration(true);
+            mChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
+            mChannel.setShowBadge(false);
+            notificationManager.createNotificationChannel(mChannel);
+        }
+
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(icon)
                 .setContentTitle(title)
                 .setContentText(notification.getBody())
@@ -564,9 +601,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentIntent(resultPendingIntent);
 
         if (bigTextStyle != null) notificationBuilder.setStyle(bigTextStyle);
-
-        NotificationManager notificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
     }

@@ -390,13 +390,19 @@ public class CommonUtils {
         int count = myDBManager.updateDemandColumn(demand,columnName,value);
 
         if(count > 0) {
-
+            Log.d(TAG, "(updateColumnDB) demand late column updated to: " + value);
+            /*
             if (demand.getReason() != null) {
                 updateReasonDB(demand.getReason(), context);
             }
 
+            if (demand.getType() != null) {
+                updateTypeDB(demand.getType(), context);
+            }
+
             // If demand is updated to ACCEPTED then check if this user is the receiver,
             // so warn alarm should be set.
+
             if(demand.getStatus().equals(Constants.ACCEPT_STATUS)) {
                 SharedPreferences preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
                 try {
@@ -411,6 +417,8 @@ public class CommonUtils {
                 }
             }
 
+            */
+
             String fragTag = "";
 
             fragTag = Constants.BROADCAST_SENT_FRAG;
@@ -421,7 +429,7 @@ public class CommonUtils {
             notifyDemandListView(demand,fragTag,type,context);
             fragTag = Constants.BROADCAST_STATUS_ACT;
             notifyDemandListView(demand,fragTag,type, context);
-        }
+        } else Log.e(TAG, "(updateColumnDB) demand late column updated to: " + value);
 
         // listAllDemandsDB(context);
     }
@@ -610,13 +618,13 @@ public class CommonUtils {
     // Handle demand changes when there is no internet connection
     public static void handleLater(Demand demand, String type, Context context){
         Bundle bundle = new Bundle();
-        //bundle.putSerializable(Constants.INTENT_DEMAND, demand);
+        //bundle.putSerializable(Constants.INTENT_DEMAND, demand); // Serialization not working well.
         bundle.putInt(Constants.INTENT_DEMAND_SERVER_ID, demand.getId());
         bundle.putString(Constants.INTENT_DEMAND_STATUS, demand.getStatus());
         bundle.putString(Constants.JOB_TYPE_KEY, type);
 
-        String jobTag = type + "-" + demand.getId();
-        Log.e(TAG, "Job Tag:" + jobTag);
+        String jobTag = generateJobTag(type, demand.getId());
+        Log.e(TAG, "(handleLater) Job Tag:" + jobTag);
 
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
         Job myJob = dispatcher.newJobBuilder()
@@ -633,8 +641,12 @@ public class CommonUtils {
                 .build();
         dispatcher.schedule(myJob);
         //Demand demandSer = (Demand) bundle.getSerializable(Constants.INTENT_DEMAND);
-        Log.e(TAG, "Handle Later Called. Demand:" + bundle.getInt(Constants.INTENT_DEMAND_SERVER_ID)
+        Log.e(TAG, "(handleLater) Demand:" + bundle.getInt(Constants.INTENT_DEMAND_SERVER_ID)
          + " Job type:" + bundle.getString(Constants.JOB_TYPE_KEY));
+    }
+
+    public static String generateJobTag(String type, long demandId) {
+        return type + "-" + demandId;
     }
 
     public static String getPriorTag(int position){

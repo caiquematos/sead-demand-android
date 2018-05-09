@@ -102,6 +102,8 @@ public class Constants {
     public static final String INSERT_JOB_TAG = "insert-job-tag";
     public static final String REMOVE_JOB_TAG = "remove-job-tag";
     public static final String UPDATE_JOB_TAG = "update-job-tag";
+    public static final String WARN_DUE_TIME_JOB_TAG = "warn-due-time-job-tag";
+    public static final String DUE_TIME_JOB_TAG = "due-time-job-tag";
 
     // Alarm Manager.
     public static final String ALARM_TYPE_KEY = "alarm-type-key";

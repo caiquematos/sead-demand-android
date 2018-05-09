@@ -15,8 +15,8 @@ android {
         applicationId 'com.sead.demand'
         minSdkVersion 15
         targetSdkVersion 27
-        versionCode 6
-        versionName '0.2.1'
+        versionCode 10
+        versionName '0.3.0'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
@@ -76,6 +76,8 @@ dependencies {
     compile('com.google.android.gms:play-services:10.2.1') {
         exclude group: 'com.google.android.gms', module: 'play-services-gcm'
     }
+
+    compile 'com.android.support:multidex:1.0.1'
     // In case debug signature wont work, comment this line.
     apply plugin: 'com.google.gms.google-services'
     compile 'com.android.support.constraint:constraint-layout:1.1.0'

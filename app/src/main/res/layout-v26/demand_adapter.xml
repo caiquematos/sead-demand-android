@@ -126,9 +126,10 @@
                     android:layout_height="0dp"
                     android:text="12/05/2017"
                     android:autoSizeTextType="uniform"
-                    android:autoSizeMaxTextSize="12sp"
+                    android:autoSizeMaxTextSize="@dimen/max_text_size"
                     android:autoSizeStepGranularity="2sp"
-                    android:layout_weight="45"/>
+                    android:layout_weight="45"
+                    android:gravity="end"/>
 
                 <TextView
                     android:id="@+id/demand_time"

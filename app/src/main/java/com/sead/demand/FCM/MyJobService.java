@@ -2,10 +2,13 @@ package com.sead.demand.FCM;
 
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.sead.demand.Entities.Demand;
+import com.sead.demand.Handlers.AlarmReceiver;
 import com.sead.demand.R;
 import com.sead.demand.Tools.CommonUtils;
 import com.sead.demand.Tools.Constants;
@@ -23,49 +26,82 @@ public class MyJobService extends JobService {
     private String TAG = getClass().getSimpleName();
     private SeenTask mSeenTask;
     private StatusTask mStatusTask;
+    private DueTimeTask mDueTimeTask;
+    private String mType;
+    private long mDemandId;
+    private String mTag;
 
     @Override
     public boolean onStartJob(JobParameters params) {
         Bundle bundle = params.getExtras();
-        String tag = params.getTag();
-        String type = bundle.getString(Constants.JOB_TYPE_KEY);
-        int demandId = bundle.getInt(Constants.INTENT_DEMAND_SERVER_ID);
-        Log.e(TAG, "Job Tag:" + tag + " Job Type:" + type + " Demand Id:" + demandId);
+        mTag = params.getTag();
+        //Demand demand = (Demand) bundle.getSerializable(Constants.INTENT_DEMAND);
+        mType = bundle.getString(Constants.JOB_TYPE_KEY);
+        mDemandId = bundle.getInt(Constants.INTENT_DEMAND_SERVER_ID);
+        Log.e(TAG, "Job Tag:" + mTag + " Job Type:" + mType + " Demand Id:" + mDemandId);
 
         // TODO: Send Task. Verify list of jobs!
-        switch (type) {
+        switch (mType) {
             case Constants.MARK_AS_READ_JOB_TAG:
-                return !attemptToMarkAsSeen(demandId);
+                return !attemptToMarkAsSeen(mDemandId);
             case Constants.UPDATE_JOB_TAG:
                 String status = bundle.getString(Constants.INTENT_DEMAND_STATUS);
-                return !attemptToUpdateStatus(demandId, status);
+                return !attemptToUpdateStatus(mDemandId, status);
+            case Constants.WARN_DUE_TIME_JOB_TAG:
+                return !attemptToSendLateWarning(mDemandId);
+            case Constants.DUE_TIME_JOB_TAG:
+                return !attemptToMarkDemandAsLate(mDemandId);
         }
 
         return false; // Answers the question: "Is there still work going on?"
-
     }
 
-    private boolean attemptToMarkAsSeen(int id){
-        mSeenTask = new SeenTask(id);
-        mSeenTask.execute();
-        return true;
+    private boolean attemptToMarkDemandAsLate(long demandId) {
+            if (mDueTimeTask == null){
+                mDueTimeTask = new DueTimeTask(demandId);
+                mDueTimeTask.execute("mark-as-late");
+                return true;
+            } else return false;
     }
 
-    private boolean attemptToUpdateStatus(int id, String status){
-        mStatusTask = new StatusTask(id, status);
-        mStatusTask.execute();
-        return true;
+    private boolean attemptToSendLateWarning(long demandId) {
+        if (mDueTimeTask == null){
+            mDueTimeTask = new DueTimeTask(demandId);
+            mDueTimeTask.execute("late-warning");
+            return true;
+        } else return false;
+    }
+
+    private boolean attemptToMarkAsSeen(long id){
+        if (mSeenTask == null) {
+            mSeenTask = new SeenTask(id);
+            mSeenTask.execute();
+            return true;
+        } else return false;
+    }
+
+    private boolean attemptToUpdateStatus(long id, String status){
+        if (mStatusTask == null) {
+            mStatusTask = new StatusTask(id, status);
+            mStatusTask.execute();
+            return true;
+        } else return false;
+
     }
 
     @Override
     public boolean onStopJob(JobParameters params) {
+        Log.e(TAG, "(onStop) job somehow canceled!!!");
+        if (mType.equals(Constants.DUE_TIME_JOB_TAG)) {
+            return true;
+        }
         return false; // Answers the question: "Should this job be retried?"
     }
 
     public class SeenTask extends AsyncTask<Void, Void, String> {
-        private int demandId;
+        private long demandId;
 
-        public SeenTask(int demandId) {
+        public SeenTask(long demandId) {
             this.demandId = demandId;
         }
 
@@ -97,10 +133,10 @@ public class MyJobService extends JobService {
     }
 
     public class StatusTask extends AsyncTask<Void, Void, String> {
-        private int id;
+        private long id;
         private String status;
 
-        public StatusTask(int id, String status) {
+        public StatusTask(long id, String status) {
             this.id = id;
             this.status = status;
         }
@@ -139,6 +175,62 @@ public class MyJobService extends JobService {
                 // No need to broadcast change, since local changes are made before server.
             } else {
                 Log.e(TAG, getString(R.string.server_error));
+            }
+        }
+    }
+
+    public class DueTimeTask extends AsyncTask<String, Void, String> {
+        private long demandId;
+
+        public DueTimeTask(long demandId) {
+            this.demandId = demandId;
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            ContentValues values = new ContentValues();
+            values.put("demand_id", demandId);
+            String url = "";
+            switch (strings[0]) {
+                case "late-warning":
+                    url = "late-warning";
+                    break;
+                case "mark-as-late":
+                    url = "late";
+                    break;
+                default:
+            }
+            return CommonUtils.POST("/send/" + url, values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mDueTimeTask = null;
+            Log.d(TAG, "(DueTimeTask) response: " + s);
+
+            try {
+                JSONObject jsonObject = new JSONObject(s);
+                boolean success = jsonObject.getBoolean("success");
+                if (success) {
+                    int type = jsonObject.getInt("type");
+                    switch (type) {
+                        case Constants.WARN_DUE_TIME_ALARM_TAG:
+                            //do something.
+                            Log.d(TAG, "(DueTimeTask) warn due time sent!");
+                            break;
+                        case Constants.DUE_TIME_ALARM_TAG:
+                            Log.d(TAG, "(DueTimeTask) due time sent!");
+                            //do another something;
+                            break;
+                        default:
+                            Log.e(TAG, "(DueTimeTask) post type unexpected!!!");
+                    }
+                } else {
+
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
         }
     }

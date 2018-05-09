@@ -1,11 +1,13 @@
 package com.sead.demand.Handlers;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -37,7 +39,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Bundle bundle = intent.getBundleExtra(Constants.INTENT_BUNDLE);
-        Log.e(TAG, "(onReceive) string: " + intent.getExtras().getString("test"));
+        //Log.e(TAG, "(onReceive) string: " + intent.getExtras().getString("test"));
         int type = intent.getExtras().getInt("type");
         Demand demand = (Demand) bundle.getSerializable(Constants.INTENT_DEMAND);
         String title = "";
@@ -74,7 +76,8 @@ public class AlarmReceiver extends BroadcastReceiver {
                 break;
         }
 
-       generateNotification(demand, context, intent, drawable, title, text, bigTextTitle, bigText);
+        // Local Warning.
+        generateNotification(demand, context, intent, drawable, title, text, bigTextTitle, bigText);
     }
 
     private void generateNotification(Demand demand, Context context, Intent intent,
@@ -97,8 +100,26 @@ public class AlarmReceiver extends BroadcastReceiver {
                 PendingIntent.FLAG_UPDATE_CURRENT
         );
 
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(context.NOTIFICATION_SERVICE);
+
+        String CHANNEL_ID = context.getString(R.string.alarm_receiver_channel_id);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            CharSequence name = context.getString(R.string.alarm_receiver_channel_name);
+            String Description = context.getString(R.string.alarm_receiver_channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+            mChannel.setDescription(Description);
+            mChannel.enableLights(true);
+            mChannel.setLightColor(Color.BLUE);
+            mChannel.enableVibration(true);
+            mChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
+            mChannel.setShowBadge(false);
+            notificationManager.createNotificationChannel(mChannel);
+        }
+
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, "channel_alarm")
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(drawable)
                 .setContentTitle(title)
                 .setContentText(text)
@@ -112,8 +133,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         bigTextStyle.setSummaryText(CommonUtils.formatDate(demand.getCreatedAt()));
 
         if (bigTextStyle != null) notificationBuilder.setStyle(bigTextStyle);
-
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(context.NOTIFICATION_SERVICE);
+        
         notificationManager.notify(notificationId, notificationBuilder.build());
     }
 
@@ -124,18 +144,28 @@ public class AlarmReceiver extends BroadcastReceiver {
                 mDueTimeTask.execute("late-warning");
             }
         } else {
-            CommonUtils.handleLater(demand,Constants.UPDATE_JOB_TAG, context);
+            CommonUtils.handleLater(demand,Constants.WARN_DUE_TIME_JOB_TAG, context);
         }
     }
 
     private void attemptToMarkDemandAsLate(Demand demand, Context context) {
+        // Mark locally.
+        demand.setLate(1);
+        CommonUtils.updateColumnDB(
+                FeedReaderContract.DemandEntry.COLUMN_NAME_LATE,
+                ""  + demand.isLate(),
+                demand,
+                Constants.UPDATE_STATUS,
+                context
+        );
+
         if(CommonUtils.isOnline(context)) {
             if (mDueTimeTask == null){
                 mDueTimeTask = new DueTimeTask(demand);
                 mDueTimeTask.execute("mark-as-late");
             }
         } else {
-            //CommonUtils.handleLater(demand,Constants.UPDATE_JOB_TAG, context);
+            CommonUtils.handleLater(demand,Constants.DUE_TIME_JOB_TAG, context);
         }
     }
 
